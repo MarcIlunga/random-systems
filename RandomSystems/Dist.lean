@@ -88,6 +88,27 @@ def zero' (A : Type*) : Dist A := 0
 def uniform (A : Type*) [Fintype A] [Nonempty A] : Dist A :=
   Finsupp.equivFunOnFinite.invFun (fun _ => (1 : NNReal) / (Fintype.card A : NNReal))
 
+/-! ### Uniform distribution lemmas -/
+
+/-- Pointwise evaluation of the uniform distribution. -/
+theorem uniform_apply [Fintype A] [Nonempty A] (a : A) :
+    (uniform A) a = 1 / (Fintype.card A : NNReal) := by
+  simp [uniform, Finsupp.equivFunOnFinite]
+
+/-- The uniform distribution has weight 1. -/
+theorem weight_uniform [Fintype A] [Nonempty A] :
+    (uniform A).weight = 1 := by
+  simp only [weight]
+  have h_card_pos : (0 : NNReal) < (Fintype.card A : NNReal) :=
+    Nat.cast_pos.mpr Fintype.card_pos
+  rw [Finset.sum_congr rfl (fun a _ => uniform_apply a)]
+  rw [Finset.sum_const, Finset.card_univ, nsmul_eq_mul, mul_div_cancel₀]
+  exact_mod_cast h_card_pos.ne'
+
+/-- The uniform distribution is a probability distribution. -/
+theorem uniform_isProbDist [Fintype A] [Nonempty A] :
+    (uniform A).isProbDist := weight_uniform
+
 /-- The marginal distribution obtained by projecting onto the first component.
 
 Paper Definition 2: Given a joint distribution X_{A×B}, the marginal X_A is
@@ -126,6 +147,19 @@ theorem fTransform_apply_eq_sum {A B : Type*} [Fintype A] [DecidableEq B]
       apply ha2
       exact Finset.mem_filter.mpr ⟨ha_supp, hfa⟩
     exact Finsupp.notMem_support_iff.mp ha_supp
+
+/-- Pushforward of a uniform distribution evaluated at a point equals
+the fiber cardinality divided by the total cardinality.
+
+`(fTransform f (uniform A)) b = |{a : f a = b}| / |A|` -/
+theorem fTransform_uniform_apply [Fintype A] [DecidableEq B] [Nonempty A]
+    (f : A → B) (b : B) :
+    (fTransform f (uniform A)) b =
+      ((Finset.univ.filter (fun a => f a = b)).card : NNReal)
+        / (Fintype.card A : NNReal) := by
+  classical
+  rw [fTransform_apply_eq_sum]
+  simp only [uniform_apply, Finset.sum_const, nsmul_eq_mul, mul_one_div]
 
 /-! ### Independent product distributions -/
 
