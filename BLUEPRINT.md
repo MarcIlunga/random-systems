@@ -343,6 +343,23 @@ instances).
 | M5 | ~500-800 | M4 |
 | **Total** | **~3000-3800** | |
 
+## M7: Crypto Notation DSL — NOT STARTED
+
+Design doc: `RandomSystems/Notation.lean` (design notes only, no code yet).
+H-technique extensions: `HTechnique/Notation.lean`.
+
+Paper-like notation layer so proof statements read like the paper.
+
+| Step | What | Where | Status |
+|------|------|-------|--------|
+| N-01 | Define `Dist.evalPred` (named def for `Pr[...]`) | `Dist.lean` | `[ ]` |
+| N-02 | Simple notations: `δ`, `Δ`, `𝒰`, `⊗`, `Tr`, `Trₐ` | `Notation.lean` | `[ ]` |
+| N-03 | Binder notation: `Pr[... \| x ←$ D]` | `Notation.lean` | `[ ]` |
+| N-04 | Binder notation: `sample x ←$ D return t` | `Notation.lean` | `[ ]` |
+| N-05 | H-technique extensions: `Pr_bad`, `Advₙ`, `Advₐ` | `HTechnique/Notation.lean` | `[ ]` |
+| N-06 | Refactor HashThenPRF as proof-of-concept | `HashThenPRF.lean` | `[ ]` |
+| N-07 | v2: tuple binders, `Func(X,Y)`, `Perm(X)` | both | `[ ]` |
+
 ## References
 
 1. Lanzenberger, D. & Maurer, U. (2020). "Coupling of Random Systems." TCC 2020.

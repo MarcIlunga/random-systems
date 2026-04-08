@@ -30,7 +30,6 @@ We use Mathlib's `Finsupp` to get `support`, `sum`, algebraic operations for fre
 
 - Sub-distributions (weight ≤ 1) arise naturally in the proof of Theorem 1.
 - `NNReal` (not `ENNReal`) since everything is finite; cleaner arithmetic.
-- No `ProbComp` / VCVio — purely distributional, faithful to Maurer.
 -/
 
 noncomputable section
