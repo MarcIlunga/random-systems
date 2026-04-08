@@ -61,6 +61,25 @@ Paper: `X(B) := ∑_{a ∈ B} X(a)`. -/
 def evalSet (X : Dist A) (B : Finset A) : NNReal :=
   ∑ a ∈ B, X a
 
+/-- Evaluate a distribution on a predicate: the total mass of elements satisfying `P`.
+
+`evalPred X P = ∑_{a : P(a)} X(a)`
+
+This is the named def that `Pr[P(x) | x ←$ D]` notation will expand to.
+Equivalent to `evalSet X (Finset.univ.filter P)` but takes a predicate directly. -/
+def evalPred [Fintype A] (X : Dist A) (P : A → Prop) [DecidablePred P] : NNReal :=
+  ∑ a ∈ Finset.univ.filter P, X a
+
+@[simp]
+theorem evalPred_eq_evalSet [Fintype A] (X : Dist A) (P : A → Prop) [DecidablePred P] :
+    X.evalPred P = X.evalSet (Finset.univ.filter P) := by
+  rfl
+
+theorem evalPred_le_weight [Fintype A] (X : Dist A) (P : A → Prop) [DecidablePred P] :
+    X.evalPred P ≤ X.weight := by
+  apply Finset.sum_le_sum_of_subset
+  exact Finset.filter_subset _ _
+
 /-- The zero distribution: all mass is 0. -/
 def zero' (A : Type*) : Dist A := 0
 

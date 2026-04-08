@@ -352,8 +352,8 @@ Paper-like notation layer so proof statements read like the paper.
 
 | Step | What | Where | Status |
 |------|------|-------|--------|
-| N-01 | Define `Dist.evalPred` (named def for `Pr[...]`) | `Dist.lean` | `[ ]` |
-| N-02 | Simple notations: `δ`, `Δ`, `𝒰`, `⊗`, `Tr`, `Trₐ` | `Notation.lean` | `[ ]` |
+| N-01 | Define `Dist.evalPred` (named def for `Pr[...]`) | `Dist.lean` | `[~]` building |
+| N-02 | Simple notations: `δ`, `Δ`, `𝒰`, `⊗ₚ`, `Tr`, `Trₐ` | `Notation.lean` | `[~]` building |
 | N-03 | Binder notation: `Pr[... \| x ←$ D]` | `Notation.lean` | `[ ]` |
 | N-04 | Binder notation: `sample x ←$ D return t` | `Notation.lean` | `[ ]` |
 | N-05 | H-technique extensions: `Pr_bad`, `Advₙ`, `Advₐ` | `HTechnique/Notation.lean` | `[ ]` |
