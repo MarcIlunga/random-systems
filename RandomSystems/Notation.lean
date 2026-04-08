@@ -52,23 +52,30 @@ scoped notation "Tr[" S ", " xs "]" => PDS.transcriptDist S xs
 /-- Adaptive transcript distribution: `Trₐ[S, e]`. -/
 scoped notation "Trₐ[" S ", " e "]" => PDS.adaptiveTranscriptDist S e
 
--- ===== N-03: Probability binder notation =====
+-- ===== N-03 + N-07: Probability binder notation =====
 
-/-- Probability notation: `Pr[φ(x) | x ←$ D]` for `Dist.evalPred D (fun x => φ(x))`.
+/-- Probability notation with general binder pattern:
+- `Pr[φ(x) | x ←$ D]` — single variable
+- `Pr[φ(a,b) | (a, b) ←$ D]` — pair destructuring
+- `Pr[φ(a,b,c) | (a, b, c) ←$ D]` — triple destructuring
 
-Example: `Pr[hash k m = hash k m' | k ←$ 𝒰[K]] ≤ ε` -/
-scoped syntax "Pr[" term " | " ident " ←$ " term "]" : term
+Expands to `Dist.evalPred D (fun pat => φ(pat))`. -/
+scoped syntax "Pr[" term " | " Lean.Parser.Term.funBinder " ←$ " term "]" : term
 scoped macro_rules
-  | `(Pr[$body | $x ←$ $D]) => `(Dist.evalPred $D (fun $x => $body))
+  | `(Pr[$body | $b:funBinder ←$ $D]) => `(Dist.evalPred $D (fun $b => $body))
 
--- ===== N-04: Sample/pushforward binder notation =====
+-- ===== N-04 + N-07: Sample/pushforward binder notation =====
 
-/-- Sampling notation: `sample x ←$ D return t` for `Dist.fTransform (fun x => t) D`.
+/-- Sampling notation with general binder pattern:
+- `sample x ←$ D return t` — single variable
+- `sample (h, ρ) ←$ D return t` — pair destructuring
+- `sample (a, b, c) ←$ D return t` — triple destructuring
 
-Example: `sample coin ←$ 𝒰[K × (X → Y)] return (coin.2 (H coin.1 m), coin.1)` -/
-scoped syntax "sample " ident " ←$ " term " return " term : term
+Expands to `Dist.fTransform (fun pat => t) D`. -/
+scoped syntax "sample " Lean.Parser.Term.funBinder " ←$ " term " return " term : term
 scoped macro_rules
-  | `(sample $x ←$ $D return $body) => `(Dist.fTransform (fun $x => $body) $D)
+  | `(sample $b:funBinder ←$ $D return $body) =>
+    `(Dist.fTransform (fun $b => $body) $D)
 
 end RandomSystems.CryptoNotation
 
