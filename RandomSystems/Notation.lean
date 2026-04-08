@@ -52,6 +52,24 @@ scoped notation "Tr[" S ", " xs "]" => PDS.transcriptDist S xs
 /-- Adaptive transcript distribution: `Trₐ[S, e]`. -/
 scoped notation "Trₐ[" S ", " e "]" => PDS.adaptiveTranscriptDist S e
 
+-- ===== N-03: Probability binder notation =====
+
+/-- Probability notation: `Pr[φ(x) | x ←$ D]` for `Dist.evalPred D (fun x => φ(x))`.
+
+Example: `Pr[hash k m = hash k m' | k ←$ 𝒰[K]] ≤ ε` -/
+scoped syntax "Pr[" term " | " ident " ←$ " term "]" : term
+scoped macro_rules
+  | `(Pr[$body | $x ←$ $D]) => `(Dist.evalPred $D (fun $x => $body))
+
+-- ===== N-04: Sample/pushforward binder notation =====
+
+/-- Sampling notation: `sample x ←$ D return t` for `Dist.fTransform (fun x => t) D`.
+
+Example: `sample coin ←$ 𝒰[K × (X → Y)] return (coin.2 (H coin.1 m), coin.1)` -/
+scoped syntax "sample " ident " ←$ " term " return " term : term
+scoped macro_rules
+  | `(sample $x ←$ $D return $body) => `(Dist.fTransform (fun $x => $body) $D)
+
 end RandomSystems.CryptoNotation
 
 /-!
