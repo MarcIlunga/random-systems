@@ -414,6 +414,23 @@ XOR (`ZMod (2^n)`) and addition are both valid instantiations.
 |------|------|-------|--------|
 | A-08 | Generalize SoP to abelian group | `SumOfPermutations.lean` | `[ ]` |
 
+## M9: Computable Distribution Layer — NOT STARTED
+
+Parallel `RatDist A = A →₀ NNRat` layer for `#eval`-able distributions.
+Math proofs stay on `NNReal`; `RatDist` gives executability for testing
+and the CryptoCode DSL.
+
+| Step | What | Where | Status |
+|------|------|-------|--------|
+| R-01 | `RatDist A = A →₀ NNRat` with uniform, fTransform, prod | `RatDist.lean` | `[ ]` |
+| R-02 | `RatDist.toNNReal` bridge lemma | `RatDist.lean` | `[ ]` |
+| R-03 | `#eval` demo: toy SoP on `ZMod 4` | `Examples/SoPEval.lean` | `[ ]` |
+| R-04 | `#eval` demo: toy HashThenPRF | `Examples/HashThenPRFEval.lean` | `[ ]` |
+
+**Why:** `Dist` uses `NNReal = {r : ℝ // 0 ≤ r}` (classical, noncomputable).
+`NNRat` is computable — `Finsupp`, `Finset.sum`, `Fintype.card` all compute.
+The distribution *structure* is already computable; only the codomain blocks `#eval`.
+
 ## References
 
 1. Lanzenberger, D. & Maurer, U. (2020). "Coupling of Random Systems." TCC 2020.
