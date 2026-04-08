@@ -352,11 +352,11 @@ Paper-like notation layer so proof statements read like the paper.
 
 | Step | What | Where | Status |
 |------|------|-------|--------|
-| N-01 | Define `Dist.evalPred` (named def for `Pr[...]`) | `Dist.lean` | `[~]` building |
-| N-02 | Simple notations: `δ`, `Δ`, `𝒰`, `⊗ₚ`, `Tr`, `Trₐ` | `Notation.lean` | `[~]` building |
-| N-03 | Binder notation: `Pr[... \| x ←$ D]` | `Notation.lean` | `[ ]` |
-| N-04 | Binder notation: `sample x ←$ D return t` | `Notation.lean` | `[ ]` |
-| N-05 | H-technique extensions: `Pr_bad`, `Advₙ`, `Advₐ` | `HTechnique/Notation.lean` | `[ ]` |
+| N-01 | Define `Dist.evalPred` (named def for `Pr[...]`) | `Dist.lean` | `[x]` |
+| N-02 | Simple notations: `δ`, `Δ`, `𝒰`, `⊗ₚ`, `Tr`, `Trₐ` | `Notation.lean` | `[x]` |
+| N-03 | Binder notation: `Pr[... \| x ←$ D]` | `Notation.lean` | `[x]` |
+| N-04 | Binder notation: `sample x ←$ D return t` | `Notation.lean` | `[x]` |
+| N-05 | H-technique extensions: `Pr_bad`, `Advₙ`, `Advₐ` | `HTechnique/Notation.lean` | `[x]` |
 | N-06 | Refactor HashThenPRF as proof-of-concept | `HashThenPRF.lean` | `[ ]` |
 | N-07 | v2: tuple binders, `Func(X,Y)`, `Perm(X)` | both | `[ ]` |
 
