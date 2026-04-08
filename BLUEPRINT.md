@@ -360,6 +360,60 @@ Paper-like notation layer so proof statements read like the paper.
 | N-06 | Refactor HashThenPRF as proof-of-concept | `HashThenPRF.lean` | `[ ]` |
 | N-07 | v2: tuple binders, `Func(X,Y)`, `Perm(X)` | both | `[ ]` |
 
+## M8: Automation & Shared Lemmas — NOT STARTED
+
+### A-01..A-03: Shared lemmas to upstream into Dist.lean
+
+| Step | What | Where | Status |
+|------|------|-------|--------|
+| A-01 | `uniform_apply` : `(𝒰[A]) a = 1 / Fintype.card A` | `Dist.lean` | `[ ]` |
+| A-02 | `weight_uniform` : `(𝒰[A]).weight = 1` | `Dist.lean` | `[ ]` |
+| A-03 | `fTransform_uniform_apply` : pushforward of uniform at point = \|fiber\| / \|total\| | `Dist.lean` | `[ ]` |
+
+### A-04: `dist_simp` simp set
+
+Curated `@[dist_simp]` attribute for distribution normalization.
+
+**Include** (terms get smaller/simpler):
+- `Dist.weight_fTransform`, `Dist.weight_prod`, `Dist.prod_uniform`
+- `Dist.fTransform_comp`, `Dist.fTransform_equiv_uniform`
+- `Dist.fTransform_fst_uniform`, `Dist.fTransform_snd_uniform`
+- `Dist.evalPred_eq_evalSet`, `uniform_apply`, `weight_uniform`
+
+**Exclude** (too expansive — unfold into sums/filters, use `rw` explicitly):
+- `Dist.fTransform_apply_eq_sum`
+- `PDS.transcriptDist_apply_eq_sum`
+
+| Step | What | Where | Status |
+|------|------|-------|--------|
+| A-04 | Define `dist_simp` simp set + tag lemmas | `Dist.lean` / `Simp.lean` | `[ ]` |
+
+### A-05: `card_perm_fiber` — shared counting lemma
+
+Move `card_perm_fiber` from `PRPPRFSwitchingGeneral.lean` to shared
+counting infrastructure. SoP's `sopFiber_eq_sum_validV` needs this.
+
+| Step | What | Where | Status |
+|------|------|-------|--------|
+| A-05 | Extract `card_perm_fiber` to shared location | `Instances/` or `Counting.lean` | `[ ]` |
+
+### A-06..A-07: Thin tactic wrappers (h-technique)
+
+| Step | What | Occurrences | Where | Status |
+|------|------|-------------|-------|--------|
+| A-06 | `split_good_bad` — transcript sum split + zero good side | 5× ConditionBased | `HTechnique/Tactics.lean` | `[ ]` |
+| A-07 | `h_ratio_bound` — NNReal tsub chain from `(1-ε)·ideal ≤ real` | 3× Core+OneSided | `HTechnique/Tactics.lean` | `[ ]` |
+
+### A-08: SoP abelian group abstraction
+
+Parameterize `sopDist` over `[AddCommGroup G] [Fintype G]` instead of
+`Fin (2^n)` addition. Counting core only needs cancellation + cardinality.
+XOR (`ZMod (2^n)`) and addition are both valid instantiations.
+
+| Step | What | Where | Status |
+|------|------|-------|--------|
+| A-08 | Generalize SoP to abelian group | `SumOfPermutations.lean` | `[ ]` |
+
 ## References
 
 1. Lanzenberger, D. & Maurer, U. (2020). "Coupling of Random Systems." TCC 2020.
