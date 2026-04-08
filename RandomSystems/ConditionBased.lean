@@ -186,6 +186,27 @@ theorem conditionFailureProbAdaptive_eq_transcriptDist_filter
   rw [fTransform_filter_sum (fun s => interact s e) S.dist (fun t => ¬A.holds t)]
   rfl
 
+/-! ### Shared good/bad split lemma
+
+When `f t = g t` on good transcripts, the sum `∑ (f - g)` reduces to
+the bad part only. This pattern appears 5+ times below. -/
+
+/-- If `f t = g t` for all `t` satisfying `P`, then `∑ t, (f t - g t)`
+equals the sum restricted to `¬ P`. -/
+theorem sum_tsub_eq_sum_filter_not {T : Type*} [Fintype T]
+    (f g : T → NNReal) (P : T → Prop) [DecidablePred P]
+    (h : ∀ t, P t → f t = g t) :
+    ∑ t : T, (f t - g t) =
+      ∑ t ∈ (Finset.univ : Finset T).filter (fun t => ¬ P t), (f t - g t) := by
+  rw [← Finset.sum_filter_add_sum_filter_not Finset.univ P]
+  have h_zero :
+      ∑ t ∈ (Finset.univ : Finset T).filter P, (f t - g t) = 0 := by
+    apply Finset.sum_eq_zero
+    intro t ht
+    simp only [Finset.mem_filter, Finset.mem_univ, true_and] at ht
+    rw [h t ht, tsub_self]
+  rw [h_zero, zero_add]
+
 omit [Fintype X] [Fintype Y] [DecidableEq X] [DecidableEq Y] in
 /-- Pointwise bound: condEquiv implies statDist ≤ sum of failure probs.
 
