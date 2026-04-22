@@ -1,61 +1,54 @@
 # Random Systems in Lean 4
 
-A standalone formalization of Maurer's random systems framework for
-cryptographic indistinguishability proofs.
+Standalone Lean 4 formalization of Maurer's random systems framework for cryptographic indistinguishability proofs.
 
-## What Are Random Systems?
+A random system answers adaptive queries: at round $i$ it receives $X_i$ and returns $Y_i$, where each $Y_i$ may depend on the prior transcript. The central theorem identifies $\text{Adv}(S, T)$ with $\Delta(S, T)$, so indistinguishability proofs can be reduced to couplings of deterministic systems instead of direct reasoning about adaptive environments.
 
-A **random system** is an abstract object that answers queries
-probabilistically. In round i, it receives input X_i and produces
-output Y_i, where Y_i may depend (probabilistically) on all
-previous inputs and outputs.
+## Notation and Proof Tooling
 
-The framework, introduced by Maurer (EUROCRYPT 2002) and refined
-by Lanzenberger & Maurer (TCC 2020), provides a clean theory for
-proving that two systems are indistinguishable:
+`RandomSystems/Notation.lean` provides a paper-style DSL with `Pr[...]`, `sample ... return`, $\delta(X, Y)$, $\Delta(S, T)$, `𝒰[...]`, `Tr[...]`, and `Trₐ[...]`.
 
-- A **DDS** (deterministic discrete system) is a concrete lookup
-  table: a partial function `s : X+ -> Y`.
-- A **PDS** (probabilistic discrete system) is a distribution
-  over DDS — "fix the random tape to get a deterministic system."
-- A **random system** is an equivalence class of PDS under
-  behavioral equivalence.
-- The **advantage** Adv(S, T) measures how well any adaptive
-  environment can distinguish systems S from T.
-
-The central result (Theorem 1) shows that the advantage equals
-Delta(S, T), the infimum statistical distance over PDS representatives.
-This means you can prove indistinguishability by exhibiting a
-coupling of deterministic systems — no need to reason about
-adaptive environments.
+`RandomSystems/DistSimpAttr.lean` and `RandomSystems/DistSimp.lean` define the curated `dist_simp` simp set, used as `simp only [dist_simp]` to normalize common `Dist` expressions.
 
 ## Structure
 
-```
+```text
 RandomSystems/
-  Dist.lean              -- Distributions (A ->_0 NNReal)
-  StatDist.lean          -- Statistical distance
-  Coupling.lean          -- Coupling lemma
-  DDS.lean               -- Deterministic discrete systems
-  DDE.lean               -- Environments
-  Transcript.lean        -- Interaction transcripts
-  PDS.lean               -- Probabilistic discrete systems
-  Equiv.lean             -- PDS equivalence
-  Successor.lean         -- Successor operation (key proof technique)
-  Advantage.lean         -- Adv and Delta
-  FundamentalTheorem.lean -- Theorem 1: Delta = Adv
-  SystemCoupling.lean    -- Theorem 2: Adv = Pr(S != T)
-  Construction.lean      -- n-ary constructions
-  Combiner.lean          -- (k,n)-combiners
-  Amplification.lean     -- Theorem 3: indistinguishability amplification
-  Instances/
-    URF.lean             -- Uniform Random Function
-    URP.lean             -- Uniform Random Permutation
-    BoolDDS.lean         -- Example: Boolean single-query systems
+├── Dist.lean
+├── Counting.lean
+├── DistSimpAttr.lean
+├── DistSimp.lean
+├── Notation.lean
+├── StatDist.lean
+├── Coupling.lean
+├── DDS.lean
+├── DDE.lean
+├── Transcript.lean
+├── PDS.lean
+├── Equiv.lean
+├── Successor.lean
+├── Advantage.lean
+├── FundamentalTheorem.lean
+├── SystemCoupling.lean
+├── Construction.lean
+├── HConstruction.lean
+├── Combiner.lean
+├── Amplification.lean
+├── ConditionBased.lean
+├── Instances/
+│   ├── BoolDDS.lean
+│   ├── URF.lean
+│   ├── URFfunEval.lean
+│   └── URP.lean
+└── Applications/
+    ├── PRPPRFSwitching.lean
+    ├── PRPPRFSwitchingGeneral.lean
+    ├── CBCMAC.lean
+    ├── CTRMode.lean
+    └── CascadePRF.lean
 ```
 
-See [BLUEPRINT.md](BLUEPRINT.md) for the detailed plan, milestones,
-and paper-to-code map.
+See [BLUEPRINT.md](BLUEPRINT.md) for the paper-to-code map.
 
 ## Building
 
@@ -64,7 +57,7 @@ lake update
 lake build
 ```
 
-Requires Lean 4 v4.28.0-rc1 and Mathlib.
+Requires Lean 4 `v4.28.0-rc1` and Mathlib `v4.28.0-rc1`.
 
 ## References
 

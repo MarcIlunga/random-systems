@@ -1,6 +1,6 @@
 # Proof Gaps & Issues — Random Systems Formalization
 
-## Status: 3 sorry, 0 custom axioms
+## Status: 3 sorry, 0 custom axioms (verified 2026-04-08)
 
 Full project builds successfully (1130 Lake jobs). Only standard Lean axioms
 (propext, Classical.choice, Quot.sound) appear in `#print axioms`.
@@ -8,7 +8,8 @@ Full project builds successfully (1130 Lake jobs). Only standard Lean axioms
 Sorry breakdown:
 - 2 original core theory (Theorem 1 inductive step, Amplification general k)
 - 0 condition-based proof technique — **ALL PROVED**
-- 1 PRF/PRP switching application (combinatorial fiber counting)
+- 0 PRF/PRP switching application — **ALL PROVED**
+- 1 adaptive Boneh–Shoup cascade application (prefix-free adaptive environment bound)
 - 0 CBC-MAC application (delegates to condition-based framework)
 
 ---
@@ -78,34 +79,36 @@ The paper proof is correct.
 
 ---
 
-## Sorry 3: URF/URP Transcript Distribution Equality (q=1)
+## Sorry 3: Adaptive Boneh–Shoup Cascade Bound
 
-**File:** `RandomSystems/Applications/PRPPRFSwitching.lean:72`
-**Theorem:** `urf_urp_transcriptDist_eq`
-**Severity:** LOW — only blocks the q=1 PRF/PRP switching result
+**File:** `RandomSystems/Applications/BonehShoupCascadeAdaptive.lean:63`
+**Theorem:** `advantageAdaptiveOn_URFfunCascadeIdeal_URFfun_prefixFreeEnv_le_birthday`
+**Severity:** LOW — adaptive extension only; the file is not imported by `RandomSystems.lean`
 
-**Statement:** For q=1, URF and URP produce the same transcript distributions:
-  `URF.transcriptDist inputs = URP.transcriptDist inputs`
+**Statement:** For prefix-free adaptive environments, the ideal cascade and URF
+are indistinguishable up to the birthday bound:
+  `advantageAdaptiveOn(...) ≤ birthdayBound (q * (ℓ + 1)) (Fintype.card K)`
 
 **What's proved:**
-- `urf_urp_cond_equiv`: ✅ proved (delegates to transcriptDist equality)
-- `urf_collision_bound`: ✅ proved (condition never fails for q=1)
-- `prf_prp_switching_q1`: ✅ proved (delegates to transcriptDist equality)
+- The fixed-input / non-adaptive Boneh–Shoup cascade development lives in
+  `RandomSystems/Applications/BonehShoupCascade.lean`
+- The adaptive condition-based infrastructure exists, including
+  `ConditionBased.advantageAdaptive_le_condition_failure`
+- The adaptive target theorem and proof plan are in place so downstream work can
+  target a stable statement
 
 **What's needed:**
-- Show that for any input x, both distributions assign weight 1/|X| to each
-  output y. This requires computing fiber cardinalities:
-  - URF: `|{f : X→X | f(x)=y}| = |X|^(|X|-1)`, so weight = `|X|^(|X|-1) / |X|^|X| = 1/|X|`
-  - URP: `|{π ∈ Sym(X) | π(x)=y}| = (|X|-1)!`, so weight = `(|X|-1)! / |X|! = 1/|X|`
-- Mathlib has `Fintype.card_filter_piFinset_const_eq_of_mem` for the URF side
-  and `Fintype.card_perm` for |Sym(X)| = |X|!, but the permutation fiber
-  counting requires orbit-stabilizer or direct combinatorial argument.
+- An environment-lifting lemma relating tag-only interaction under `e` to
+  trace-level interaction under a lifted environment
+- An adaptive variant of the trace-level "equal on good transcripts" lemma
+- A proof of the adaptive failure-probability / birthday bound under the
+  prefix-free restriction
 
-**Difficulty:** Medium. Standard combinatorics but requires connecting DDS
-definitions to Mathlib's `piFinset` and `Equiv.Perm` machinery.
+**Difficulty:** Medium. The mathematics is standard; the missing work is mostly
+adaptive-environment plumbing.
 
-**Source of difficulty:** Bridging between our custom DDS type and Mathlib's
-function/permutation types. The mathematical fact is elementary.
+**Source of difficulty:** Formalization and environment-lifting infrastructure.
+This is an extension module rather than a gap in the imported core development.
 
 ---
 
@@ -129,15 +132,17 @@ function/permutation types. The mathematical fact is elementary.
 
 **File:** `RandomSystems/Applications/PRPPRFSwitching.lean`
 
+- `urf_urp_transcriptDist_eq`: **PROVED** — For q=1, URF and URP induce the
+  same transcript distribution exactly.
 - `urf_collision_bound`: **PROVED** — For q=1, the failure probability is 0
   because the "all outputs distinct" condition holds trivially (one element
   is always injective). The birthday bound `1·0/(2|X|) = 0` matches.
 
-- `urf_urp_cond_equiv`: **PROVED** (modulo `urf_urp_transcriptDist_eq`) —
-  Conditional equivalence follows from full transcript distribution equality.
+- `urf_urp_cond_equiv`: **PROVED** — Conditional equivalence follows from full
+  transcript distribution equality.
 
-- `prf_prp_switching_q1`: **PROVED** (modulo `urf_urp_transcriptDist_eq`) —
-  If transcript distributions are equal, advantage = 0 by `statDist_self`.
+- `prf_prp_switching_q1`: **PROVED** — The q=1 PRF/PRP switching advantage is 0
+  by transcript distribution equality and `statDist_self`.
 
 ---
 
@@ -233,7 +238,7 @@ is built incrementally.
 | **Theorem 3** (amplification, general k) | ⚠️ | 1 sorry; k=1 proved |
 | Corollary 1 ((1,2)-combiner) | ✅ | |
 | Condition-based proof technique (Mau02) | ✅ | **ALL PROVED** |
-| PRF/PRP switching (Mau02 Sec 4.1) | ⚠️ | 1 sorry (fiber counting); q=1 structure proved |
+| PRF/PRP switching (Mau02 Sec 4.1) | ✅ (q=1) | q=1 fully proved; multi-query still blocked because URP is only defined for q=1 |
 | CBC-MAC security (Mau02 Sec 4.2) | ✅ | Delegates to ConditionBased |
 
 ---
@@ -247,6 +252,7 @@ challenges:
 - Lean instance management during induction on type-level parameters
 - Combinatorial bookkeeping for the amplification bound
 - Bridging DDS types with Mathlib's function/permutation infrastructure
+- Lifting fixed-input arguments to adaptive prefix-free environments
 - URP only defined for single-query case
 
 The paper proofs are sketches (especially Theorem 1 pp. 17-18 and
