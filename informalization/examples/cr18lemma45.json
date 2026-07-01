@@ -1,0 +1,68 @@
+{"title": "CR18 Lemma 4.5 — Composition of reductions",
+ "body":
+ {"xs":
+  [{"xs":
+    [{"xs":
+      [{"s":
+        "Let p, q and r be problems. Let ρ and ρ' be solver-transformations. Let τ and τ' be ≤-respecting functions. Then ",
+        "kind": "text"},
+       {"prov": null,
+        "latex":
+        "\\tau p \\le q \\rho \\,\\wedge\\, \\tau' q \\le r \\rho' \\;\\Rightarrow\\; \\tau' \\tau p \\le r \\rho' \\rho",
+        "kind": "math"},
+       {"s": ".", "kind": "text"}],
+      "kind": "concat"}],
+    "kind": "paragraph"},
+   {"xs":
+    [{"kind": "tooltip",
+      "hint":
+      {"kind": "goalState",
+       "hyps":
+       [{"type": "", "name": "τ p ≤ q ρ", "changed": false},
+        {"type": "", "name": "τ' is ≤-respecting", "changed": false}],
+       "goal": "\\tau' \\tau p \\le \\tau' q \\rho"},
+      "anchor":
+      {"xs":
+       [{"s": "Composing both sides of ", "kind": "text"},
+        {"prov": null, "latex": "\\tau p \\le q \\rho", "kind": "math"},
+        {"s": " with the ≤-respecting function ", "kind": "text"},
+        {"prov": null, "latex": "\\tau'", "kind": "math"},
+        {"s": " on the left side results in ", "kind": "text"},
+        {"prov": null,
+         "latex": "\\tau' \\tau p \\le \\tau' q \\rho",
+         "kind": "math"},
+        {"s": ", since ", "kind": "text"},
+        {"prov": null, "latex": "\\tau'", "kind": "math"},
+        {"s": " is ≤-respecting.", "kind": "text"}],
+       "kind": "concat"}}],
+    "kind": "paragraph"},
+   {"xs":
+    [{"kind": "tooltip",
+      "hint":
+      {"kind": "goalState",
+       "hyps": [{"type": "", "name": "τ' q ≤ r ρ'", "changed": false}],
+       "goal": "\\tau' q \\rho \\le r \\rho' \\rho"},
+      "anchor":
+      {"xs":
+       [{"s": "Composing both sides of ", "kind": "text"},
+        {"prov": null, "latex": "\\tau' q \\le r \\rho'", "kind": "math"},
+        {"s": " with ", "kind": "text"},
+        {"prov": null, "latex": "\\rho", "kind": "math"},
+        {"s": " on the right side results in ", "kind": "text"},
+        {"prov": null,
+         "latex": "\\tau' q \\rho \\le r \\rho' \\rho",
+         "kind": "math"},
+        {"s": ".", "kind": "text"}],
+       "kind": "concat"}}],
+    "kind": "paragraph"},
+   {"xs":
+    [{"xs":
+      [{"s": "We conclude ", "kind": "text"},
+       {"prov": null,
+        "latex": "\\tau' \\tau p \\le r \\rho' \\rho",
+        "kind": "math"},
+       {"s": " by combining the two inequalities.", "kind": "text"}],
+      "kind": "concat"}],
+    "kind": "paragraph"},
+   {"xs": [{"s": "∎", "kind": "text"}], "kind": "paragraph"}],
+  "kind": "concat"}}

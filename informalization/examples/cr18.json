@@ -1,0 +1,124 @@
+{"title": "CR18 §4.7.2 — Reduction by a converter",
+ "body":
+ {"xs":
+  [{"xs":
+    [{"xs":
+      [{"s":
+        "Let c be a converter. Let W be a distribution over winning conditions. Let G be a distribution over games. Then ",
+        "kind": "text"},
+       {"prov": null,
+        "latex": "\\omega(W, c \\cdot G) = \\omega(W^c, G)",
+        "kind": "math"},
+       {"s": ".", "kind": "text"}],
+      "kind": "concat"}],
+    "kind": "paragraph"},
+   {"xs":
+    [{"kind": "tooltip",
+      "hint":
+      {"kind": "goalState",
+       "hyps":
+       [{"type": "\\text{a converter}", "name": "c", "changed": false},
+        {"type": "\\text{a distribution over winning conditions}",
+         "name": "W",
+         "changed": false},
+        {"type": "\\text{a distribution over games}",
+         "name": "G",
+         "changed": false}],
+       "goal": "\\omega(W, c \\cdot G) = \\omega(W^c, G)"},
+      "anchor":
+      {"xs":
+       [{"s":
+         "Since by definition the winning probability is a weighted sum, with ⟦w g⟧ = 1 exactly when the winning condition w beats game g, ",
+         "kind": "text"},
+        {"prov": null,
+         "latex":
+         "\\omega(W, c \\cdot G) = \\sum_w W(w) \\sum_g (c \\cdot G)(g)\\,⟦w\\,g⟧",
+         "kind": "math"},
+        {"s": ".", "kind": "text"}],
+       "kind": "concat"}}],
+    "kind": "paragraph"},
+   {"xs":
+    [{"xs":
+      [{"kind": "tooltip",
+        "hint":
+        {"kind": "goalState",
+         "hyps":
+         [{"type": "\\text{a winning condition}",
+           "name": "w",
+           "changed": true}],
+         "goal":
+         "\\sum_g (c \\cdot G)(g)\\,⟦w\\,g⟧ = \\sum_g G(g)\\,⟦w\\,(c\\,g)⟧"},
+        "anchor":
+        {"xs":
+         [{"s": "Since the pushforward c·G pulls the game-sum back along c, ",
+           "kind": "text"},
+          {"prov": null,
+           "latex":
+           "\\sum_g (c \\cdot G)(g)\\,⟦w\\,g⟧ = \\sum_g G(g)\\,⟦w\\,(c\\,g)⟧",
+           "kind": "math"},
+          {"s": ".", "kind": "text"}],
+         "kind": "concat"}},
+       {"s": " ", "kind": "text"},
+       {"summary": {"s": "", "kind": "text"},
+        "salient": false,
+        "kind": "detail",
+        "expanded":
+        {"kind": "indent",
+         "body":
+         {"xs":
+          [{"xs":
+            [{"xs":
+              [{"s": "Since the summand vanishes when a weight is zero, ",
+                "kind": "text"},
+               {"prov": null, "latex": "0 \\cdot x = 0", "kind": "math"},
+               {"s": ".", "kind": "text"}],
+              "kind": "concat"}],
+            "kind": "paragraph"},
+           {"xs":
+            [{"xs":
+              [{"s": "Since the summand is additive in the weight, ",
+                "kind": "text"},
+               {"prov": null,
+                "latex": "(a + b) \\cdot x = a \\cdot x + b \\cdot x",
+                "kind": "math"},
+               {"s": ".", "kind": "text"}],
+              "kind": "concat"}],
+            "kind": "paragraph"}],
+          "kind": "concat"}}}],
+      "kind": "concat"}],
+    "kind": "paragraph"},
+   {"xs":
+    [{"xs":
+      [{"s":
+        "Since the reduced winner W^c pushes forward along c in the same way, ",
+        "kind": "text"},
+       {"prov": null,
+        "latex":
+        "\\omega(W^c, G) = \\sum_w W(w) \\sum_g G(g)\\,⟦(w \\circ c)\\,g⟧",
+        "kind": "math"},
+       {"s": ".", "kind": "text"}],
+      "kind": "concat"}],
+    "kind": "paragraph"},
+   {"xs":
+    [{"xs":
+      [{"s": "It suffices to show ", "kind": "text"},
+       {"prov": null,
+        "latex":
+        "\\sum_g G(g)\\,⟦w\\,(c\\,g)⟧ = \\sum_g G(g)\\,⟦(w \\circ c)\\,g⟧ \\text{ for each } w",
+        "kind": "math"},
+       {"s": ".", "kind": "text"}],
+      "kind": "concat"}],
+    "kind": "paragraph"},
+   {"xs":
+    [{"xs":
+      [{"s": "We conclude ", "kind": "text"},
+       {"prov": null,
+        "latex": "\\omega(W, c \\cdot G) = \\omega(W^c, G)",
+        "kind": "math"},
+       {"s":
+        " by the reduction equality (w∘c) g = w (c g), which holds by definition of the reduction ρ^c (CR18 4.9).",
+        "kind": "text"}],
+      "kind": "concat"}],
+    "kind": "paragraph"},
+   {"xs": [{"s": "∎", "kind": "text"}], "kind": "paragraph"}],
+  "kind": "concat"}}

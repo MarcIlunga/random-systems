@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Reducibility is transitive</title>
+<link rel="stylesheet" href="style.css?v=7"/>
+<link rel="stylesheet" href="vendor/katex.min.css" onerror="this.remove()"/>
+<script defer src="vendor/katex.min.js" onerror="window.__noKatex=true"></script>
+</head><body>
+<header class="page-head"><div class="kicker">Informalized proof</div></header>
+<main id="doc-root" aria-live="polite"></main>
+<footer class="page-foot"><b>Source:</b> Describer path — a proof tree run through the tactic-describers.<br>Click <b>⊕</b> to reveal hidden detail · hover a dashed phrase for its proof state. Rendered offline from kernel-checked Lean.</footer>
+<script id="informalization-data" type="application/json">
+{"title": "Reducibility is transitive",
+ "body":
+ {"xs":
+  [{"xs":
+    [{"xs":
+      [{"s": "Let p, q and r be problems. Then ", "kind": "text"},
+       {"prov": null,
+        "latex":
+        "\\text{the reduction of } q \\text{ to } r \\text{ and the reduction of } r \\text{ to } p \\text{ compose to a reduction of } q \\text{ to } p",
+        "kind": "math"},
+       {"s": ".", "kind": "text"}],
+      "kind": "concat"}],
+    "kind": "paragraph"},
+   {"xs":
+    [{"kind": "tooltip",
+      "hint":
+      {"kind": "goalState",
+       "hyps":
+       [{"type": "", "name": "q reduces to r", "changed": false},
+        {"type": "", "name": "r reduces to p", "changed": false}],
+       "goal": "q \\text{ reduces to } p"},
+      "anchor":
+      {"xs":
+       [{"s": "By ", "kind": "text"},
+        {"prov": null,
+         "latex":
+         "composing the reduction of q to r with the reduction of r to p",
+         "kind": "math"},
+        {"s": ", ", "kind": "text"},
+        {"prov": null, "latex": "q \\text{ reduces to } p", "kind": "math"},
+        {"s": ".", "kind": "text"}],
+       "kind": "concat"}}],
+    "kind": "paragraph"},
+   {"xs": [{"s": "∎", "kind": "text"}], "kind": "paragraph"}],
+  "kind": "concat"}}
+</script>
+<script src="render.js?v=7"></script>
+</body></html>

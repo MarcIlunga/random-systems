@@ -1,0 +1,46 @@
+{"title": "Composition of injective functions is injective.",
+ "body":
+ {"xs":
+  [{"xs":
+    [{"xs":
+      [{"s":
+        "Let α, β and γ be types. Let f : α → β and g : β → γ be injective functions. Then ",
+        "kind": "text"},
+       {"prov": null,
+        "latex": "g \\circ f\\ \\text{is injective}",
+        "kind": "math"},
+       {"s": ".", "kind": "text"}],
+      "kind": "concat"}],
+    "kind": "paragraph"},
+   {"xs":
+    [{"xs":
+      [{"s": "Let a and b be elements of ", "kind": "text"},
+       {"prov": null, "latex": "α", "kind": "math"},
+       {"s": ".", "kind": "text"}],
+      "kind": "concat"}],
+    "kind": "paragraph"},
+   {"xs":
+    [{"xs":
+      [{"s": "Assume ", "kind": "text"},
+       {"prov": null,
+        "latex": "(g \\circ f)\\, a = (g \\circ f)\\, b",
+        "kind": "math"},
+       {"s": ".", "kind": "text"}],
+      "kind": "concat"}],
+    "kind": "paragraph"},
+   {"xs":
+    [{"xs":
+      [{"s": "Since g is injective, ", "kind": "text"},
+       {"prov": null, "latex": "f\\, a = f\\, b", "kind": "math"},
+       {"s": ".", "kind": "text"}],
+      "kind": "concat"}],
+    "kind": "paragraph"},
+   {"xs":
+    [{"xs":
+      [{"s": "Since f is injective, ", "kind": "text"},
+       {"prov": null, "latex": "a = b", "kind": "math"},
+       {"s": ".", "kind": "text"}],
+      "kind": "concat"}],
+    "kind": "paragraph"},
+   {"xs": [{"s": "∎", "kind": "text"}], "kind": "paragraph"}],
+  "kind": "concat"}}

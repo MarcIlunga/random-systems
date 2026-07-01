@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<!-- Informalization — landing / gallery. Copyright (c) 2026 Trail of Bits. Apache 2.0. -->
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Informalization — Lean proofs as readable, interactive documents</title>
+  <link rel="stylesheet" href="style.css?v=7" />
+</head>
+<body>
+  <header class="page-head"><div class="kicker">Informalization · the missing arrow</div></header>
+  <main id="doc-root">
+    <h1>Lean proofs, as readable interactive documents</h1>
+    <p>
+      Each page below is a Lean theorem rendered into controlled English with two
+      affordances: click <b>⊕</b> to reveal hidden detail to any depth, and hover a
+      dashed phrase to see its proof state. Rendered entirely offline from
+      kernel-checked Lean — every claim traces back to a real term.
+    </p>
+
+    <div class="gallery">
+      <a class="card" href="example-cr18.html">
+        <div class="card-tag">Real CR18 proof</div>
+        <div class="card-title">CR18 §4.7.2 — reduction by a converter</div>
+        <div class="card-sub">ω(W, c·G) = ω(Wᶜ, G). The already-proven
+          <code>winProb_apply</code>, transcribed step-for-step: unfold → push the
+          converter through the pushforward → reduce per winner → close by the
+          trivial reduction equality.</div>
+      </a>
+      <a class="card" href="example-injcomp.html">
+        <div class="card-tag">Auto-generated</div>
+        <div class="card-title">Composition of injective functions</div>
+        <div class="card-sub">Produced automatically by <code>#informalize inj_comp</code>
+          from the theorem's type and proof term — the grammar engine merges the
+          binders into "Let α, β and γ be types. Let f and g be injective functions."</div>
+      </a>
+      <a class="card" href="example-reduction.html">
+        <div class="card-tag">Describer path</div>
+        <div class="card-title">Reductions compose (CR18 Lemma 4.5)</div>
+        <div class="card-sub">A re-parented proof tree rendered with expandable
+          sub-steps and goal states — the rich interaction surface.</div>
+      </a>
+      <a class="card" href="example-showcase.html">
+        <div class="card-tag">Feature showcase</div>
+        <div class="card-title">All node kinds</div>
+        <div class="card-sub">Hand-authored to exercise every document feature:
+          detail, tooltip, clickable definition, goal state, display math.</div>
+      </a>
+    </div>
+  </main>
+  <footer class="page-foot">
+    <b>Informalization</b> — companion to the verbose layer &amp; cnl-rs.
+    Grammar grounded in GF/RGL + Reiter–Dale; provenance-checked; zero unsafe DOM sinks.
+    For typeset math, drop a pinned KaTeX into <code>vendor/</code> (optional — math
+    renders without it).
+  </footer>
+</body>
+</html>

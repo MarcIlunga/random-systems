@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<!--
+  Informalization renderer — "the slides".
+  Copyright (c) 2026 Trail of Bits. Apache 2.0.
+
+  Open directly in a browser (file://) — no server needed, no network.
+  The explanation data is inlined below as an inert <script type="application/json">
+  payload (parsed with JSON.parse, never eval'd). Replace its contents with the
+  output of `Explanation.toJsonString` from the Lean side (or use a generated
+  example from `examples/`).
+
+  KaTeX is optional: drop `katex.min.js` + `katex.min.css` + fonts into `vendor/`
+  to get typeset math; without them, math degrades to readable escaped text.
+  Pin KaTeX to a current, non-severely-vulnerable release (DESIGN §9).
+-->
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Informalized proof</title>
+  <link rel="stylesheet" href="style.css?v=7" />
+  <!-- Optional vendored KaTeX (safe to omit). -->
+  <link rel="stylesheet" href="vendor/katex.min.css" onerror="this.remove()" />
+  <script defer src="vendor/katex.min.js" onerror="window.__noKatex=true"></script>
+</head>
+<body>
+  <main id="doc-root" aria-live="polite"></main>
+
+  <!-- Explanation data. Replace the body with generated JSON. This sample
+       exercises every node kind (text, math, paragraph, indent, detail,
+       clickable, tooltip, goalState, displayMath). -->
+  <script id="informalization-data" type="application/json">
+{
+  "title": "Theorem (inj_comp)",
+  "body": {
+    "kind": "concat",
+    "xs": [
+      { "kind": "paragraph", "xs": [
+        { "kind": "text", "s": "Let " },
+        { "kind": "math", "latex": "\\alpha", "prov": "a" },
+        { "kind": "text", "s": ", " },
+        { "kind": "math", "latex": "\\beta", "prov": "b" },
+        { "kind": "text", "s": " and " },
+        { "kind": "math", "latex": "\\gamma", "prov": "c" },
+        { "kind": "text", "s": " be types. Let " },
+        { "kind": "math", "latex": "f : \\alpha \\to \\beta" },
+        { "kind": "text", "s": " and " },
+        { "kind": "math", "latex": "g : \\beta \\to \\gamma" },
+        { "kind": "text", "s": " be injective functions. Then " },
+        { "kind": "math", "latex": "g \\circ f" },
+        { "kind": "text", "s": " is injective." }
+      ]},
+      { "kind": "paragraph", "xs": [
+        { "kind": "text", "s": "Proof. " },
+        { "kind": "tooltip",
+          "anchor": { "kind": "text", "s": "Fix x and y" },
+          "hint": { "kind": "goalState",
+            "hyps": [
+              { "name": "f", "type": "\\alpha \\to \\beta", "changed": false },
+              { "name": "g", "type": "\\beta \\to \\gamma", "changed": false },
+              { "name": "x", "type": "\\alpha", "changed": true },
+              { "name": "y", "type": "\\alpha", "changed": true }
+            ],
+            "goal": "(g \\circ f)(x) = (g \\circ f)(y) \\to x = y" } },
+        { "kind": "text", "s": " with " },
+        { "kind": "math", "latex": "(g \\circ f)(x) = (g \\circ f)(y)" },
+        { "kind": "text", "s": ". " },
+        { "kind": "detail", "salient": true,
+          "summary": { "kind": "text", "s": "One sees x = y. ⊕" },
+          "expanded": { "kind": "indent", "body": { "kind": "concat", "xs": [
+            { "kind": "text", "s": "Using the " },
+            { "kind": "clickable",
+              "label": { "kind": "text", "s": "injectivity of g" },
+              "reveal": { "kind": "text", "s": "g a = g b implies a = b" } },
+            { "kind": "text", "s": ", we get " },
+            { "kind": "math", "latex": "f(x) = f(y)" },
+            { "kind": "text", "s": "; then by injectivity of f, " },
+            { "kind": "math", "latex": "x = y" },
+            { "kind": "text", "s": "." }
+          ]}}
+        }
+      ]},
+      { "kind": "displayMath", "latex": "g \\circ f : \\alpha \\to \\gamma" }
+    ]
+  }
+}
+  </script>
+
+  <script src="render.js?v=7"></script>
+</body>
+</html>

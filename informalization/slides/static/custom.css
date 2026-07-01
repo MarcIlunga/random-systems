@@ -1,0 +1,395 @@
+/* ── Slides — Leonardo de Moura's ETAPS structure, blended with the Trail of
+   Bits brand (Geist type, brand red, ink). Lean code syntax colors are kept
+   semantic (de Moura's). Everything below the "Informalization additions"
+   banner is ours. */
+
+/* Geist + Geist Mono — Trail of Bits' typefaces (self-hosted on the TOB site;
+   loaded here from Google Fonts). */
+@import url('https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500&display=swap');
+
+:root {
+  /* Trail of Bits brand tokens (from trailofbits/new-website src/styles/global.css) */
+  --tob-red: #d00000;          /* decorative brand mark */
+  --tob-red-strong: #a20000;   /* AAA red for text/links/fills */
+  --tob-ink: #181717;          /* near-black brand ink */
+  --tob-ink-muted: #4a4b4d;
+
+  /* Chrome accent is now TOB red; dark/title band is TOB ink. (These vars are
+     reused throughout de Moura's rules, so the blend propagates in one place.
+     Lean *syntax* colors are defined separately below and stay unchanged.) */
+  --lean-teal: var(--tob-red);
+  --lean-blue: var(--tob-ink);
+  --text-dark: var(--tob-ink);
+  --text-muted: #64748b;
+  --bg-code: #f8fafc;
+  --border-code: #e2e8f0;
+}
+
+/* ── Base typography ── */
+.reveal {
+  font-family: 'Geist', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-weight: 300;
+  font-size: 3.4vh;
+  color: var(--text-dark);
+}
+
+.reveal h1, .reveal h2, .reveal h3, .reveal h4, .reveal h5, .reveal h6 {
+  text-transform: none;
+  font-family: 'Geist', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-weight: 500;
+  color: var(--text-dark);
+}
+
+.reveal .slides section {
+  text-align: left;
+  padding: 2vh 3vw;
+  box-sizing: border-box;
+  width: 100vw;
+  height: 100vh;
+}
+
+/* ── Content slides ── */
+.reveal h2 {
+  font-size: 1.3em;
+  font-weight: 600;
+  margin: 0 0 0.5em 0;
+  color: var(--text-dark);
+}
+/* teal accent UNDER the slide title (replaces de Moura's logo+line header,
+   which we have no logo for) — content slides only, not the dark title slide */
+.reveal .slides section:not([data-background-color]) h2 {
+  border-bottom: 2px solid var(--lean-teal);
+  padding-bottom: 0.2em;
+}
+
+.reveal ul {
+  font-size: 0.9em;
+  font-weight: 300;
+  line-height: 1.7;
+  margin: 0;
+  padding-left: 1.2em;
+}
+.reveal ul ul {
+  font-size: 1em;
+}
+.reveal ul li {
+  margin-bottom: 0.25em;
+}
+
+.reveal p {
+  font-size: 0.9em;
+  font-weight: 300;
+  line-height: 1.6;
+  margin: 0.4em 0;
+}
+
+.reveal strong {
+  font-weight: 600;
+  color: var(--text-dark);
+}
+
+.reveal a {
+  color: var(--tob-red-strong);
+  font-weight: 600;
+}
+
+/* ── Code blocks (non-Lean) ── */
+.reveal pre {
+  font-size: 0.68em;
+  width: 100%;
+  margin: 0.4em 0;
+  box-shadow: none;
+  border: 1px solid var(--border-code);
+  border-radius: 6px;
+  background: var(--bg-code);
+}
+.reveal pre code {
+  padding: 0.8em 1em;
+  max-height: 70vh;
+  background: var(--bg-code);
+}
+
+/* ── Inline code ── */
+.reveal code {
+  font-size: 0.9em;
+  background: #f1f5f9;
+  padding: 0.1em 0.3em;
+  border-radius: 3px;
+}
+.reveal pre code {
+  background: var(--bg-code);
+  padding: 0.8em 1em;
+}
+
+/* ── Accent ── */
+.accent {
+  color: var(--lean-teal);
+  font-weight: 600;
+}
+/* KaTeX names its accent atoms `.accent` (e.g. `\widehat`, `\hat`); the rule
+   above would otherwise paint every wide-hat brand-red. Re-inherit inside math
+   so accents take the surrounding text color. */
+.reveal .katex .accent { color: inherit; font-weight: inherit; }
+
+/* ── Key-value highlight boxes ── */
+.key-box {
+  background: #fafafa;
+  border: 1px solid #ebebeb;
+  border-left: 4px solid var(--lean-teal);
+  border-radius: 0 8px 8px 0;
+  padding: 0.6em 1em;
+  margin: 0.4em 0;
+  font-size: 0.85em;
+}
+.key-box strong {
+  color: var(--text-dark);
+}
+
+/* ── Dark background slides (title, section breaks) ── */
+.reveal section[data-background-color="#181717"] {
+  display: flex !important;
+  flex-direction: column;
+  justify-content: center;
+}
+.reveal section[data-background-color="#181717"] h1,
+.reveal section[data-background-color="#181717"] h2 {
+  color: #ffffff !important;
+  font-size: 2em;
+  font-weight: 300;
+}
+.reveal section[data-background-color="#181717"] p,
+.reveal section[data-background-color="#181717"] li {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 1.1em;
+}
+.reveal section[data-background-color="#181717"] em {
+  color: #ff4b40; /* TOB dark-mode accent red */
+}
+.reveal section[data-background-color="#181717"] strong {
+  color: #ffffff;
+}
+.reveal section[data-background-color="#181717"] code {
+  background: rgba(255, 255, 255, 0.15);
+  color: #ffffff;
+}
+/* Title slide: the white stacked TRAIL OF BITS wordmark as a brand sign-off,
+   bottom-left, restrained. (The general `section img` rule centers + caps at
+   45vh; pin the title wordmark instead.) */
+.reveal section[data-background-color="#181717"] img {
+  max-height: 12vh;
+  max-width: 28%;
+  margin: 1.2em 0 0 0;
+  object-fit: contain;
+  opacity: 0.95;
+}
+
+/* ── Two-column layout ── */
+.two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5em;
+  align-items: start;
+}
+
+/* ── Blockquotes ── */
+.reveal blockquote {
+  font-size: 0.85em;
+  border-left: 4px solid var(--lean-teal);
+  padding: 0.3em 0.8em;
+  margin: 0.5em 0;
+  background: #fafafa;
+  border-radius: 0 6px 6px 0;
+}
+
+/* ═══════════════════════════════════════════════
+   Lean code: Stanford-style syntax colors
+   ═══════════════════════════════════════════════ */
+
+.reveal,
+.reveal section {
+  --verso-code-keyword-color: #cf222e;
+  --verso-code-const-color: #0550ae;
+  --verso-code-var-color: #1e293b;
+  --verso-code-color: #1e293b;
+  --verso-code-font-family: 'Geist Mono', 'SF Mono', 'Menlo', 'Monaco', monospace;
+  --verso-info-indicator-color: var(--lean-teal);
+  --verso-code-keyword-weight: 700;
+}
+
+/* ── Lean code block appearance ── */
+.reveal code.hl.lean.block {
+  background: var(--bg-code);
+  border: 1px solid var(--border-code);
+  border-radius: 6px;
+  box-shadow: none;
+  padding: 0.8em 1em;
+  font-size: 0.5em;
+  line-height: 1.55;
+  width: 95%;
+  max-width: 95%;
+  text-align: left;
+}
+
+/* ── Code panel: Verso info panel alongside code ── */
+.code-with-panel {
+  border: 1px solid var(--border-code);
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow: none;
+}
+.code-with-panel > code.hl.lean.block {
+  border: none;
+  border-radius: 6px 0 0 6px;
+  background: var(--bg-code);
+}
+.code-with-panel > .panel-cell {
+  background: #f8fafc;
+  border-left: 1px solid var(--border-code);
+}
+.code-with-panel > .info-panel,
+.code-with-panel .info-panel {
+  font-size: 0.45em;
+  color: var(--text-dark);
+}
+
+/* ── Inline Lean code ── */
+.reveal code.hl.lean.inline {
+  background: #f1f5f9;
+  border-radius: 3px;
+  padding: 0.1em 0.3em;
+  font-size: 0.85em;
+}
+
+/* ── #eval output ── */
+.command-output.information {
+  background: #ecfeff;
+  border-color: var(--lean-teal);
+  border-radius: 4px;
+  font-size: 0.9em;
+}
+
+/* ── Soften wavy underlines on info diagnostics ── */
+.reveal .hl.lean .has-info.information .token:not(.tactic-state):not(.tactic-state *),
+.reveal .hl.lean .has-info.information .inter-text:not(.tactic-state):not(.tactic-state *) {
+  text-decoration-color: rgba(8, 145, 178, 0.35);
+}
+
+/* ── Keyword: bold and colored ── */
+.hl.lean .keyword {
+  font-weight: 700 !important;
+}
+
+/* ── Variable: no italic ── */
+.hl.lean .var {
+  font-style: normal !important;
+}
+
+/* ── Re-enable Verso hover popups ── */
+.hl.lean .hover-container {
+  display: block;
+}
+
+/* ── Images: scale to fit slide ── */
+.reveal section img {
+  max-width: 70%;
+  max-height: 45vh;
+  object-fit: contain;
+}
+
+/* ── hstack layout ── */
+.reveal .r-hstack {
+  display: flex !important;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 1.5em;
+}
+.reveal .r-hstack > ul { flex: 1; }
+.reveal .r-hstack > p { flex: 1; }
+.reveal .r-hstack > hr,
+.reveal .r-hstack > p:empty { display: none; }
+
+/* ── Table styling ── */
+.reveal table {
+  font-size: 0.75em;
+  border-collapse: collapse;
+  margin: 0.5em 0;
+  width: 100%;
+}
+.reveal table th {
+  background: var(--tob-ink); /* ink fill, not a full-bleed red bar */
+  color: white;
+  font-weight: 600;
+  padding: 0.4em 0.8em;
+  text-align: left;
+}
+.reveal table td {
+  padding: 0.3em 0.8em;
+  border-bottom: 1px solid var(--border-code);
+}
+.reveal table tr:nth-child(even) td { background: #f8fafc; }
+
+/* ═══════════════════════════════════════════════
+   Informalization additions (ours — not de Moura)
+   ═══════════════════════════════════════════════ */
+
+/* inline math ($`…`$ → <code class="math inline">) must NOT get the grey
+   inline-code box — that was the ugly grey. */
+.reveal code.math { background: none !important; padding: 0; border-radius: 0; font-size: 1em; }
+
+/* in-place ⊕ expander: unfolds hidden proof steps in place (standalone-HTML
+   show-hidden-detail), independent of slide navigation */
+.reveal .inf-toggle {
+  cursor: pointer; color: var(--lean-teal); font-weight: 700; user-select: none;
+  padding: 0 0.15em;
+}
+.reveal .inf-toggle:hover { color: var(--tob-red-strong); }
+.reveal .inf-hidden { display: none; margin-top: 0.4em; }
+.reveal .inf-hidden.inf-show { display: block; }
+
+/* hover-to-see-goal-state on a prose phrase: dashed phrase whose proof state
+   appears in a tippy tooltip; the source block is hidden and harvested by JS */
+.reveal .inf-hover { border-bottom: 1px dashed var(--lean-teal); cursor: help; }
+.reveal .inf-goal { display: none; }
+
+/* ── Fullscreen: fill the whole screen, no letterbox/side/top bars ── */
+html, body { margin: 0; padding: 0; height: 100%; width: 100%; background: #fff; }
+.reveal-viewport, .reveal { width: 100%; height: 100%; }
+.reveal:fullscreen, .reveal:-webkit-full-screen { width: 100vw; height: 100vh; }
+:fullscreen .reveal .slides > section,
+:-webkit-full-screen .reveal .slides > section { width: 100vw; height: 100vh; }
+/* fullscreen toggle button */
+#fsbtn {
+  position: fixed; bottom: 12px; left: 12px; z-index: 60; border: none;
+  background: rgba(30,41,59,0.12); color: #1e293b; border-radius: 6px;
+  cursor: pointer; font-size: 18px; line-height: 1; padding: 4px 9px;
+  font-family: -apple-system, system-ui, sans-serif;
+}
+#fsbtn:hover { background: rgba(30,41,59,0.25); }
+
+/* ═══════════════════════════════════════════════
+   Trail of Bits brand mark — small logo top + bottom of every page
+   ═══════════════════════════════════════════════
+   The vendored tob-logo.svg is drawn with a CSS mask (alpha shape only), so a
+   single asset recolors itself: brand red on light content slides, white on the
+   dark (ink) title/section slides. Fixed to the viewport → present on every
+   slide, above the deck but below tooltips. */
+.tob-mark {
+  position: fixed;
+  z-index: 55;
+  /* the icon mark is ~76×45 — keep that aspect ratio */
+  aspect-ratio: 76 / 45;
+  /* solid-recolored SVG as a background image (a CSS mask rendered nothing on
+     file://; a plain background-image paints reliably). Red on light slides. */
+  background: url("tob-logo-red.svg") no-repeat center / contain;
+  pointer-events: none;
+  opacity: 0.92;
+}
+.tob-mark-top    { top: 14px;    right: 18px; height: 3.4vh; }
+
+/* On dark (ink) slides the red mark reads muddy against near-black → swap to the
+   white-fill copy. reveal tags the active ink slide; Main.lean toggles this
+   class on the body from the slide's data-background-color. */
+body.tob-dark-slide .tob-mark { background-image: url("tob-logo-white.svg"); }
+/* The title (dark) slide carries the prominent stacked wordmark, so the small
+   corner mark is redundant there — hide it. */
+body.tob-dark-slide .tob-mark-top { display: none; }

@@ -1,0 +1,166 @@
+/* Informalization renderer — minimal, paper-like canvas (DESIGN §8).
+   Copyright (c) 2026 Trail of Bits. Apache 2.0.
+   Prose-only surface; detail/tooltips/goal-states live in hover/expand. */
+
+:root {
+  --ink: #1f2328;
+  --muted: #57606a;
+  --faint: #8c959f;
+  --rule: #d8dee4;
+  --accent: #2f8a5b;
+  --accent-soft: #e7f3ec;
+  --changed: #fff4d6;
+  --paper: #fcfcfb;
+  --math: #11324d;
+}
+
+* { box-sizing: border-box; }
+html { font-size: 19px; -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0 auto; max-width: 44rem; padding: 3.5rem 1.5rem 7rem;
+  background: var(--paper); color: var(--ink);
+  font-family: Georgia, Cambria, 'Times New Roman', serif; line-height: 1.62;
+  text-rendering: optimizeLegibility;
+}
+
+h1 { font-size: 1.6rem; font-weight: 700; letter-spacing: -0.01em; margin: 0 0 1.6rem; }
+p  { margin: 0 0 1rem; }
+
+/* block indentation (proof structure) */
+.indent { margin: .25rem 0 .25rem 1.15rem; padding-left: .85rem; border-left: 2px solid var(--rule); }
+
+/* ----- math typesetting (self-rendered) ----- */
+.math, .math-inline, .math-display { color: var(--math); font-family: 'Latin Modern Math', 'Cambria Math', Georgia, serif; }
+.math-display { display: block; text-align: center; margin: 1rem 0; font-size: 1.05em; }
+.mrow { white-space: nowrap; }
+.mi { font-style: italic; }                 /* variables */
+.mn { font-style: normal; }                 /* numbers   */
+.mathrm, .mtext, .mop { font-style: normal; }
+.mtext { font-family: Georgia, serif; }
+.mop { padding: 0 .2em 0 0; }                /* sin, lim, … */
+.mo  { padding: 0 .06em; }                   /* default operator */
+.mo-rel  { padding: 0 .26em; }               /* = ≤ ∈ → … (relations: room) */
+.mo-bin  { padding: 0 .15em; }               /* + ∘ ⋅ × … (binary ops) */
+.mo-open  { padding: 0 .01em 0 .04em; }      /* ( [ ⟨ (tight) */
+.mo-close { padding: 0 .04em 0 .01em; }      /* ) ] ⟩ (tight) */
+.mo-punct { padding: 0 .14em 0 0; }          /* , ; : */
+.mrow > .mo-rel:first-child, .mrow > .mo-bin:first-child { padding-left: 0; }
+sub.msub, sup.msup { font-size: .72em; font-style: italic; }
+.scripts { display: inline; }
+/* fractions */
+.mfrac { display: inline-flex; flex-direction: column; vertical-align: -0.55em; text-align: center; margin: 0 .18em; }
+.mfrac-num { border-bottom: 1px solid currentColor; padding: 0 .3em .05em; line-height: 1.25; }
+.mfrac-den { padding: .05em .3em 0; line-height: 1.25; }
+/* roots */
+.msqrt-inner { border-top: 1px solid currentColor; padding: 0 .15em; margin-left: -.05em; }
+
+/* ----- show-hidden-detail (⊕ / ⊖) ----- */
+.detail { }
+.detail > .toggle {
+  font: inherit; border: none; background: none; cursor: pointer;
+  color: var(--accent); padding: 0 .15rem; font-size: .95rem; line-height: 1;
+  vertical-align: baseline; transition: color .12s;
+}
+.detail > .toggle:hover { color: #1c6b42; }
+.detail.salient > .toggle { font-weight: 700; }
+.detail .expanded { display: block; }
+.hidden { display: none !important; }
+
+/* ----- clickable reveal (definitions) ----- */
+.clickable > .label { cursor: pointer; border-bottom: 1px dotted var(--faint); }
+.reveal { color: var(--muted); font-style: italic; }
+.reveal::before { content: " ("; } .reveal::after { content: ")"; }
+
+/* ----- tooltips (proof state on hover) ----- */
+.tooltip-anchor { position: relative; border-bottom: 1px dashed var(--faint); cursor: help; outline: none; }
+.tooltip-anchor:hover, .tooltip-anchor:focus { border-bottom-color: var(--accent); }
+.tooltip-hint {
+  position: absolute; left: 0; top: 1.5em; z-index: 20; display: none;
+  min-width: 15rem; max-width: 26rem;
+  background: #fffdf7; border: 1px solid var(--rule); border-radius: 8px;
+  padding: .55rem .75rem; box-shadow: 0 6px 22px rgba(20,30,40,.16);
+  font-size: .82rem; line-height: 1.5; white-space: normal;
+}
+.tooltip-anchor:hover > .tooltip-hint, .tooltip-anchor:focus-within > .tooltip-hint,
+.tooltip-anchor:focus > .tooltip-hint { display: block; }
+
+/* ----- goal-state box ----- */
+.goal-state {
+  border: 1px solid var(--rule); border-radius: 8px; padding: .55rem .8rem; margin: .3rem 0;
+  background: #f7f8fa; font-family: 'SF Mono', 'JetBrains Mono', Menlo, Consolas, monospace;
+  font-size: .8rem; line-height: 1.55;
+}
+.goal-state hr { border: none; border-top: 1px solid var(--rule); margin: .45rem 0; }
+.hyp { padding: .02em .2em; border-radius: 4px; }
+.hyp.changed { background: var(--changed); }
+.hyp-name { color: #9a6700; font-weight: 600; }
+.goal { font-weight: 500; }
+.turnstile { color: var(--accent); font-weight: 700; }
+.context-fold > summary { cursor: pointer; color: var(--muted); font-size: .76rem; list-style: revert; }
+.goal-state .math, .goal-state .math-inline { color: inherit; font-family: inherit; }
+
+/* ----- page chrome (slide framing) ----- */
+.page-head { margin-bottom: 1.4rem; }
+.kicker {
+  font-family: -apple-system, system-ui, sans-serif; font-size: .68rem;
+  letter-spacing: .16em; text-transform: uppercase; color: var(--accent);
+  font-weight: 700;
+}
+#doc-root > h1 { margin-top: .35rem; }
+.page-foot {
+  margin-top: 3.2rem; padding-top: 1rem; border-top: 1px solid var(--rule);
+  font-family: -apple-system, system-ui, sans-serif; font-size: .72rem; color: var(--faint);
+}
+.page-foot b { color: var(--muted); font-weight: 600; }
+
+/* ----- Theorem / Proof environment ----- */
+#doc-root .mrow-text > p:first-child {
+  font-size: 1.05rem; padding: .15rem 0 .15rem 1rem;
+  border-left: 3px solid var(--accent); margin-bottom: 1.4rem;
+}
+#doc-root .mrow-text > p:first-child::before {
+  content: "Theorem.\00a0"; font-weight: 700; font-variant: small-caps; letter-spacing: .01em;
+}
+/* each proof step is its own block (no run-ons) */
+#doc-root .mrow-text > p:nth-child(n+2) { margin: .5rem 0; }
+#doc-root .mrow-text > p:nth-child(2) { margin-top: 1.15rem; }
+#doc-root .mrow-text > p:nth-child(2)::before {
+  content: "Proof.\00a0"; font-weight: 700; font-style: italic;
+}
+/* indented sub-proof steps: compact, slightly muted */
+.indent p { margin: .3rem 0; }
+.indent .detail .expanded { display: block; }
+.detail .expanded .indent { margin-top: .3rem; }
+
+/* ----- landing gallery ----- */
+.gallery { display: grid; gap: .9rem; margin-top: 1.8rem; }
+.card {
+  display: block; text-decoration: none; color: inherit;
+  border: 1px solid var(--rule); border-radius: 10px; padding: 1rem 1.15rem;
+  transition: border-color .15s, box-shadow .15s, transform .15s; background: #fff;
+}
+.card:hover { border-color: var(--accent); box-shadow: 0 6px 20px rgba(20,40,30,.08); transform: translateY(-1px); }
+.card-tag {
+  font-family: -apple-system, system-ui, sans-serif; font-size: .64rem;
+  letter-spacing: .14em; text-transform: uppercase; color: var(--accent); font-weight: 700;
+}
+.card-title { font-size: 1.12rem; font-weight: 700; margin: .25rem 0 .35rem; }
+.card-sub { font-size: .9rem; color: var(--muted); line-height: 1.5; }
+code {
+  font-family: 'SF Mono', 'JetBrains Mono', Menlo, Consolas, monospace; font-size: .85em;
+  background: #f3f4f6; padding: .05em .3em; border-radius: 4px; color: #3a4a5a;
+}
+
+/* ----- misc ----- */
+.unknown-node { color: #cf222e; }
+.hintbar {
+  margin-top: 3rem; padding-top: .9rem; border-top: 1px solid var(--rule);
+  color: var(--faint); font-size: .76rem; font-family: -apple-system, system-ui, sans-serif;
+}
+[data-prov] { /* provenance-traceable; faint affordance available for tooling */ }
+
+/* QED marker: a lone ∎ as the last proof block */
+#doc-root .mrow-text > p:last-child { text-align: right; color: var(--muted); margin-top: .4rem; }
+
+/* English goal box: "Goal:" label instead of a turnstile */
+.goal-label { color: var(--accent); font-weight: 700; }

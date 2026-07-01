@@ -1,0 +1,35 @@
+{"title": "Reducibility is transitive",
+ "body":
+ {"xs":
+  [{"xs":
+    [{"xs":
+      [{"s": "Let p, q and r be problems. Then ", "kind": "text"},
+       {"prov": null,
+        "latex":
+        "\\text{the reduction of } q \\text{ to } r \\text{ and the reduction of } r \\text{ to } p \\text{ compose to a reduction of } q \\text{ to } p",
+        "kind": "math"},
+       {"s": ".", "kind": "text"}],
+      "kind": "concat"}],
+    "kind": "paragraph"},
+   {"xs":
+    [{"kind": "tooltip",
+      "hint":
+      {"kind": "goalState",
+       "hyps":
+       [{"type": "", "name": "q reduces to r", "changed": false},
+        {"type": "", "name": "r reduces to p", "changed": false}],
+       "goal": "q \\text{ reduces to } p"},
+      "anchor":
+      {"xs":
+       [{"s": "By ", "kind": "text"},
+        {"prov": null,
+         "latex":
+         "composing the reduction of q to r with the reduction of r to p",
+         "kind": "math"},
+        {"s": ", ", "kind": "text"},
+        {"prov": null, "latex": "q \\text{ reduces to } p", "kind": "math"},
+        {"s": ".", "kind": "text"}],
+       "kind": "concat"}}],
+    "kind": "paragraph"},
+   {"xs": [{"s": "∎", "kind": "text"}], "kind": "paragraph"}],
+  "kind": "concat"}}
