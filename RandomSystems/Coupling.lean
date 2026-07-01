@@ -31,7 +31,7 @@ open scoped BigOperators NNReal
 
 namespace RandomSystems
 
-variable {A : Type*} [Fintype A] [DecidableEq A]
+variable {A : Type*} [Fintype A] [Nonempty A] [DecidableEq A]
 
 /-- A coupling of two distributions over `A`: a joint distribution
 over `A × A` whose marginals are the given distributions.
@@ -51,6 +51,49 @@ structure DistCoupling (X Y : Dist A) where
 def DistCoupling.prDisagree {X Y : Dist A} (C : DistCoupling X Y) : NNReal :=
   ∑ p ∈ (Finset.univ : Finset (A × A)).filter (fun p => p.1 ≠ p.2),
     C.joint p
+
+/-- Push a coupling forward through a deterministic map on both coordinates. -/
+def DistCoupling.fTransform {B : Type*} [Fintype B] [Nonempty B] [DecidableEq B]
+    {X Y : Dist A} (C : DistCoupling X Y) (f : A → B) :
+    DistCoupling (Dist.fTransform f X) (Dist.fTransform f Y) where
+  joint := Dist.fTransform (fun p : A × A => (f p.1, f p.2)) C.joint
+  marginal_fst := by
+    calc
+      Dist.fTransform Prod.fst
+          (Dist.fTransform (fun p : A × A => (f p.1, f p.2)) C.joint) =
+          Dist.fTransform (Prod.fst ∘ fun p : A × A => (f p.1, f p.2)) C.joint := by
+            rw [Dist.fTransform_comp]
+      _ = Dist.fTransform (f ∘ Prod.fst) C.joint := rfl
+      _ = Dist.fTransform f (Dist.fTransform Prod.fst C.joint) := by
+            rw [Dist.fTransform_comp]
+      _ = Dist.fTransform f X := by
+            rw [C.marginal_fst]
+  marginal_snd := by
+    calc
+      Dist.fTransform Prod.snd
+          (Dist.fTransform (fun p : A × A => (f p.1, f p.2)) C.joint) =
+          Dist.fTransform (Prod.snd ∘ fun p : A × A => (f p.1, f p.2)) C.joint := by
+            rw [Dist.fTransform_comp]
+      _ = Dist.fTransform (f ∘ Prod.snd) C.joint := rfl
+      _ = Dist.fTransform f (Dist.fTransform Prod.snd C.joint) := by
+            rw [Dist.fTransform_comp]
+      _ = Dist.fTransform f Y := by
+            rw [C.marginal_snd]
+
+/-- Injective deterministic maps preserve the disagreement probability of a
+pushed-forward coupling. -/
+theorem DistCoupling.prDisagree_fTransform_of_injective
+    {B : Type*} [Fintype B] [Nonempty B] [DecidableEq B]
+    {X Y : Dist A} (C : DistCoupling X Y) (f : A → B)
+    (hf : Function.Injective f) :
+    (C.fTransform f).prDisagree = C.prDisagree := by
+  -- `prDisagree` is `evalPred (· ≠ ·)`, but the filter's `Decidable` instance differs
+  -- from `evalPred`'s, so we bridge with `convert` and reconcile each filter (the right
+  -- one via injectivity of `f`).
+  simp only [DistCoupling.prDisagree, DistCoupling.fTransform]
+  convert Dist.evalPred_fTransform C.joint (fun p : A × A => (f p.1, f p.2))
+      (fun x : B × B => x.1 ≠ x.2) using 1 <;>
+    rw [Dist.evalPred] <;> congr 1 <;> ext x <;> simp [Finset.mem_filter, hf.eq_iff]
 
 -- Helper: fTransform Prod.fst evaluates to ∑ over second component
 private lemma fTransform_fst_eval

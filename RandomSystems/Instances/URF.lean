@@ -3,6 +3,8 @@ Copyright (c) 2024-2026 Trail of Bits. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 -/
 import RandomSystems.PDS
+import RandomSystems.Instances.URFfunEval
+import RandomSystems.StatDist
 
 /-!
 # Uniform Random Function (URF) / Uniform Random DDS
@@ -61,8 +63,8 @@ omit [Fintype X] [DecidableEq X] [Fintype Y] in
 /-- URF is a probability PDS (weight = 1) when the DDS type is nonempty. -/
 theorem URF_isProbPDS [Nonempty (DDS X Y q)] :
     (URF (X := X) (Y := Y) (q := q)).isProbPDS := by
-  unfold PDS.isProbPDS Dist.isProbDist URF Dist.weight
-  simp [Dist.uniform]
+  unfold PDS.isProbPDS Dist.isProbDist URF
+  exact Dist.weight_uniform
 
 /-- Evaluating a single-query URF at any input produces the uniform
 distribution on outputs.
@@ -112,3 +114,183 @@ theorem URF_eval_eq_uniform [DecidableEq Y] [Nonempty (DDS X Y 1)] [Nonempty Y] 
       exact_mod_cast pow_ne_zero _ h_pos.ne'), one_div]
 
 end RandomSystems.Instances
+
+namespace RandomSystems
+
+/-- Transcript mass of a stateless `URFfunOf` world on a matching transcript:
+the pushforward "evaluate at the query points" mass of the function
+distribution. -/
+theorem transcriptDist_URFfunOf_match
+    {X Y : Type*} {q : ℕ}
+    [Fintype X] [Nonempty X] [DecidableEq X] [Fintype Y] [Nonempty Y] [DecidableEq Y]
+    [Fintype (DDS X Y q)] [Fintype (Transcript X Y q)] [DecidableEq (Transcript X Y q)]
+    (Df : Dist (X → Y))
+    (xs : Fin q → X) (t : Transcript X Y q) (hmatch : transcriptInputsMatch xs t) :
+    (Instances.URFfunOf (X := X) (Y := Y) (q := q) Df).transcriptDist xs t =
+      Dist.fTransform (fun f : X → Y => fun i => f (xs i)) Df (transcriptOutputs t) := by
+  classical
+  unfold PDS.transcriptDist Instances.URFfunOf
+  rw [Dist.fTransform_comp, Dist.fTransform_apply_eq_sum, Dist.fTransform_apply_eq_sum]
+  apply Finset.sum_congr
+  · ext f
+    simp only [Finset.mem_filter, Finset.mem_univ, true_and]
+    constructor
+    · intro hf
+      funext i
+      have hpoint := congr_fun hf i
+      simpa [DDS.transcript, DDS.ofFunq, transcriptOutputs] using congrArg Prod.snd hpoint
+    · intro hf
+      funext i
+      apply Prod.ext
+      · simpa [DDS.transcript, DDS.ofFunq] using (hmatch i).symm
+      · have hpoint := congr_fun hf i
+        simpa [DDS.transcript, DDS.ofFunq, transcriptOutputs] using hpoint
+  · intro f _
+    rfl
+
+/-- Transcript mass of a stateless `URFfunOf` world on a mismatched transcript
+is zero. -/
+theorem transcriptDist_URFfunOf_mismatch
+    {X Y : Type*} {q : ℕ}
+    [Fintype X] [Nonempty X] [DecidableEq X] [Fintype Y] [Nonempty Y] [DecidableEq Y]
+    [Fintype (DDS X Y q)] [Fintype (Transcript X Y q)] [DecidableEq (Transcript X Y q)]
+    (Df : Dist (X → Y))
+    (xs : Fin q → X) (t : Transcript X Y q) (hmatch : ¬ transcriptInputsMatch xs t) :
+    (Instances.URFfunOf (X := X) (Y := Y) (q := q) Df).transcriptDist xs t = 0 := by
+  classical
+  unfold PDS.transcriptDist Instances.URFfunOf
+  rw [Dist.fTransform_comp, Dist.fTransform_apply_eq_sum]
+  apply Finset.sum_eq_zero
+  intro f hf
+  simp only [Finset.mem_filter, Finset.mem_univ, true_and] at hf
+  exfalso
+  apply hmatch
+  intro i
+  have hpoint := congr_fun hf i
+  simpa [DDS.transcript, DDS.ofFunq] using (congrArg Prod.fst hpoint).symm
+
+/-- On a transcript recording distinct fixed queries, the uniform random
+function assigns uniform mass `1 / |Y| ^ q`. -/
+theorem transcriptDist_URFfun_uniform
+    {X Y : Type*} {q : ℕ}
+    [Fintype X] [Nonempty X] [DecidableEq X] [Fintype Y] [Nonempty Y] [DecidableEq Y]
+    [Fintype (DDS X Y q)] [Fintype (Transcript X Y q)] [DecidableEq (Transcript X Y q)]
+    (xs : Fin q → X) (h_inj : Function.Injective xs)
+    (t : Transcript X Y q) (hmatch : transcriptInputsMatch xs t) :
+    (Instances.URFfun (X := X) (Y := Y) (q := q)).transcriptDist xs t =
+      1 / (Fintype.card Y : NNReal) ^ q := by
+  simp only [Instances.URFfun]
+  rw [transcriptDist_URFfunOf_match (Dist.uniform (X → Y)) xs t hmatch,
+    Instances.eval_nonces_uniform xs h_inj, Dist.uniform_apply, Fintype.card_fun,
+    Fintype.card_fin, Nat.cast_pow]
+
+/-- Every `ofStatelessOracleDist` world is a `URFfunOf` of the pushforward
+function distribution. -/
+theorem ofStatelessOracleDist_eq_URFfunOf
+    {X Y A : Type*} {q : ℕ}
+    [Fintype X] [Nonempty X] [DecidableEq X] [Fintype Y] [Nonempty Y] [DecidableEq Y]
+    [Fintype A] [Fintype (DDS X Y q)]
+    (D : Dist A) (oracle : A → X → Y) :
+    PDS.ofStatelessOracleDist (X := X) (Y := Y) (q := q) D oracle =
+      Instances.URFfunOf (Dist.fTransform oracle D) := by
+  unfold PDS.ofStatelessOracleDist Instances.URFfunOf
+  congr 1
+  rw [Dist.fTransform_comp]
+  rfl
+
+/-- For compatible transcripts, an adaptive `URFfunOf` transcript mass equals
+the non-adaptive transcript mass on the query vector recorded by the transcript. -/
+theorem adaptiveTranscriptDist_URFfunOf_eq_of_compatible
+    {X Y : Type*} {q : ℕ}
+    [Fintype X] [Nonempty X] [DecidableEq X] [Fintype Y] [Nonempty Y] [DecidableEq Y]
+    [Fintype (DDS X Y q)]
+    [Fintype (Transcript X Y q)] [DecidableEq (Transcript X Y q)]
+    (Df : Dist (X → Y)) (e : DDE X Y q) (t : Transcript X Y q)
+    (hcompat : Transcript.compatibleWithEnv e t) :
+    (Instances.URFfunOf (X := X) (Y := Y) (q := q) Df).adaptiveTranscriptDist e t =
+      (Instances.URFfunOf (X := X) (Y := Y) (q := q) Df).transcriptDist
+        (fun i => (t i).1) t := by
+  classical
+  unfold PDS.adaptiveTranscriptDist PDS.transcriptDist Instances.URFfunOf
+  rw [Dist.fTransform_comp, Dist.fTransform_comp]
+  rw [Dist.fTransform_apply_eq_sum, Dist.fTransform_apply_eq_sum]
+  apply Finset.sum_congr
+  · ext f
+    simp [interact_ofFunq_eq_iff, hcompat]
+  · intro f _
+    rfl
+
+/-- Incompatible transcripts have zero adaptive mass for any stateless
+function-oracle distribution. -/
+theorem adaptiveTranscriptDist_URFfunOf_eq_zero_of_incompatible
+    {X Y : Type*} {q : ℕ}
+    [Fintype X] [Nonempty X] [DecidableEq X] [Fintype Y] [Nonempty Y] [DecidableEq Y]
+    [Fintype (DDS X Y q)]
+    [Fintype (Transcript X Y q)] [DecidableEq (Transcript X Y q)]
+    (Df : Dist (X → Y)) (e : DDE X Y q) (t : Transcript X Y q)
+    (hcompat : ¬ Transcript.compatibleWithEnv e t) :
+    (Instances.URFfunOf (X := X) (Y := Y) (q := q) Df).adaptiveTranscriptDist e t = 0 := by
+  classical
+  unfold PDS.adaptiveTranscriptDist Instances.URFfunOf
+  rw [Dist.fTransform_comp]
+  rw [Dist.fTransform_apply_eq_sum]
+  apply Finset.sum_eq_zero
+  intro f hf
+  simp only [Finset.mem_filter, Finset.mem_univ, true_and] at hf
+  exact (hcompat (compatibleWithEnv_of_interact_eq _ _ _ hf)).elim
+
+/-- UPSTREAM-CANDIDATE: `URFfun` adaptive transcripts are the pushforward of the
+uniform function distribution along deterministic interaction. -/
+theorem urffun_aTD_eq_fTransform_uniform
+    {X Y : Type*} {q : ℕ}
+    [Fintype X] [DecidableEq X] [Fintype Y] [DecidableEq Y] [Nonempty Y]
+    [Fintype (DDS X Y q)] [Fintype (Transcript X Y q)]
+    [DecidableEq (Transcript X Y q)]
+    (e : DDE X Y q) :
+    (Instances.URFfun (X := X) (Y := Y) (q := q)).adaptiveTranscriptDist e =
+      Dist.fTransform (fun f : X → Y => interact (DDS.ofFunq f) e)
+        (Dist.uniform (X → Y)) := by
+  unfold PDS.adaptiveTranscriptDist Instances.URFfun Instances.URFfunOf
+  rw [Dist.fTransform_comp]
+  rfl
+
+/-- UPSTREAM-CANDIDATE: predicate mass bound for adaptive `URFfun` transcripts
+from a function-fiber count. -/
+theorem urffun_evalPred_le
+    {X Y : Type*} {q : ℕ}
+    [Fintype X] [DecidableEq X] [Fintype Y] [DecidableEq Y] [Nonempty Y]
+    [Fintype (DDS X Y q)] [Fintype (Transcript X Y q)]
+    [DecidableEq (Transcript X Y q)]
+    (e : DDE X Y q) (P : Transcript X Y q → Prop) [DecidablePred P]
+    {d : ℕ} (hd : 0 < d)
+    (hcard : d * (Finset.univ.filter (fun f : X → Y =>
+        P (interact (DDS.ofFunq f) e))).card ≤ Fintype.card (X → Y)) :
+    ((Instances.URFfun (X := X) (Y := Y) (q := q)).adaptiveTranscriptDist e).evalPred P
+      ≤ 1 / (d : NNReal) := by
+  rw [urffun_aTD_eq_fTransform_uniform]
+  exact Dist.evalPred_fTransform_uniform_le _ P hd hcard
+
+/-- UPSTREAM-CANDIDATE: birthday-style union bound for adaptive `URFfun`
+transcript bad events. -/
+theorem probBad_urffun_birthday_le
+    {X Y ι : Type*} {q : ℕ}
+    [Fintype X] [DecidableEq X] [Fintype Y] [DecidableEq Y] [Nonempty Y]
+    [Fintype ι] [Fintype (DDS X Y q)] [Fintype (Transcript X Y q)]
+    [DecidableEq (Transcript X Y q)]
+    (e : DDE X Y q) (B : Transcript X Y q → Prop)
+    (P : ι → Transcript X Y q → Prop) [∀ p, DecidablePred (P p)]
+    {d : ℕ} (hd : 0 < d)
+    (hB : ∀ t, B t → ∃ p, P p t)
+    (hpair : ∀ p : ι, d * (Finset.univ.filter (fun f : X → Y =>
+        P p (interact (DDS.ofFunq f) e))).card ≤ Fintype.card (X → Y)) :
+    probBad ((Instances.URFfun (X := X) (Y := Y) (q := q)).adaptiveTranscriptDist e) B
+      ≤ (Fintype.card ι : NNReal) / (d : NNReal) := by
+  refine le_trans (probBad_iUnion_le _ B P hB) ?_
+  calc ∑ p : ι,
+        ((Instances.URFfun (X := X) (Y := Y) (q := q)).adaptiveTranscriptDist e).evalPred (P p)
+      ≤ ∑ _p : ι, (1 / (d : NNReal)) :=
+        Finset.sum_le_sum (fun p _ => urffun_evalPred_le e (P p) hd (hpair p))
+    _ = (Fintype.card ι : NNReal) / (d : NNReal) := by
+        rw [Finset.sum_const, Finset.card_univ, nsmul_eq_mul, mul_one_div]
+
+end RandomSystems

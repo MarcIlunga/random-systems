@@ -52,6 +52,12 @@ namespace DDS
 
 variable {X Y : Type*} {q : ℕ}
 
+/-- `DDS X Y q` is inhabited whenever the response alphabet `Y` is (use the
+constant responder).  Declared globally so the `Dist`-over-`DDS` API — which now
+requires `[Nonempty]` carriers — resolves `Nonempty (DDS X Y q)` automatically. -/
+instance instNonempty [Nonempty Y] : Nonempty (DDS X Y q) :=
+  ⟨⟨fun _ _ => ‹Nonempty Y›.some⟩⟩
+
 /-- The canonical equivalence between DDS and its underlying function type. -/
 def equivRespond (X Y : Type*) (q : ℕ) :
     DDS X Y q ≃ ((i : Fin q) → (Fin (i.val + 1) → X) → Y) where

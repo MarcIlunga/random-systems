@@ -1,0 +1,3 @@
+# Placeholder so the RandomSystems/CR18 directory is tracked in git until the
+# first CR18 submodule lands. Each CR18 item adds a real .lean file here and a
+# matching `import RandomSystems.CR18.<Item>` line in ../CR18.lean.
