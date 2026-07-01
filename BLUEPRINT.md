@@ -29,7 +29,7 @@ Layer 4: Construction / Combiner    (Def 13-15, Theorem 3)
     |    axiom: respects PDS equivalence
 Layer 3: Advantage / Delta          (Def 11-12, Theorem 1-2)
     |    axiom: well-defined on equivalence classes
-Layer 2: PDS / Equivalence          (Def 8-10, Lemma 5)
+Layer 2: PDS / Non-adaptive equivalence (Def 8-10)
     |    axiom: common domain, finite support
 Layer 1: DDS / DDE / Transcript     (Def 5-7)
     |    axiom: prefix-closed domain
@@ -93,7 +93,7 @@ random-systems/
 
     -- Layer 2: Probabilistic systems
     PDS.lean                            -- Def 8-9: Probabilistic discrete systems
-    Equiv.lean                          -- Def 10, Lemma 5: PDS equivalence
+    Equiv.lean                          -- Def 10: non-adaptive PDS equivalence
 
     -- Proof technique
     Successor.lean                      -- Notation 2: s^{↑x↓y} operation on PDS
@@ -115,6 +115,10 @@ random-systems/
     Applications/
       PRPPRFSwitching.lean             -- PRF/PRP switching lemma
       CBCMAC.lean                      -- CBC-MAC security
+      XoP.lean                         -- theorem-first XoP/LM20 coupling scaffold
+      XoPCounting.lean                 -- concrete-counting `Z/E[Z]` scaffold
+      XoPCombinatorics.lean            -- raw compatible hidden-state count
+      XoPModel.lean                    -- concrete real/ideal XoP PDS definitions
 
     -- Concrete instances
     Instances/
@@ -186,7 +190,7 @@ random-systems/
 | Def 9 (PDE) | `DDE.lean` (environment analog) | M2 |
 | Def 10 (Equivalence) | `Equiv.lean`: `PDS.equiv` | M2 |
 | Notation 2 (Successor) | `Successor.lean`: `DDS.successor`, `PDS.successor` | M3 |
-| Lemma 5 (Non-adaptive suffices) | `Equiv.lean`: `equiv_iff_nonadaptive` | M2 |
+| Lemma 5 (Non-adaptive suffices) | `Equiv.lean`: `PDS.equivAdaptive_iff_nonadaptive` | ✅ |
 | Example 4 (Bool DDS) | `Instances/BoolDDS.lean` | M2 |
 | Example 5 (V, V') | `Instances/URF.lean` | M2 |
 

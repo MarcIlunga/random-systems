@@ -2,7 +2,7 @@
 Copyright (c) 2024-2026 Trail of Bits. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 -/
-import RandomSystems.Equiv
+import RandomSystems.PDS
 import RandomSystems.StatDist
 
 /-!
@@ -24,8 +24,9 @@ Lean 4 formalization of Definitions 11-12 from Lanzenberger-Maurer (TCC 2020).
 
 ## Design Notes
 
-The advantage is the supremum over non-adaptive input sequences
-of the statistical distance between transcript distributions.
+The default `advantage` is the supremum over non-adaptive input sequences
+of the statistical distance between transcript distributions.  The separate
+`advantageAdaptive` definition ranges over deterministic adaptive environments.
 
 Delta is the infimum over equivalent PDS pairs of the statistical
 distance between the underlying DDS distributions. Theorem 1 shows
@@ -43,14 +44,12 @@ variable {X Y : Type*} {q : ℕ}
   [Fintype (Transcript X Y q)]
   [DecidableEq (Transcript X Y q)]
 
-/-- The distinguishing advantage between two PDS.
+/-- The non-adaptive distinguishing advantage between two PDS.
 
-Paper Definition 11:
-  Adv(S, T) := sup_e δ(tr(S, e), tr(T, e))
-
-Using Lemma 5, we optimize over non-adaptive environments only.
-For finite X, the set of input sequences is finite, so the sup
-is a finite max (using `Finset.sup` with ⊥ = 0 for NNReal). -/
+This ranges over fixed input sequences.  It is not the full adaptive paper
+definition unless an adaptive-to-non-adaptive bridge is proved separately.
+For finite `X`, the set of input sequences is finite, so the sup is a finite
+max using `Finset.sup` with `⊥ = 0` for `NNReal`. -/
 def advantage [Fintype X] (S T : PDS X Y q) : NNReal :=
   Finset.sup Finset.univ
     (fun inputs => statDist (S.transcriptDist inputs) (T.transcriptDist inputs))
@@ -93,19 +92,6 @@ theorem advantage_self [Fintype X] (S : PDS X Y q) :
     intro inputs _
     exact le_of_eq (statDist_self (S.transcriptDist inputs))
   · exact zero_le _
-
-/-- The advantage respects PDS equivalence: if S ≡ S' and T ≡ T',
-then Adv(S, T) = Adv(S', T').
-
-This is why advantage is well-defined on random systems. -/
-theorem advantage_respects_equiv [Fintype X]
-    {S S' T T' : PDS X Y q}
-    (hS : S ≡ₚ S') (hT : T ≡ₚ T') :
-    advantage S T = advantage S' T' := by
-  simp only [advantage]
-  congr 1
-  ext inputs
-  rw [hS inputs, hT inputs]
 
 /-- Triangle inequality for advantage.
 
@@ -150,6 +136,19 @@ theorem advantageOn_le_of_pointwise [Fintype X]
   intro inputs hmem
   have hGood : Good inputs := (Finset.mem_filter.mp hmem).2
   exact h inputs hGood
+
+/-- Restricted non-adaptive advantage is bounded by unrestricted non-adaptive
+advantage. -/
+theorem advantageOn_le_advantage [Fintype X]
+    (S T : PDS X Y q) (Good : (Fin q → X) → Prop) [DecidablePred Good] :
+    advantageOn S T Good ≤ advantage S T := by
+  simp only [advantageOn, advantage]
+  apply Finset.sup_le
+  intro inputs _
+  exact Finset.le_sup
+    (s := (Finset.univ : Finset (Fin q → X)))
+    (f := fun inputs => statDist (S.transcriptDist inputs) (T.transcriptDist inputs))
+    (Finset.mem_univ inputs)
 
 /-- `Adv_adapt(S, S) = 0`. -/
 theorem advantageAdaptive_self [Fintype X] [Fintype Y] [DecidableEq Y] (S : PDS X Y q) :
@@ -224,43 +223,5 @@ theorem advantage_le_advantageAdaptive [Fintype X] [Fintype Y] [DecidableEq Y]
         Finset.le_sup (f := fun e =>
           statDist (S.adaptiveTranscriptDist e) (T.adaptiveTranscriptDist e))
           (Finset.mem_univ (DDE.nonadaptive inputs))
-
-/-- The infimum statistical distance (Delta) between two PDS.
-
-Paper Definition 12:
-  Δ(S, T) := inf_{S'≡S, T'≡T} δ(S'.dist, T'.dist)
-
-We use `sInf` over the set of values, avoiding the need for
-`Fintype (PDS X Y q)` or decidability of equivalence. -/
-def delta (S T : PDS X Y q) : NNReal :=
-  sInf { d : NNReal | ∃ (S' : PDS X Y q) (T' : PDS X Y q),
-    (S ≡ₚ S') ∧ (T ≡ₚ T') ∧ statDist S'.dist T'.dist = d }
-
-/-- Δ(S, T) ≤ δ(S.dist, T.dist) — the trivial representative.
-
-Taking S' = S and T' = T gives this bound. -/
-theorem delta_le_statDist (S T : PDS X Y q) :
-    delta S T ≤ statDist S.dist T.dist := by
-  apply csInf_le
-  · exact ⟨0, fun _ ⟨_, _, _, _, hd⟩ => hd ▸ zero_le _⟩
-  · exact ⟨S, T, PDS.equiv_refl S, PDS.equiv_refl T, rfl⟩
-
-/-- Δ(S, S) = 0 — a system has zero delta with itself. -/
-theorem delta_self (S : PDS X Y q) : delta S S = 0 := by
-  apply le_antisymm
-  · calc delta S S ≤ statDist S.dist S.dist := delta_le_statDist S S
-    _ = 0 := statDist_self S.dist
-  · exact zero_le _
-
-/-- Transport a security bound across equivalence.
-
-If `Adv(S, T) ≤ ε` and `S ≡ S'`, `T ≡ T'`, then `Adv(S', T') ≤ ε`. -/
-theorem transport_security_bound [Fintype X]
-    {S S' T T' : PDS X Y q}
-    (hS : S ≡ₚ S') (hT : T ≡ₚ T')
-    {ε : NNReal} (h : advantage S T ≤ ε) :
-    advantage S' T' ≤ ε := by
-  rw [← advantage_respects_equiv hS hT]
-  exact h
 
 end RandomSystems

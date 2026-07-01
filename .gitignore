@@ -2,6 +2,11 @@
 lake-packages/
 build/
 .autoformalize/
+.drafts/
+tmp/
+informalization/
+__pycache__/
+*.pyc
 *.olean
 *.ilean
 *.trace

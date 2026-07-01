@@ -25,6 +25,15 @@ import RandomSystems.Instances.URP
 import RandomSystems.Applications.PRPPRFSwitching
 import RandomSystems.Applications.PRPPRFSwitchingGeneral
 import RandomSystems.Applications.CBCMAC
+import RandomSystems.Applications.XoP
+import RandomSystems.Applications.XoPCounting
+import RandomSystems.Applications.XoPCombinatorics
+import RandomSystems.Applications.XoPModel
+import RandomSystems.Applications.XoPAnalytic
+import RandomSystems.Applications.XoPANOVA
+import RandomSystems.Applications.XoPMayer
+import RandomSystems.Applications.XoPRank
+import RandomSystems.Applications.SoP
 import RandomSystems.Applications.CascadePRF
 import RandomSystems.Applications.CascadeCircle
 import RandomSystems.Applications.BonehShoupCascade

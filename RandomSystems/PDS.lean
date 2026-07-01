@@ -73,9 +73,9 @@ theorem transcriptDist_apply_eq_sum (S : PDS X Y q) (inputs : Fin q → X)
     S.transcriptDist inputs t =
       ∑ s ∈ (Finset.univ : Finset (DDS X Y q)).filter (fun s => DDS.transcript s inputs = t),
         S.dist s := by
-  simpa [transcriptDist] using
-    (Dist.fTransform_apply_eq_sum (f := fun s : DDS X Y q => DDS.transcript s inputs) (X := S.dist)
-      (b := t))
+  unfold transcriptDist
+  rw [Dist.fTransform_apply_eq_sum]
+  congr
 
 /-- The transcript distribution of a PDS under an adaptive environment. -/
 def adaptiveTranscriptDist (S : PDS X Y q) (e : DDE X Y q)
@@ -91,8 +91,33 @@ theorem adaptiveTranscriptDist_apply_eq_sum (S : PDS X Y q) (e : DDE X Y q)
     S.adaptiveTranscriptDist e t =
       ∑ s ∈ (Finset.univ : Finset (DDS X Y q)).filter (fun s => interact s e = t),
         S.dist s := by
-  simpa [adaptiveTranscriptDist] using
-    (Dist.fTransform_apply_eq_sum (f := fun s : DDS X Y q => interact s e) (X := S.dist) (b := t))
+  unfold adaptiveTranscriptDist
+  rw [Dist.fTransform_apply_eq_sum]
+  congr
+
+/-- A PDS obtained by sampling stateless function oracles cannot assign
+adaptive mass to a repeat-inconsistent transcript. -/
+theorem adaptiveTranscriptDist_statelessPDS_eq_zero_of_not_repeatConsistent
+    {A : Type*} [Fintype A] [Nonempty A] [Nonempty X] [Nonempty Y]
+    (D : Dist A) (oracle : A → X → Y)
+    [Fintype (Transcript X Y q)] [DecidableEq (Transcript X Y q)]
+    (e : DDE X Y q) (t : Transcript X Y q)
+    (hnot : ¬ Transcript.RepeatConsistent t) :
+    (({ dist := Dist.fTransform (fun a : A => DDS.ofFunq (q := q) (oracle a)) D } :
+      PDS X Y q).adaptiveTranscriptDist e t) = 0 := by
+  classical
+  rw [adaptiveTranscriptDist_apply_eq_sum]
+  apply Finset.sum_eq_zero
+  intro s hs
+  rw [Dist.fTransform_apply_eq_sum]
+  apply Finset.sum_eq_zero
+  intro a ha
+  have hs_interact : interact s e = t := (Finset.mem_filter.mp hs).2
+  have hsa : DDS.ofFunq (q := q) (oracle a) = s := (Finset.mem_filter.mp ha).2
+  apply False.elim
+  apply hnot
+  rw [← hs_interact, ← hsa]
+  exact interact_ofFunq_repeatConsistent (q := q) (oracle a) e
 
 /-- For non-adaptive environments, `adaptiveTranscriptDist` coincides with `transcriptDist`. -/
 theorem adaptiveTranscriptDist_nonadaptive (S : PDS X Y q) (inputs : Fin q → X)
@@ -109,6 +134,12 @@ theorem ext {S T : PDS X Y q} (h : S.dist = T.dist) : S = T := by
 /-- Construct a PDS from a single DDS (point distribution). -/
 def ofDDS (s : DDS X Y q) : PDS X Y q where
   dist := Finsupp.single s 1
+
+/-- Construct a PDS by sampling a stateless oracle from an arbitrary finite
+distribution and embedding it as `DDS.ofFunq`. -/
+def ofStatelessOracleDist {A : Type*} (D : Dist A) (oracle : A → X → Y)
+    [Fintype (DDS X Y q)] [DecidableEq (DDS X Y q)] : PDS X Y q where
+  dist := Dist.fTransform (fun a : A => DDS.ofFunq (q := q) (oracle a)) D
 
 /-- The successor PDS: condition on the first query yielding `(x, y)`.
 

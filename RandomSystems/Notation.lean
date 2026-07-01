@@ -36,8 +36,8 @@ open RandomSystems
 /-- Statistical distance: `δ(X, Y)` for `statDist X Y`. -/
 scoped notation "δ(" X ", " Y ")" => statDist X Y
 
-/-- Infimum distance between PDS: `Δ(S, T)` for `delta S T`. -/
-scoped notation "Δ(" S ", " T ")" => delta S T
+-- `Δ(S, T)` for `delta`: `delta` moved to `RandomSystems.AdvantageEquiv` (it depends on
+-- `RandomSystems.Equiv`); keeping it out of `Notation` lets the core advantage path avoid `Equiv`.
 
 /-- Uniform distribution: `𝒰[A]` for `Dist.uniform A`. -/
 scoped notation "𝒰[" A "]" => Dist.uniform A
@@ -54,15 +54,16 @@ scoped notation "Trₐ[" S ", " e "]" => PDS.adaptiveTranscriptDist S e
 
 -- ===== N-03 + N-07: Probability binder notation =====
 
-/-- Probability notation with general binder pattern:
+/- Probability notation with general binder pattern:
 - `Pr[φ(x) | x ←$ D]` — single variable
 - `Pr[φ(a,b) | (a, b) ←$ D]` — pair destructuring
 - `Pr[φ(a,b,c) | (a, b, c) ←$ D]` — triple destructuring
+- `Pr[φ(x) | x ←$ D, ψ(x)]` — conditional probability/mass
 
-Expands to `Dist.evalPred D (fun pat => φ(pat))`. -/
-scoped syntax "Pr[" term " | " Lean.Parser.Term.funBinder " ←$ " term "]" : term
-scoped macro_rules
-  | `(Pr[$body | $b:funBinder ←$ $D]) => `(Dist.evalPred $D (fun $b => $body))
+Expands to `Dist.mass D (fun pat => φ(pat))`, i.e. the event mass over the
+finite support of `D`; the conditional form expands to `Dist.cond`. The syntax
+is defined in `Dist.lean` so CR18 files can use it without importing this
+higher-level notation module. -/
 
 -- ===== N-04 + N-07: Sample/pushforward binder notation =====
 
@@ -84,8 +85,9 @@ end RandomSystems.CryptoNotation
 
 ### N-03: `Pr[φ | x ←$ D]`
 
-Needs `scoped syntax` + `scoped macro`. Expands to `Dist.evalPred D (fun x => φ)`.
-`evalPred` is defined in `Dist.lean` (N-01, done).
+Needs `scoped syntax` + `scoped macro`. Expands to `Dist.mass D (fun x => φ)`.
+`mass` is defined in `Dist.lean` and sums over finite support, so it does not
+require `Fintype` on the sample space.
 
 Lean mechanics: custom syntax with binder. Follow Mathlib `Probability/Notation.lean`.
 

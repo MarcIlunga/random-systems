@@ -19,8 +19,8 @@ Lean 4 formalization of Definition 6 from Lanzenberger-Maurer (TCC 2020).
 A DDE is the "dual" of a DDS: it chooses the next input based on all
 previous outputs. The pair (DDS, DDE) determines a transcript.
 
-For proving equivalence (Lemma 5), non-adaptive environments suffice,
-so `DDE.nonadaptive` is the primary constructor in practice.
+`DDE.nonadaptive` embeds fixed query sequences as environments.  The full
+adaptive-to-non-adaptive equivalence theorem is not part of this module.
 -/
 
 noncomputable section
@@ -44,6 +44,12 @@ structure DDE (X : Type*) (Y : Type*) (q : ℕ) where
 namespace DDE
 
 variable {X Y : Type*} {q : ℕ}
+
+/-- `DDE X Y q` is inhabited whenever the input alphabet `X` is (use the constant
+chooser).  Declared globally so the `Dist`-over-`DDE` API — which now requires
+`[Nonempty]` carriers — resolves `Nonempty (DDE X Y q)` automatically. -/
+instance instNonempty [Nonempty X] : Nonempty (DDE X Y q) :=
+  ⟨⟨fun _ _ => ‹Nonempty X›.some⟩⟩
 
 /-- The canonical equivalence between DDE and its underlying choice function type. -/
 def equivChoose (X Y : Type*) (q : ℕ) :
@@ -76,10 +82,7 @@ def mapOutput {Y' : Type*} (g : Y' → Y) (e : DDE X Y q) : DDE X Y' q where
   choose := fun i prevOutputs => e.choose i (fun j => g (prevOutputs j))
 
 /-- A non-adaptive environment: the input sequence is fixed in advance,
-independent of the system's outputs.
-
-Paper Lemma 5 shows that non-adaptive environments suffice for
-checking PDS equivalence. -/
+independent of the system's outputs. -/
 def nonadaptive (inputs : Fin q → X) : DDE X Y q where
   choose := fun i _ => inputs i
 

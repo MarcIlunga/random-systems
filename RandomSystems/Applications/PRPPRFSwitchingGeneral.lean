@@ -107,15 +107,17 @@ private lemma urf_output_uniform [Nonempty (DDS X X q)]
     Dist.fTransform (outputMap inputs) (Dist.uniform (DDS X X q)) =
     Dist.uniform (Fin q → X) := by
   classical
-  rw [outputMap_eq_fst_decomp]
-  rw [← Dist.fTransform_comp Prod.fst (ddsDecomp inputs) _]
+  -- Provide the `Nonempty` witnesses for the intermediate carriers up front: the
+  -- `Dist` API (`fTransform_comp`, `fTransform_equiv_uniform`) now requires them.
   haveI : Nonempty ((Fin q → X) ×
     ((i : Fin q) → ({f : Fin (i.val + 1) → X // f ≠ qPrefix inputs i} → X))) :=
     ⟨(ddsDecomp inputs) (Classical.arbitrary _)⟩
-  rw [Dist.fTransform_equiv_uniform (ddsDecomp inputs)]
   haveI : Nonempty ((i : Fin q) →
     ({f : Fin (i.val + 1) → X // f ≠ qPrefix inputs i} → X)) :=
     ⟨((ddsDecomp inputs) (Classical.arbitrary _)).2⟩
+  rw [outputMap_eq_fst_decomp]
+  rw [← Dist.fTransform_comp Prod.fst (ddsDecomp inputs) _]
+  rw [Dist.fTransform_equiv_uniform (ddsDecomp inputs)]
   exact Dist.fTransform_fst_uniform _ _
 
 /-! ### URPq output: zero on non-injective -/
