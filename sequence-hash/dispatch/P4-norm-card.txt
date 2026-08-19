@@ -1,0 +1,64 @@
+TASK P4-norm — discharge R4's named core `h_norm` =
+`DeltaFilterDomFiniteQueryNormalization (budgetHist …) … (p+q) real.val ideal.val`
+(`Derivation.lean:1711` def). TRUE by budget EXTENSIBILITY. Two parts: PART A (scaffolding — land green
+regardless), PART B (the generic normalization construction — VALVE-guarded). Sorry-free, additive, green.
+
+BACKGROUND: the filter-first R4 headline `sequenceMAC_generic_prf_tight`
+(`SequenceHash/RandomSystems/SequenceMACGeneric.lean:192`) carries two named hyps; this discharges the
+first. The normalization must produce, from ANY distinguisher D against `filterDom P S, filterDom P T`,
+an exactly-(p+q), P-RESPECTING distinguisher D' whose BASE advantage dominates D's filtered advantage.
+Prefix-closure alone is insufficient (no length-q respecting continuation in general) — but `budgetHist`
+IS q-extensible, which supplies the completion.
+
+PART A — scaffolding (grep-first; land these green even if Part B valves):
+1. `QExtensible (P : List X → Prop) (q : ℕ) : Prop := ∀ l, P l → l.length < q → ∃ x, P (l ++ [x])`
+   — PUBLIC, beside `PrefixClosed` (`PFunDDS.lean:25`).
+2. `budgetHist_qExtensible : QExtensible (budgetHist model b S p q lambda) (p+q)`
+   (in `SequenceMACGeneric.lean`). Proof: a budget-respecting `l` with `l.length < p+q` has
+   `primCount l < p ∨ evalCount l < q` (primCount+evalCount = length < p+q); append a `prim` query (the
+   `Prim` carrier is inhabited — grep) when primCount<p, else a ≤λ-cost `eval` query (a min/zero-cost eval
+   exists — grep `sequenceFunctionEvalCost`/the `Eval` carrier). Reuse the `TaggedBudgetRespects`
+   count/cost lemmas; do NOT reprove counting.
+3. `sequenceFunctionICReal/Ideal` are `CondEquiv.TotalOnNonempty` (grep — likely a lemma exists or follows
+   from the KStepTotal lemmas; reuse, don't reprove).
+
+PART B — generic normalization (framework; VALVE below):
+`deltaFilterDomFiniteQueryNormalization_of_extensible` (near `deltaFilteredFiniteQueryNormalization_of_totalOnNonempty`,
+`GameOf.lean:1203`):
+  `PrefixClosed P → QExtensible P q → TotalOnNonempty S → TotalOnNonempty T →
+      DeltaFilterDomFiniteQueryNormalization P hP q S T`.
+Construction (normalize D → exactly-q P-respecting D', base advantage ≥ filtered advantage):
+  (a) SUPPRESS P-violating queries: on a P-violating query BOTH `filterDom P S` and `filterDom P T`
+      return `none` (deterministic, identical) ⟹ D' self-answers `none` internally, issues no query,
+      advantage UNCHANGED.
+  (b) PAD to exactly q with P-RESPECTING queries via `QExtensible` (append a valid one-step extension
+      until length q); respecting (real-answered) padding only ADDS distinguishing power ⟹
+      `advantage D' S T ≥ advantage D (filterDom P S) (filterDom P T)`.
+  Reuse the `padDDDDist` advantage-domination STRUCTURE (`GameOf.lean:1186–1209`,
+  `advantage_padDDDDist_filterQueries_eq_of_totalOnNonempty`), adapting none-pad → respecting-pad.
+Keep `deltaFilteredFiniteQueryNormalization_of_totalOnNonempty` (:1203) green (`P = length≤q` is
+q-extensible for nonempty X — add that instance if useful).
+
+THEN INSTANTIATE: use Part A (2,3) + the generic lemma to DISCHARGE `h_norm`, i.e. add
+`sequenceMAC_generic_prf_tight_norm` — the headline with `h_norm` REPLACED by the proven normalization
+(only `h_badmass` remains a hypothesis). Do NOT modify the existing `sequenceMAC_generic_prf_tight`.
+
+READ: `Derivation.lean:1711` (`DeltaFilterDomFiniteQueryNormalization`), `GameOf.lean:1175–1260`
+(count-filter normalization + `padDDDDist`), `PFunDDS.lean:23–30/283–320` (`PrefixClosed`/`filterDom`),
+`SequenceMACGeneric.lean` (`budgetHist`, the headline), `TaggedBudgetRespects` count/cost helpers,
+CHEATSHEET.md (repo root).
+
+*** VALVE (Part B is the hard part): if the suppress+pad construction / advantage-domination is large,
+STOP after PART A (green: `QExtensible`, `budgetHist_qExtensible`, the TotalOnNonempty facts) and REPORT
+the PRECISE remaining construction obligations (which advantage lemmas, the suppress transform, the
+respecting-pad). NEVER leave a `sorry`. A clean Part-A-only return is an ACCEPTED partial. ***
+
+ADDITIVE: new/extended framework file for the generic lemma + `SequenceMACGeneric.lean` (or a sibling)
+for the sequence pieces. Do NOT modify the bridge, the eq-on-good module, the facade, R1–R6, or the
+existing `sequenceMAC_generic_prf_tight`.
+
+ACCEPTANCE: whole-repo `lake build RandomSystems RandomSystemsCC SequenceHash` green; axiom-clean
+{propext, Classical.choice, Quot.sound}; sorry-free; NO `private`; count-filter normalization preserved;
+Part A landed (and Part B + the discharge, unless valved). Report: `QExtensible`, `budgetHist_qExtensible`,
+the TotalOnNonempty facts, Part B status (done + the discharged headline, or valved + precise plan),
+reuse map, axiom line.

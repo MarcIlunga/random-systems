@@ -1,0 +1,46 @@
+STEP 0 — non-negotiable:
+1. NO GUESSWORK. Do EXACTLY what the paper does. Read the PDF; model its actual
+   definitions. Do not invent a resource/key model.
+2. PURE CR18 IDIOM, NOT H-technique: `PFunPDS` systems, `Δ`=`maxAdvantage`,
+   `⌈q⌉`=`filterQueries`. `advPRF`/`advNPRF`/`Adv` are H-technique — DO NOT use.
+   No game/adversary/oracle objects (translate the paper's games into the
+   PFunPDS/Δ idiom).
+3. NEVER REPROVE; reuse; generalize.
+
+TASK P2.paper-model — fix the R2 model by following Gaži 2014 EXACTLY.
+
+CONTEXT: the prior reshape modeled the compression resource as `PFunPDS B C`
+(a fixed `f k : B → C`). That is WRONG: the MD fold needs `f` called with changing
+chaining values, and the SequenceMAC key never entered the deterministic converter.
+Do NOT guess a fix — read the paper and model what it actually defines.
+
+READ (this directory): `2014-578.pdf` — Gaži, Pietrzak, Rybár, "The Exact
+PRF-Security of NMAC and HMAC". Extract, VERBATIM and with section/eq numbers:
+  - §2: the compression function's exact type and how it is keyed; the cascade
+    definition; the NMAC and HMAC key structure (k_in / k_out, IVs); the exact
+    PRF and nonadaptive-PRF security definitions used.
+  - §3 + Appendix A: Proposition 1 and Theorem 1 — exact statements, assumptions,
+    and bounds; Lemmas 5 & 6 (the two hybrids).
+
+THEN map the paper's model FAITHFULLY into the pure random-system idiom for
+SequenceMAC (`sequence-hash/SequenceHash/RandomSystems/SequenceMACPRF.lean`):
+  - the compression resource, its domain, and its keying EXACTLY as the paper
+    defines `f` (resolve the `C × B → C` vs `B → C` question the paper's way);
+  - how the SequenceMAC/NMAC keys enter (sample them in a probabilistic converter
+    / key mixture, per the paper);
+  - `sequenceMACReal`, `compReal`, `compIdeal`, `macIdeal`, `epsKS`
+    (as `Δ`), and the goal `Δ(⌈q⌉ real, ⌈q⌉ URF) ≤ …` with the paper's bound,
+    all `PFunPDS`/`Δ`. Reuse `CBCMAC.lean` (cbcReal/Vn idiom), `Converter.lean`,
+    `MDHash.lean`, `AbsorbDPI.lean`.
+  - The file must BUILD green; the goal must elaborate; heavy bodies may be
+    `sorry`, but every object type must be faithful to the paper (no placeholder
+    that misrepresents the model).
+
+FALLBACK: if Gaži's structure genuinely cannot be rendered faithfully/cleanly in
+the pure random-system idiom, STOP — do NOT force it — and instead read the 2025
+paper `2025-2260.pdf` (Shen–Zhang–Wang–Gu, "Tight Generic PRF Security of HMAC and
+NMAC"), extract ITS model and main theorem, and propose that as the R2 route,
+explaining why it is cleaner. (advPRF/advNPRF still banned; still pure `Δ` idiom.)
+
+REPORT: the exact paper definitions you used (with §/eq refs), the resulting
+objects + goal statement, which paper you followed, and any residual `sorry`.

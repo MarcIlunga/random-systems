@@ -1,0 +1,39 @@
+STEP 0 — non-negotiable:
+1. PURE CR18/PDS idiom (PFunPDS / Δ=maxAdvantage / ⌈q⌉=filterQueries). No
+   advPRF/advNPRF/Adv (H-technique), no game/adversary/oracle objects. No `private`.
+2. NO GUESSWORK — check the ACTUAL indifferentiability API in `../abstract-crypto`
+   (e.g. `MetricResourceAlgebra.ProtocolIndifferentiable` and its composition
+   theorem) and the ACTUAL RO/URF model in RandomSystems before writing.
+3. NEVER REPROVE; reuse; generalize.
+
+TASK S4 — pen-and-paper sketch for R3: SequenceMAC PRF security ASSUMING the
+underlying hash `H` is indifferentiable from a random oracle. This is the
+hash-agnostic complement to R2 (which assumed the MD compression is a PRF). This
+is a WRITING task: produce a markdown sketch. NO Lean, NO file edits except the
+sketch.
+
+APPROACH (composition): `H ≈ RO` (indiff hypothesis) ⇒ SequenceMAC[H] ≈
+SequenceMAC[RO] (indiff composition), and SequenceMAC[RO] is a PRF (the secret key
++ the UNAMBIGUOUS encoding make distinct queries hit distinct RO points ⇒
+independent uniform outputs). Cover, grounded in the real APIs (cite files):
+  (a) The indiff hypothesis stated with `abstract-crypto`'s actual notion
+      (`ProtocolIndifferentiable`/`MetricResourceAlgebra`); its composition
+      theorem you will reuse.
+  (b) The composition step in the PDS idiom: `Δ(SequenceMAC[H], SequenceMAC[RO])`
+      bounded by the indiff advantage of `H` (via composition).
+  (c) `SequenceMAC[RO]` is a PRF: reuse R1 (`encodeItems_injective`, the C2SP
+      collision/unambiguity theorem, domain separation via headers/`F`) to show
+      distinct `(S,M)` queries map to distinct RO inputs ⇒ the keyed RO evaluation
+      is `Δ`-close to `PFunPDS.URF`. State the exact lemma.
+  (d) The R3 theorem statement (the guardrail we will freeze) over `InputSequence`
+      and its bound (indiff advantage + the encoding-collision term), pure `Δ`.
+  (e) Reuse-vs-new map (cite `abstract-crypto` indiff, R1 encoding lemmas,
+      `PFunPDS.URF`, converter machinery); flag genuinely-new items.
+
+Be explicit about what abstract-crypto already provides vs. what is new. Note if
+the indiff notion/composition isn't directly usable in the PDS idiom and how to
+bridge faithfully. Contrast R3's assumption/model with R2's (MD-compression-PRF).
+
+OUTPUT: write the full sketch to sequence-hash/sketches/A4-indiff-prf.md
+(math in `$$…$$`/`$…$`). Summarize the R3 statement, the composition+encoding
+plan, and the reuse-vs-new split in your final message.

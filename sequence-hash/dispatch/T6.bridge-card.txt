@@ -1,0 +1,44 @@
+STEP 0 — non-negotiable:
+1. PURE CR18/PDS idiom (PFunPDS / Δ=maxAdvantage / ⌈q⌉=filterQueries). No
+   advPRF/advNPRF/Adv, no game/adversary/oracle objects. NO `private`, EVER.
+2. **Consult the REUSE INDEX first:**
+   /Users/marcilunga/Documents/tob/research/random-systems/CHEATSHEET.md
+   (esp. "AbstractCrypto R3/R5 indifferentiability"). NEVER RE-DERIVE. AUTOMATION
+   FIRST (grind/cr18_*); no manual sprawl; no local generic helper.
+3. NO GUESSWORK — follow the accepted sketch A4 and the ACTUAL RandomSystemsCC /
+   abstract-crypto APIs.
+
+TASK T6.bridge — discharge the LAST R3 obligation
+  `ProtocolIndifferentiableSequenceMACBridge` in
+  sequence-hash/SequenceHash/RandomSystems/SequenceMACIndiff.lean, making R3
+  UNCONDITIONAL. It must produce, from `SequenceMACProtocolIndifferentiable …`
+  (H is protocol-indifferentiable with error ε_ind):
+    ∀ q, Δ(⌈q⌉ SM_H b S DK D_H, ⌈q⌉ SM_RO b S DK) ≤ ε_ind (4*q).
+
+KEY REUSE (the transport is NOT missing — it exists):
+  - `RandomSystemsCC/ProbMetric.lean :: edistD_le_maxAdvantage` — the metric
+    distance ↔ `maxAdvantage` transport (line ~668). This is the PFunPDC↔PDS bridge.
+  - `RandomSystemsCC/Sponge.lean` — the WORKED pattern connecting abstract-crypto
+    `ProtocolIndifferentiable`/`.constructs` to the PDS layer; mirror it.
+  - abstract-crypto `ProtocolIndifferentiable`/`Constructs`/`eball_trans`.
+  Import `RandomSystemsCC` as needed (it is a non-default lib — add the import).
+  Plan: `.constructs` bounds the metric distance of the constructed protocol by
+  `ε_ind`; `edistD_le_maxAdvantage` transports that to the PDS `maxAdvantage` of
+  SM_H vs SM_RO; the `4*q` is the per-query H-call budget.
+
+ESCALATE IF: the bridge is stated over an ABSTRACT `MetricResourceAlgebra A`, but
+the PDS `maxAdvantage` transport needs `A` = the concrete ProbAlgebra (so its
+metric = `maxAdvantage`). If the frozen abstract-`A` statement genuinely can't
+connect to the PDS `Δ` without fixing `A` := ProbAlgebra, STOP and report exactly
+what the statement must change (do NOT fake it).
+
+GUARDRAIL: the bridge def, `sequenceMAC_prf_bound_indiff`, and R1/R2 statements are
+FROZEN. No `private`. If unprovable as stated, STOP + report.
+
+ALSO (if the bridge closes): add the UNCONDITIONAL R3 theorem
+  `sequenceMAC_prf_bound_indiff_unconditional` := instantiate
+  `sequenceMAC_prf_bound_indiff` with the now-proven bridge + `sequenceMAC_encoding_bound`.
+
+ACCEPTANCE: `lake build SequenceHash` (+ `RandomSystemsCC` if imported) green;
+bridge + unconditional theorem axiom-clean (fresh check); reused ProbMetric/Sponge
+(no re-derivation); no `private`/advPRF/game/sprawl. Report reuse map + residuals.

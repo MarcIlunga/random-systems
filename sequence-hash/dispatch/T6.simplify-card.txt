@@ -1,0 +1,42 @@
+STEP 0 — non-negotiable:
+1. PURE CR18/PDS idiom (PFunPDS / Δ=maxAdvantage / ⌈q⌉=filterQueries). No
+   advPRF/advNPRF/Adv, no game/adversary/oracle objects. NO `private`, EVER.
+2. Consult /Users/marcilunga/Documents/tob/research/random-systems/CHEATSHEET.md.
+   NEVER RE-DERIVE; reuse R1 + framework. AUTOMATION FIRST (grind/cr18_*); no sprawl.
+
+TASK T6.simplify — REWRITE
+  sequence-hash/SequenceHash/RandomSystems/SequenceMACIndiff.lean
+to the SIMPLE, fast model. The previous approach OVER-MODELED R3: it used
+abstract-crypto `MetricResourceAlgebra`/`ProtocolIndifferentiable`/`SequenceMACProtocolIndifferentiable`/
+`ProtocolIndifferentiableSequenceMACBridge` + a RandomSystemsCC carrier — DELETE all of that.
+Indifferentiability→PRF is essentially free and must be a short triangle.
+
+KEEP / REUSE: `SM_H`, `SM_RO`, the active-call-domain plumbing, `encodeItems_injective`
+and R1 unambiguity, `pairCollisionUnionBound`, `maxAdvantage_triangle`.
+
+NEW SIMPLE MODEL:
+1. R3 hypothesis is PDS-level and direct — "H behaves like a RO for SequenceMAC"
+   (the composition consequence of H being indifferentiable):
+     `h_indiff : ∀ q, Δ(⌈q⌉ SM_H b S DK D_H, ⌈q⌉ SM_RO b S DK) ≤ (ε_ind (4*q) : ℝ)`.
+   NO MetricResourceAlgebra, NO ProtocolIndifferentiable, NO carrier.
+2. Encoding leg `SM_RO ≈ URF`: prove
+     `Δ(⌈q⌉ SM_RO b S DK, ⌈q⌉ PFunPDS.URF) ≤ pairCollisionUnionBound (HashOutput L) q`
+   from R1 unambiguity — distinct `(S,M)` queries reach distinct RO inputs, and in
+   the PRF game the adversary never queries the RO directly, so the ONLY loss is the
+   birthday collision of the queries' own RO inputs. **No `ε_sched` residual** — if
+   you find one is genuinely forced by the finite active-domain wrapper, isolate it
+   as the SMALLEST explicit term and explain; do not carry a vague scheduling error.
+   You MAY reuse the existing `maxAdvantage_filterQueries_seededHashThenURF_le`
+   blind-game endpoint for this leg (same as R2's collision) — do NOT reprove it.
+3. R3 theorem `sequenceMAC_prf_bound_indiff`:
+     `Δ(⌈q⌉ SM_H, ⌈q⌉ URF) ≤ ε_ind(4q) + pairCollisionUnionBound … q`
+   proven by ONE `maxAdvantage_triangle` from `h_indiff` + the encoding leg. Fast.
+
+GUARDRAIL: R1/R2 statements FROZEN. No `private`. No abstract-crypto/CC machinery.
+Reuse, don't re-derive. If a step needs a genuinely-missing framework lemma, STOP+report.
+
+ACCEPTANCE: `lake build SequenceHash` green; the R3 file is sorry-free and
+axiom-clean (fresh check); NO `MetricResourceAlgebra`/`ProtocolIndifferentiable`/
+carrier remnants; the R3 theorem is a short triangle; no `private`/advPRF/game/sprawl.
+Report: the final statement, the encoding-leg bound (and whether it's pure birthday),
+and the reuse map.

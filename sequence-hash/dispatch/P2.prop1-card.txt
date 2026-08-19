@@ -1,0 +1,35 @@
+STEP 0 — non-negotiable:
+1. PURE CR18 idiom: `PFunPDS`, `Δ`=`maxAdvantage`, `⌈q⌉`=`filterQueries`.
+   `advPRF`/`advNPRF`/`Adv` are H-technique — DO NOT use. No game/adversary/oracle
+   objects (NA-PRF assumption = the existing `CompNASecure`).
+2. NO GUESSWORK — follow Gaži 2014 (`2014-578.pdf`) Appendix A exactly.
+3. NEVER REPROVE; reuse framework hybrid/telescoping lemmas.
+
+TASK P2.prop1 — discharge the two Proposition 1 hybrid `sorry`s in
+  sequence-hash/SequenceHash/RandomSystems/SequenceMACPRF.lean:
+  - `gazi_lemma5_depth_hybrid`  (Appendix A Lemma 5, Eq. (9); factor `ℓ`;
+    length-position hybrid; uses `mdIterate_append` for the cascade split).
+  - `gazi_lemma6_row_hybrid`    (Appendix A Lemma 6, Eq. (10); factor `q`;
+    oracle-index hybrid over the `q` independently-keyed compression rows).
+These compose (already assembled in the file) into Prop. 1 = `ℓ·q·ε_na`.
+
+SOURCE: Gaži 2014 Appendix A, Eq. (9)/(10), read verbatim. Copy the hybrids.
+
+REUSE (search + confirm): `AdvantageSeq.advantage_telescope`,
+`AdvantageSeq.maxAdvantage_le_adjacent_sum`, `AbsorbDPI.maxAdvantage_triangle`,
+`MDHash.mdIterate_append`, `Dist.prodProbDist`/`Dist.fTransform_comp`, and the
+fixed-query transcript laws already used in the file. Generalize, don't duplicate.
+
+GUARDRAIL: the `nmac_prf_bound`/`sequenceMAC_prf_bound` statements and the two
+lemma STATEMENTS are frozen — fill only their `sorry`s. Leave the other two
+residual sorries (`gazi_outer_prf_hop`, `gazi_outer_random_collision_bound`) and
+the final triangle untouched. If a lemma statement is wrong/unprovable as stated,
+STOP + report (don't edit it silently).
+
+ACCEPTANCE: `lake build SequenceHash.RandomSystems.SequenceMACPRF` green; the two
+Prop.1 lemmas axiom-clean (no new `sorry` inside them); pure `Δ` (no
+advPRF/advNPRF/Adv/game); reused framework infra. If a hybrid genuinely cannot be
+closed, leave `sorry` only at the single hardest inductive step and report which
+Gaži equation it is.
+
+Report: how each hybrid was proved, reused lemmas, residuals (with Gaži eq refs).

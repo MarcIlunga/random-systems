@@ -1,0 +1,2184 @@
+Innovations in Computer Science 2011
+
+Abstract Cryptography
+Ueli Maurer1 Renato Renner2
+1
+Department of Computer Science, ETH Zurich, Switzerland
+2
+Institute for Theoretical Physics, ETH Zurich, Switzerland
+maurer@inf.ethz.ch renner@phys.ethz.ch
+Abstract: In the spirit of algebraic abstraction, this paper advocates the definition and use of higher levels
+of abstraction in cryptography (and beyond). If contrasted with the standard bottom-up approach to defining
+models of computation, algorithms, complexity, efficiency, and then security of cryptographic schemes, our
+approach is top-down and axiomatic, where lower abstraction levels inherit the definitions and theorems (e.g.
+a composition theorem) from the higher level, but the definition or concretization of low levels is not required
+for proving theorems at the higher levels. The goal is to strive for simpler definitions, higher generality of
+results, simpler proofs, improved elegance, possibly better didactic suitability, and to derive new insights from
+the abstract viewpoint.
+In particular, we propose a general framework for defining and proving that a system satisfying an (abstract or
+ideal) specification is constructed from some systems satisfying certain (concrete or real) specifications. This
+puts the well-known “ideal-world real-world” paradigm on a new theoretical foundation, applicable in various
+cryptographic settings. Existing frameworks for proving composable security can be explained as special cases
+of our framework, thereby allowing to distinguish between relevant and less relevant aspects of the underlying
+technical definitions and to prove a single common composition theorem.
+Some properties of our framework are as follows. It is independent of particular models of computation, communication, and adversary behavior. It can be instantiated in many different ways, for example to arrive at
+different notions of security or of efficiency and infeasibility. It can precisely capture settings with no central
+adversary where entities have potentially conflicting goals (e.g. a coercion scenario). The relation between the
+ideal and the real setting is tight, via an isomorphism notion for settings. The (desired) asymmetry between real
+and ideal is captured in a formal abstraction notion (the ideal setting is an abstraction of the real setting). A
+main theorem states that such an abstraction statement can be proved by using local (as opposed to monolithic)
+simulators.
+Keywords: foundations of cryptography, composable security.
+
+1
+
+straction, once identified, appears natural and stable.
+For example, the natural mathematical concepts of a
+relation, a function, a graph, a group, a field, or a vector space capture exactly, in a minimal manner, the
+relevant notions.
+
+Introduction
+
+1.1
+
+The quest for simplicity and
+abstraction
+
+In contrast, in cryptography (and in other areas of
+computer science), definitions, theorems, and proofs
+are generally highly technical and have substantial
+complexity due to the technical artifacts of the particular model (e.g. defining the computational model
+via Turing machines and communication via tapes,
+using asymptotic definitions of systems and protocols, defining efficiency as polynomial-time, using a
+particular adversarial model, etc.). This is often
+considered unavoidable since, undoubtedly, definitions
+must be precise. Nevertheless, more abstraction seems
+possible. For example the notion of polynomial-time,
+
+In every mathematical discipline one tries to identify the key concepts and to formalize them in an
+abstract manner. Abstraction means to eliminate irrelevant details from consideration, thereby focusing
+only on the relevant aspects of a problem or context. The purpose of abstraction is to provide, at
+the same time, simpler definitions, higher generality of
+results, simpler proofs, improved elegance, better didactic suitability, and, perhaps most importantly, new
+insights.
+In many contexts, the highest achievable level of ab1
+
+U. MAURER, R. RENNER
+
+an effect is defined.2 Formally, such a choice setting is a function from n choice domains to an
+effect space. A choice can consist of fixing an entire (interactive) strategy.3 We refer to Section
+1.3 for a discussion of what this could mean in
+cryptography.
+Moreover, we introduce the notion of an isomorphism between such nchoice settings. Roughly
+speaking, two n-choice settings are isomorphic
+if each choice made in one has a corresponding
+choice in the other, in such a way that the effects remain the same. This equivalence is the
+strongest possible and holds no matter why the
+particular choices are made (e.g. because parties making the choices are honest, dishonest, corrupted, collude, or are coerced).
+• We consider the notion of a set of choice settings,
+called a specification (see Section 5), and define
+that a specification S is an abstraction of another
+specification R if, roughly, every element of R
+has an isomorphic element in S.4 Stated differently, an (ideal) specification S is an abstraction
+of another (real) specification R if any element of
+R also meets the specification S, which implies
+that the real specification inherits every property
+of the ideal specification.
+We also discuss the concept of an ²-region R² of
+a specification R, allowing to define approximate
+(within ²) abstraction.
+Theorem 1 states that abstraction (or approximate abstraction) is a composable reduction.
+• Section 6 presents a theory of abstract systems,
+which is also of independent interest. At this
+highest level of abstraction, a system is an abstract object with interfaces. Two systems can
+be composed (similar to an algebraic composition
+operation) into a single system by connecting one
+interface from each system.
+At this abstract level we define the notion of
+a cryptographic algebra, consisting of a set of
+resource systems, a set of (so-called) converter
+
+even though universally accepted and reasonable, can
+probably not be seen as the ultimate (and only)
+definition and abstraction of efficiency and of
+feasibility.
+In view of this, it seems desirable to make cryptographic definitions in an abstract way, for example non-asymptotic, and to leave the technical aspects to a lower level of abstraction where systems
+and their composition are defined, and where unavoidable artifacts (like asymptotics, required for a notion
+of composability of efficient systems or algorithms)
+are introduced. This allows for simplicity (e.g. nonasymptotic definitions and proofs) and generality (e.g.
+simultaneous treatment of different security notions,
+like information-theoretic and computational).
+
+1.2
+
+Contributions and outline of this
+paper
+
+The paper makes several independent contributions,
+some of which are explained in more detail in the following subsections. This section also provides an outline of the paper.
+• We propose (see Section 1.4) as a new paradigm
+for developing a theory of cryptography (and
+beyond) to define levels of abstraction topdown rather than bottom-up. We also propose a
+hierarchy of levels of abstraction in a general
+theory of systems (see Section 1.5), of which
+we only formalize and use the top level in this
+paper.
+• We define and investigate (in Section 3) the most
+abstract notion of a reduction, which captures
+that realizing (or implementing) a certain object (or module) is reduced to realizing some
+other (simpler) objects.1 When used iteratively,
+reducing the simple objects to yet simpler objects, this is called step-wise refinement, a central paradigm in any constructive discipline. A
+reduction is composable (Definition 7) if it satisfies some simple natural properties. Composable reductions allow us to capture formally the
+soundness of the step-wise refinement paradigm.
+• We define the general notion of a so-called nchoice setting (see Section 4) which models any
+setting where some number n of independent
+choices (each from a specific domain) can be
+made, and where for every fixed list of choices
+
+2 One can think of the choices as being made by parties,
+where one party can also make several of the choices. Also, the
+choices of several parties modeled to act consistently can me
+modeled as a single choice. The notion of an n-choice setting is
+more general than the notion of an n-party game in game theory
+where the effect is described specifically by utility functions of
+the parties making the choices.
+3 Modeling such a strategy as one choice or as many choices
+is both possible and corresponds, for example, to modeling
+whether or not a party can (or is assumed to) change its goals
+during time, for example due to coercion.
+4 This abstraction notion is discussed here only in our specific context but is actually applicable in more general contexts
+where an isomorphism (or equivalence) notion is defined on a
+set.
+
+1 This includes as a special case the classical notion of a reduction in complexity theory, but also various types of reductions in cryptography, or any other constructive discipline.
+
+2
+
+ABSTRACT CRYPTOGRAPHY
+
+theorems can be seen as implications of our general
+composition theorem.
+
+systems, and a set of distinguisher systems, satisfying certain axioms. Resources (e.g. a communication channel or a commitment functionality)
+can be understood as providing (at their interfaces) certain functionalities to parties connected
+to the resource. A converter system attached to
+an interface of a resource corresponds to a program (or protocol engine, e.g. an encryption engine) transforming the interface into a different
+interface (see Section 1.3). A (local) simulator is
+also a converter.
+Cryptographic algebras can be instantiated in
+different ways, corresponding to different security
+notions. For example, if all three system classes
+are arbitrary (no computational restriction), this
+results in the notion of information-theoretic security. If the classes are restricted to efficiently
+implementable systems, for an arbitrary composable notion of efficiency, then this results in the
+notion of computational security. Other notions
+also exist.
+• Section 7 brings together all the previously defined concepts: n-choice settings correspond to
+n-interface resources, choices correspond to converters, an effect is again an n-interface resources
+(resulting when the converters are attached), and
+a pseudo-metric on the set of resource systems is
+defined as the maximal distinguishing advantage
+of a certain distinguisher class.
+We define an important class of (resource) specifications, called f iltered specifications. Roughly,
+a filtered specification is described by a resource
+system and, for each interface, a filter (a converter), where the meaning is that the party connected to the interface is guaranteed to have filtered access to the resource but that it is also
+possible (but not guaranteed) that it has more
+powerful access, up to possibly unfiltered access.
+This allows to capture exactly what it means
+that a system satisfying an (ideal) specification is
+constructed from a list of systems satisfying certain (real) specifications, putting the well-known
+“ideal-world real-world” paradigm on an exact
+theoretical foundation, applicable in any constructive setting (including, for example, channel
+coding in information theory).
+A main theorem (Theorem 2) of this part shows
+how to prove abstraction statements by invoking
+the concept of local simulators.
+
+Our theory can explain a large number of results
+in a unified and generalized manner. For example, in
+Appendix C we prove by algebraic equations a generalization of the celebrated impossibility results of
+realizing UC secure commitments [5]. In Appendix D
+we prove the impossibility result of Canetti et al. [6]
+of realizing a random oracle.
+The paper also makes a number of observations following from the abstract viewpoint. Some implications on the “ideal-world real-world” paradigm are
+discussed in Section 1.6, and possible implications on
+conventional cryptography are discussed in Section
+1.7.
+
+1.3
+
+A cryptographic example
+
+We give a first high-level example of how the concepts of the previous section could be interpreted in a
+concrete cryptographic context. We also refer to [12]
+for a discussion of concrete examples of resources and
+converters in a cryptographic context.
+Consider a resource system consisting of an authenticated (but not confidential) channel from A to B,
+accessible to an eavesdropper E, and (in parallel) a
+system providing a secret key to A and B (and nothing to E). A choice for A is to apply (at its interface of
+the channel) a converter system, with an outside and
+an inside interface, that fetches a key at the inside
+interface, accepts messages at the outside interface,
+encrypts each message with the key, and sends it at
+the inside interface as input to the channel. A choice
+for B is to apply a similar decryption converter. We
+want to argue that a secure channel (one that does
+not leak the transmitted message, only its length) is
+an abstraction of the above resource (authenticated
+channel and key).
+Here we have assumed somehow that A and B indeed make these choices, and we make no statement
+otherwise. However, in a setting where A’s (and B’s)
+other choices should also be considered (because we
+want to make a statement even if A deviates from the
+normal behavior), then it will turn out that secure
+channel which is the abstraction has the special feature that A and B could potentially leak the message
+to E (e.g. by pressing a certain button). This captures
+the well-known fact that by encrypting a message, one
+may have the capability of convincing E about the
+
+Existing frameworks, such as Canetti’s UC framework [3], can be explained as special cases of our
+framework. For example, the different composition
+3
+
+U. MAURER, R. RENNER
+
+1.5
+
+message sent. This is usually captured by terms like
+coercibility, but in our view it is just an interpretation
+of properties of the abstracted resource.
+
+1.4
+
+Abstraction levels of a system
+theory
+
+We define the following abstraction levels of a theory of systems, to be used beyond the scope of this
+paper, for example in complexity theory.
+
+Levels of abstraction: bottom-up
+vs. top-down
+
+• Level 1 captures the most general notion of a
+system and of the composition of systems. The
+composition laws are described by simple algebraic rules.
+• Level 2 captures the most general notion of a
+discrete system, the typical level at which cryptographic systems are considered. We need a theory
+of discrete systems corresponding to an extension of Maurer’s random system framework [8]
+for single-interface systems to multiple-interface
+systems and to the composition of systems (work
+in progress). The language in which discrete systems are described (e.g. text, pseudo-code, or
+conditional probability distributions) is not directly relevant.
+• Level 3 defines the implementation of systems.
+At this level one can define (still) abstract complexity and efficiency notions (e.g. polynomialtime). This level is not required if one considers
+only information-theoretic security.
+
+The traditional approach in theoretical computer
+science, and more specifically in complexity theory
+and cryptography, is bottom-up. One first defines (at
+a low level) a computational model (e.g. a Turing
+machine or a circuit), based on which one defines the
+concept of an algorithm for the model and a communication model (e.g. based on tapes). One then defines
+a complexity notion for an algorithm (e.g. the number
+of steps), and then a notion of efficiency (e.g. polynomial in some parameter(s), in an asymptotic sense).
+Finally, based on all these notions, one defines the security of a cryptosystem, typically as the infeasibility
+of a specific game.
+This approach is based on the view that without
+defining all these low-level concepts, one can not state
+precise definitions of higher-level concepts, let alone
+prove theorems. However, while this established approach is perfectly sound in principle, it is perhaps fair
+to say that many papers using this approach fall short
+of being completely precise and are in some cases even
+wrong in technical details, thus missing the promise of
+the bottom-up approach of being precise down to the
+last detail.
+
+A lower level can define the particular computational
+model, the particular complexity or cost function for
+that model, etc. A still lower level can define timing aspects, and a further level can define physical aspects, including for example side channels in
+cryptography.
+
+The paradigm shift we propose is to use a top-down
+approach. In order the state definitions and develop
+a theory, one starts from the other end, the highest
+possible level of abstraction, and proceeds downwards,
+introducing in each new lower level only the minimal
+necessary specializations of that level necessary for expressing what one wants to capture.
+
+It is important to point out that theorems proved
+at a certain (high) level of abstraction are completely
+precise (as they are mathematical theorems). This is
+true without instantiations of the lower levels, which is
+exactly the point of abstraction. The definitions and
+theorems are inherited by the lower levels, provided
+(of course) that the lower levels satisfy the postulated
+properties or axioms of the higher levels. It is hence
+strictly more desirable to prove theorems at higher
+levels of abstraction; nothing is lost by doing this, and
+certainly not precision.
+
+In the context of this paper, the concept of a reduction can be seen as standing at the highest level of
+abstraction in our paper. The notion of an n-choice
+setting (including the concepts of isomorphism, specification, and abstraction of specifications) is independent of the reduction concept, but in the way it is used
+here it appears at a next lower level. The abstraction
+hierarchy of a theory of systems (Section 1.5) can also
+be seen as independent, but again in the way it is used
+here it can also be seen as constituting the next lower
+levels.
+
+For example, if one proves a theorem at level 1 for
+an algebra of composable systems, then this theorem
+holds in particular for a specific theory of efficiently
+implementable discrete systems where efficiency is defined in a composable manner, and it holds also in the
+more specialized setting where efficiency is defined as
+(some form of) polynomial-time. A main benefit from
+4
+
+ABSTRACT CRYPTOGRAPHY
+
+in most previous frameworks. However, this makes it
+impossible to model settings where parties have conflicting goals but are not corrupted by the same adversary.5 In contrast, in our framework there is no adversary (but such a setting can be modeled as a special
+case). A consequence of our approach is that in our
+framework, there is no monolithic simulator, but a
+(local) simulator for every party.
+
+such an abstract treatment is that concrete results
+(e.g. the proof of a composition theorem or an impossibility proof) become at the same time substantially
+simpler and more general.
+This paper deals with level 1, while examples also
+live at level 2, without this level being formalized as
+a full formalization of level 2 would allow. But our
+level of formality (e.g. in describing the specification
+of a commitment functionality) is comparable to the
+formality of papers written in the traditional style,
+and it is sufficient to be precise.
+
+1.6
+
+2. The communication model (the network), and
+other aspects, are an intrinsic part of the model. This
+makes it impossible to consider the absence of certain
+channels, as is for example required in the context
+of collusion-free computation [1] (a notion that is not
+composable) and in other contexts, or other types of
+network models. In contrast, our theory of reductions
+between resources makes every resource explicit, including a possibly available network.
+
+Implications on the “ideal-world
+real-world” paradigm and related
+Work
+
+The so-called “ideal-world real-world” paradigm, as
+explained in the frameworks of Canetti [3] (universal
+composability) and of Backes, Pfitzmann and Waidner
+[2, 13] (reactive simulatability) is of paramount importance in cryptography. It is also used in other frameworks, for example indifferentiability theory by Maurer, Renner, and Holenstein [11], the generalized UC
+framework of Canetti, Dodis, Pass, and Walfish [4],
+collusion-free computation by Alwen, shelat, and Visconti [1], or for the notion of splittability [14]. These
+frameworks can be explained as special cases of our
+framework.
+
+3. The security definition (e.g. computational or
+information-theoretic security) is usually hard-coded
+into the model.
+4. The ideal functionality is a fixed system. This
+means that a certain action is either guaranteed to
+be available or guaranteed to be unavailable to a certain party. In contrast, a specification in our framework models that certain choices are guaranteed, while
+others might be available. This allows to model notions like incoercibility or coercibility naturally as a
+property of the ideal specification, not as a separate
+security notion [15].
+
+In these frameworks, the basic and ingenious idea
+[3, 13] is to consider an ideal system (often called
+a functionality) capturing the goal one wants to securely realize, when given a complete asynchronous
+network and possibly a set-up, using a protocol specifying what the parties have to do. The definition of
+what it means to “securely realize” involves an adversary who can corrupt certain parties, and captures
+the idea that whatever the adversary can achieve in
+the ideal world he could also achieve in the real world.
+This is made precise by means of a so-called simulator, an ingenious concept introduced by Goldwasser,
+Micali, and Rackoff [7] to define zero-knowledge protocols.
+
+5. The complexity notions of efficiency (what honest parties can do) and feasibility (what an adversary is assumed to be able to do) are both defined
+in a fixed manner as (some form of) polynomial-time.
+It is not even clear that one could (and should) distinguish between these notions. We point out that
+these notions are distinct and can be instantiated arbitrarily as composable notions, for example efficient
+as polynomial-time and feasible as some form of subexponential time.
+6. Security is defined via the notion of a (monolithic)
+simulator. In our framework, simulators are local (one
+simulator per choice domain), and they are not part
+of the definition of what it means to securely realize
+a certain functionality, but it is “only” a tool in the
+proof.
+
+Despite their success, the current simulation-based
+frameworks ([1-4, 11, 13] and others) have several limitations and drawbacks, in addition to the above mentioned lack of abstraction. Some of the limitations,
+which are eliminated by our framework, are briefly
+discussed below.
+
+5 A first paper giving up the notion of a central adversary
+was [1].
+
+1. The concept of a (central) adversary is essential
+5
+
+U. MAURER, R. RENNER
+
+1.7
+
+Implications on conventional
+cryptography
+
+some well known facts about relations, equivalence relations, and pseudo-metrics.
+
+Security definitions of conventional cryptographic
+primitives can (and should?!) be made as constructive
+statements rather than by describing attack games.
+This approach, which can be derived as a special case
+of our framework, was called constructive cryptography
+in [10] and is used in [12] to investigate what encryption achieves when used on an insecure channel as in
+the authenticate-then-encrypt paradigm.
+
+2.1
+
+A relation ρ from a set A to a set B (also called
+an (A, B)-relation) is a subset of A × B. An (A, A)relation is also called a relation on A. If (a, b) is in the
+relation r, i.e., (a, b) ∈ ρ, one writes a r b or, alternatively, r(a, b). An (A, B)-relation is also an (A0 , B 0 )relation for any A0 ⊇ A and B 0 ⊇ B.
+
+The problem with attack-based definitions is that
+the security of the composition of several individually
+secure schemes may not be clear. In a constructive
+definition, composability is guaranteed. For example,
+a message authentication scheme can be defined to be
+secure if it constructs (or realizes) an authenticated
+communication channel from a resource consisting of
+an insecure communication channel and a secret key,
+and a symmetric encryption scheme can be defined
+to be secure if it constructs a secure communication
+channel from an authenticated communication channel and a secret key. The general composition theorem
+implies that the combination of a secure MAC and secure encryption scheme constructs a secure channel
+from an insecure channel and two secret keys (which
+can be constructed from a single secret key using a
+pseudo-random generator).
+
+1.8
+
+Definition 1. An (A, B)-relation ρ is called complete
+if it has full domain (i.e., ∀a ∈ A ∃b ∈ B : a ρ b) and
+full range (i.e., ∀b ∈ B ∃a ∈ A : a ρ b).
+A function A → B corresponds to the (A, B)relation {(a, f (a)) : a ∈ A}. Note that a relation
+is complete if and only if it contains (as subsets) a
+function A → B and a function B → A.
+Since relations are sets, all operations defined for
+sets (e.g. ∪ and ∩) are also defined for relations. In
+addition, one can define the composition operation ◦
+and a direct product × for relations. The composition
+of an (A, B)-relation ρ and a (B, C)-relation σ is the
+(A, C)-relation ρ ◦ σ defined by
+a (ρ ◦ σ) c :⇐⇒ ∃b ∈ B : (a ρ b) ∧ (b σ c).
+We usually write ρσ instead of ρ ◦ σ. The inverse of
+an (A, B)-relation ρ is the (B, A)-relation ρ−1 defined
+by bρ−1 a ⇐⇒ aρb, and we have (ρσ)−1 = σ −1 ρ−1 .
+The direct product of an (A1 , B1 )-relation ρ and an
+(A2 , B2 )-relation σ is the (A1 × A2 , B1 × B2 )-relation
+ρ × σ defined by
+
+Limitations and future work
+
+This paper describes the basic theory of abstract
+cryptography, without providing many examples. We
+are aware that it may not be easy to judge the usefulness of the framework without seeing a list of convincing examples, but we hope that the few examples mentioned here give at least an idea and a taste.
+Also, the comparison with prior work is not yet worked
+out in detail, and many references relevant in such a
+comparison are still missing. It is the goal of future
+papers, hopefully also by other authors, to formalize
+lower levels of abstraction, to discuss new application
+areas of this theory, to work out examples, and to establish the relation to (and generalizations of) prior
+work at a technical level. We welcome feedback on
+this first (primarily theoretical) paper on the subject
+and pointers to related work.
+
+2
+
+Relations
+
+(a1 , a2 ) (ρ × σ) (b1 , b2 ) :⇐⇒
+(a1 ρ b1 ) ∧ (a2 σ b2 ).
+The operations ◦ and × are both associative.
+The following lemma is a direct consequence of the
+distributive law for relations,
+(ρ ∪ σ) × (ρ0 ∪ σ 0 )
+= (ρ×ρ0 )∪(σ×σ 0 )∪(σ×ρ0 )∪(ρ×σ 0 ).
+Lemma 1. For relations ρ1 , . . . , ρn and σ1 , . . . , σn
+we have6
+
+
+n
+O
+[
+O
+O
+
+(ρi ∪ σi ) =
+ρj ×
+σj  .
+i=1
+
+Preliminaries
+
+M ⊆{1,...,n} j∈M
+
+j6∈M
+
+6 Note that the terms on the right hand side of the equality
+should be ordered according to their indices i. We hope that
+our abbreviated notation does not cause confusion.
+
+In the following two subsections, we briefly review
+6
+
+ABSTRACT CRYPTOGRAPHY
+
+2.2
+
+Pseudo-metrics and embeddings
+
+tion, denoted (ρ/σ), between functions A → A0 and
+B → B 0 as follows. Two functions, f : A → A0 and
+g : B → B 0 , are related, denoted f (ρ/σ) g, if and
+only if all related inputs a and b are mapped to related outputs. That is, formally,
+
+A pseudo-metric 7 on a set Ω is a function δ : Ω ×
+Ω → R+ such that for all a, b, c ∈ Ω
+(i) δ(a, a) = 0
+(ii) δ(a, b) = δ(b, a) (symmetry)
+(iii) δ(a, c) ≤ δ(a, b) + δ(b, c) (triangle inequality).
+
+f (ρ/σ) g
+
+a ρ b → f (a) σ g(b) .
+
+a ≃ b :⇐⇒ δ(a, b) = 0.
+If a set Ω is equipped with a pseudo-metric we can
+define an induced metric on the set of functions with
+codomain Ω.
+Definition 2. Let F be a set of functions with
+codomain Ω and let δ be a pseudo-metric on Ω. We
+define the induced metric on F by
+¡
+¢
+δ(f, g) := sup δ f (x), g(x) .
+
+Definition 4. Let ρ be a complete relation between
+two sets A and B, and let Ω be a set equipped with
+an equivalence relation ≃. We say that two functions,
+f : A → Ω and g : B → Ω, are isomorphic (via ρ and
+ρ
+relative to ≃), denoted f ≃ g if and only if all inputs a
+and b related by ρ are mapped to equivalent outputs,
+i.e.,
+¡
+¢
+ρ
+f ≃ g : ⇐⇒
+a ρ b → f (a) ≃ g(b) .
+
+x∈X
+
+whenever f, g ∈ F have identical domains X , and
+δ(f, g) = ∞ otherwise.
+It is often natural to consider a pair of elements of
+a set Ω as an element of Ω itself. For example, a pair
+of random variables can naturally be considered as a
+single random variable. Formally, we can consider the
+set Ω to be equipped with an embedding (or concatenation) operation Ω mapping Ω × Ω to Ω.8
+
+Often it is convenient to think of the equivalence
+relation ≃ as being simply equality (i.e., =). Indeed,
+an alternative (and correct) view would be to consider
+equivalence classes (of ≃) and to use the symbol “=”.
+
+Definition 3. A pseudo-metric δ for a set Ω with
+operation k is called k-non-expanding if δ(aka0 , bkb0 ) ≤
+δ(a, b) + δ(a0 , b0 ) for all a, a0 , b, b0 ∈ Ω.9
+
+Furthermore, note that the images f (A) and g(B)
+of two functions are identical if and only if there exists
+ρ
+a complete (A, B)-relation ρ such that f = g.
+
+As an example, let Ω be the set of probability distributions, with P kP 0 defined as the product distribution between P and P 0 . Then the statistical distance
+is k-non-expanding.
+
+3
+
+Isomorphisms of functions
+0
+
+(1)
+
+We are interested in the particular case where all
+functions have the same codomain Ω and where σ is
+an equivalence relation on Ω, which we denote by ≃.
+Any (A, B)-relation ρ then naturally gives rise to the
+relation (ρ/ ≃) between functions with domains A
+and B, respectively. If ρ is complete then the relation (ρ/ ≃) can be seen as an isomorphism between
+ρ
+functions. This isomorphism is denoted by ≃ and will
+play a crucial role in this work (see Section 4).
+
+Note that any pseudo-metric δ on a set Ω induces
+an equivalence relation Ω,:
+
+2.3
+
+: ⇐⇒
+
+Reductions: formalizing step-wise
+refinement
+
+A central paradigm in any constructive discipline,
+for example in software design, the construction of
+machines, and also in security engineering and cryptography, is to construct a complex system from simpler component systems, which each may consist of
+yet simpler component systems, and so on. This important iterative construction paradigm is sometimes
+called step-wise refinement.
+
+0
+
+Let ρ be an (A, B)-relation and let σ be an (A , B )relation. These relations naturally induce a rela7 A metric is a pseudo-metric for which δ(a, b) = 0 implies
+a = b.
+8 Typically one would extend this consideration to lists (e.g.
+lists of random variables), in which case one assumes Ω to be
+associative. However, while thinking of Ω as an associative mapping is helpful and justified, in our treatment we do not have
+to make this assumption.
+9 In some contexts k-non-expanding is called stabilized. Note
+that the condition is equivalent to δ(akc, bkc) ≤ δ(a, b) and
+δ(cka, ckb) ≤ δ(a, b) for all a, b, c ∈ Ω, which could be used
+as an alternative definition of k-non-expanding.
+
+One can describe the overall construction as a tree
+where each inner (non-leaf) node is labeled by a component S and a constructor α describing how component S is obtained from components, say R1 and R2 ,
+7
+
+U. MAURER, R. RENNER
+
+at the children nodes. Then we write
+
+Definition 7. A reduction −→ for Ω and Γ is called
+serially composable if the following properties hold for
+all R, S, T ∈ Ω and α, β ∈ Γ:
+
+α
+
+R1 kR2 −→ S.
+This can be generalized to nodes with more than two
+children.10
+
+α
+
+β
+
+(i) R −→ S ∧ S −→ T
+
+α◦β
+
+=⇒ R −→ T
+
+id
+
+(ii) R −→ R.
+Furthermore, Γ is called context-insensitive if
+
+There are two ways to think about such a construction step: top-down or bottom-up. Depending on the
+view one can either say that S is reduced via use of α
+to R1 and R2 , or that S is realized from R1 and R2
+via α.
+
+α|id
+
+α
+
+id|α
+
+(iii) R −→ S =⇒ RkT −→ SkT ∧ T kR −→ T kS.
+A reduction that is both serially composable and
+context-insensitive is called generally composable (or
+just composable).
+
+We mention a few instantiations of the reduction
+concept. For example, the purpose of a software
+component is to construct a system S from given library components R1 , . . . , Rn such that if these components are correct, then S is correct. Similarly, the
+purpose of applying error-correcting codes can be seen
+as constructing a reliable channel S from an unreliable (error-prone) channel R. In the context of cryptography, the purpose of encryption can be seen as
+constructing (according to a simulation-based notion)
+a secure communication channel S from two components, R1 and R2 , where one is an authenticated channel and the other a secret key R2 .
+
+Property (i) implies transitivity of the relation −→
+α
+and Property (iii) states that R −→ S remains true
+independently of the environment or context, i.e., independently of which systems are available in parallel.
+Properties (i) to (iii) together imply that the reduction
+−→ is parallelly composable, in the following sense:11
+α
+
+α0
+
+β
+
+R −→ S ∧ R0 −→ S 0 =⇒ RkR0 −→ SkS 0 ,
+where β = (α|id)(id|α0 ).
+It is intuitively clear that general composability is
+sufficient (and necessary) for the step-wise refinement
+paradigm to work in the following sense. Given a tree
+representing a construction as described above where
+α
+the relation R1 kR2 −→ S holds for any node S and its
+children R1 and R2 , the relation also holds between
+the root and the leaves. We refer to Appendix A for
+a formal version of this claim.
+
+In the following, we formalize these notions.
+Definition 5. A component set is a set Ω equipped
+with a (parallel composition) operation, denoted k. A
+constructor set Γ is a set equipped with a (serial composition) operation ◦, a (parallel composition) operation |, and a special (neutral) element id.
+
+4
+
+Definition 6. A reduction for a component set Ω
+and a constructor set Γ is a subset of Ω × Γ × Ω.
+A reduction is often denoted by an arrow, for
+example−→, as follows: If (R, α, S) is in the reducα
+tion, then we write R −→ S and say that S can be
+reduced to R by α or, equivalently, that S can be realized (or constructed) from R by α. We write R −→ S
+α
+if there exists an α ∈ Γ such that R −→ S.
+
+4.1
+
+Choice settings
+Choices and their effects
+
+We consider a general setting where n choices are
+made, e.g., by n parties who do not necessarily collaborate. Each n-tuple of choices results in a certain
+effect, which we simply model as an element from a
+set Ω. For example, Ω could be the set of real numbers, the set of vectors of real numbers, or anything
+else. We will call such a setting an n-choice setting or,
+simply a setting.
+
+A reduction −→ for a component set Ω and a constructor set Γ can equivalently be interpreted as a colα
+lection {−→}α∈Γ of relations on Ω, indexed by elements of Γ.
+
+Definition 8. An n-choice setting is a function
+R : A1 × · · · × An → Ω,
+
+We now define natural composability properties of
+a reduction.
+
+where A1 , . . . , An are arbitrary sets and Ω is a set
+equipped with an equivalence relation ≃. The set Ai
+
+10 If
+
+there are d children R1 , . . . , Rd , one can write
+α
+R1 k · · · kRd −→ S. If k is not associative, appropriate parentheses are required in the expression R1 k · · · kRd .
+
+11 One could naturally postulate that (α|id)(id|α0 ) = α|α0 , but
+this is not necessary.
+
+8
+
+ABSTRACT CRYPTOGRAPHY
+
+is called the ith choice domain, and Ω is called the
+effect space.
+
+choice settings (see Definition 4). More precisely, let
+ρ = ρ1 × · · · × ρn be a CFR from A1 × · · · × An
+to B1 × · · · × Bn . Two n-choice settings R and S
+with choice domains A1 , . . . , An and B1 , . . . , Bn , respectively, are isomorphic (via ρ and relative to ≃) if
+any choices (a1 , . . . , an ) and (b1 , . . . , bn ) related by ρ
+result in equivalent effects, i.e.,
+
+The notion of a choice is very general; for example,
+in a setting where parties p1 , . . . , pn interact with each
+other in multiple rounds, a choice ai ∈ Ai may be the
+entire reactive strategy of party pi for computing the
+answers depending on the inputs received from the
+other parties.
+
+ρ
+
+R ≃ S : ⇐⇒
+(∀i : ai ρi bi ) → R(a1 , . . . , an ) ≃ S(b1 , . . . , bn ) .
+
+The effect space Ω will often be equipped with a
+pseudo-metric δ which is compatible with the equivalence relation ≃ in the sense that
+δ(ω, ω 0 ) = 0 ⇐⇒ ω ≃ ω 0 .
+(2)
+This pseudo-metric on the effect space Ω induces
+a pseudo-metric on the choice settings (see Definition
+2), which we also denote by δ.
+
+4.2
+
+In other words, two n-choice settings R and S are
+isomorphic via ρ if the same effects can be obtained
+by a relabeling of the individual choices according
+to the prescription ρ. This isomorphism plays a crucial role in our framework. It captures the idea that,
+as long as all relevant consequences of an n-tuple of
+choices a1 , . . . , an are described as part of the effect,
+R(a1 , . . . , an ), then a party (who can, for example,
+make a choice ai from the ith choice domain Ai ) would
+not prefer R over an isomorphic setting S (where
+she could make a choice bi from a set Bi ), or vice
+versa. This argument is described in more detail in
+Appendix B.
+
+Isomorphisms between choice
+settings
+
+We now consider isomorphisms between choice settings. Roughly speaking, two settings, R and S, are
+isomorphic if the same effects can be obtained by an
+appropriate relabeling of the individual choices. The
+idea is that if R and S are isomorphic then they can
+be considered equivalent, in the sense that no choicemaking party would prefer one setting over the other.
+
+Consider an n-choice setting R with choice domains
+A1 , . . . , An . A simple example of a setting R̄ that is
+ρ
+isomorphic to R, i.e., R̄ ≃ R, is obtained by simply
+extending the choice domains Ai to choice domains
+Āi ⊇ Ai by adding further choices that are equivalent
+to choices in Ai , i.e., such that several choices of Āi
+can correspond to a single choice in Ai . In this case,
+the relation ρ is simply the one relating each choice in
+Āi to an equivalent one in Ai .
+
+A relabeling of the choices is naturally represented
+using the notion of complete relations. Let A1 , . . . , An
+and B1 , . . . , Bn be the choice sets of R and S, respectively. Each choice ai ∈ Ai shall be related to a corresponding choice bi ∈ Bi , and vice-versa. The resulting
+correspondence between the n-tuple of choices can be
+seen as a complete relation ρ from A1 × · · · × An to
+B1 × · · · × Bn , which is factorizable in the following
+sense.
+
+For later use, we define the extension of R, denoted
+ext(R), as the set consisting of all settings R̄ that
+can be obtained from R by such trivial domain extensions.12
+
+Definition 9. Let A1 , . . . , An and B1 , . . . , Bn be sets.
+A relation ρ from A1 × · · · × An to B1 × · · · × Bn is
+called factorizable if ρ = ρ1 × · · · × ρn , where ρi are
+(Ai , Bi )-relations.
+A complete factorizable relation ρ is abbreviated as
+CFR; it is the product of complete relations ρi from Ai
+to Bi . For CFRs ρ = ρ1 ×· · ·×ρn and ρ0 = ρ01 ×· · ·×ρ0n ,
+we have ρ ◦ ρ0 = (ρ1 ◦ ρ01 ) × · · · × (ρn ◦ ρ0n ), as is easily
+verified.
+
+5
+
+Specifications and their abstraction
+
+5.1
+
+Specifications and guaranteed
+choice spaces
+
+In the following we consider sets of n-choice settings. In general, a set captures those properties (of
+its elements) that are relevant in a certain step of an
+abstraction, while ignoring those aspects that are not
+12 Formally, this set is given by
+
+Lemma 2. The composition ρ ◦ ρ0 of CFRs ρ and ρ0
+is a CFR.
+
+ρ
+
+ext(R) := {R̄ : ∃ρ ⊇ id : R̄ ≃ R}
+where id = 1A1 ×· · ·×1An is the CFR consisting of the identity
+relations on Ai .
+
+ρ
+
+Any CFR ρ induces an isomorphism ≃ between
+9
+
+U. MAURER, R. RENNER
+
+relevant (namely, which element of the set it is). One
+does not care which elements of the set is given, as
+long as it is guaranteed that it is one of the set.
+
+if for every R ∈ R there exists an S ∈ S and a CFR
+ρ = (ρ1 , . . . , ρn ), such that
+ρ
+
+(i) R ≃ S
+(ii) πi−1 ⊆ ρi for all i.14
+
+More specifically, we will introduce the notion of a
+specification, which is simply the set of all settings that
+have the properties we are interested in on a certain
+level of abstraction.
+
+If R vπ S, then R and S are often called the concrete and the abstract specification, respectively. Furthermore, the abstract specification S will often be
+defined as the ²-extension of another specification S̄,
+i.e., the set S̄ ² consisting of all settings that approximate S̄ to accuracy ² (see Definition 12 below).
+
+Definition 10. An n-choice setting specification (or
+simply n-specification) R is a set of n-choice settings,
+together with an n-tuple of sets, (Â1 , . . . , Ân ), such
+that for all i, Âi is a subset of the ith choice domain
+of every setting in R. The set Âi is called the ith
+guaranteed choice domain of R.
+
+The relation R vπ S captures the idea that the
+concrete specification R has all the relevant properties
+of the abstract specification S. In other words, if an
+analysis is performed for the abstract specification S,
+leading for example to the insight that a cryptographic
+scheme is secure, than this conclusion also holds for
+the concrete specification R.
+
+Consider, as an example, a setting consisting of n
+parties p1 , . . . , pn , each of whom can make an individual choice. The effects of their choices can then
+be specified by an n-specification R consisting of nR
+choice settings R with choice spaces AR
+1 , . . . An . This
+specification tells us that pi ’s choice will be an element from the union of all ith choice domains, ∪R AR
+i .
+Furthermore, the specification guarantees that pi can
+always make a choice from the ith guaranteed set
+Âi ⊆ ∩R AR
+i . In other words, party i can count on
+having any choice from the guaranteed set available,
+but may have other choices available.
+
+5.2
+
+As a generic example, consider a situation where
+each of n parties p1 , . . . , pn can make a choice. Assume that party pi has performed an analysis of the
+abstract specification S from which she concludes that
+she should make a certain choice bi , which is an element of the guaranteed choice domain B̂i . Relation
+(3) now tells her that if she is confronted with a concrete setting R that satisfies specification R, then she
+could equivalently make the choice ai = π(bi ). In fact,
+Property (i) guarantees that there is a setting S satisfying S that is isomorphic to R (see Section 4.2).
+Furthermore, Property (ii) ensures that the choice ai
+in the concrete setting can be inferred from the choice
+bi in the abstract setting, and that ai is among the
+guaranteed choices, i.e., ai ∈ Âi .
+
+Abstraction of specifications
+
+Abstraction means to simplify a context by ignoring certain details considered irrelevant. Here we consider abstracting an n-specification R by another nspecification S that is (generally) simpler to analyze.
+Any property that holds for the abstract specification
+S also holds for the concrete specification R (but not
+necessarily vice versa). This means that one can perform an analysis in the abstract setting and carry it
+over to the concrete setting.
+
+5.3
+
+As we shall see, the relation R vπ S defines a reduction (as defined in Section 3) between n-specifications.
+The component set of the reduction will be the set of
+specifications, and the constructor set will be the set
+of n-tuples π = (π1 , . . . , πn ), where πi are functions
+from choice domains to choice domains. In the following, we define this reduction and show that it is
+generally composable.
+
+Definition 11. Consider n-specifications R and
+S with guaranteed choice spaces Â1 , . . . , Ân and
+B̂1 , . . . , B̂n , respectively. Let π = (π1 , . . . , πn ) be an
+n-tuple where
+πi : B̂i → Âi
+is a function (i = 1, . . . , n). We say that S is a πabstraction of R, denoted13
+R vπ S,
+
+Composability of abstraction
+
+We first need to equip the set of specifications,
+which will form the component set, with a parallel
+
+(3)
+
+14 Note that only the part of the relations ρ defined by π
+i
+i
+is common for all R ∈ R, the rest of the relation ρi can be
+different for every R.
+
+13 The symbol v shows that abstraction is a generalized subset
+
+relation.
+
+10
+
+ABSTRACT CRYPTOGRAPHY
+
+composition operation. To define this relation, consider two n-choice settings, R : A1 × · · · × An → Ω
+and S : B1 × · · · × Bn → Ω. Furthermore, assume
+that the effect space is equipped with an embedding
+operation Ω × Ω → Ω, denoted by k. The direct
+product of R and S (as functions) then yields, as
+the combined n-choice setting R × S, the function
+(A1 × B1 ) × · · · × (An × Bn ) → Ω with
+
+To prove Condition (iii) of Definition 7, we need to
+show that R vπ S implies R||T vπ|id S||T . This is
+ρ
+however a direct consequence of the fact that R ≃ S
+ρ×id
+
+implies R × T ≃ S × T , for any T ∈ T .
+
+5.4
+
+The composition operation || for specifications can
+then be defined as
+R||S := {R × S : R ∈ R, S ∈ S} .
+
+When specifying the relevant properties of an object, it is often irrelevant whether these properties are
+met precisely or whether they are only approximated.
+This means that, given a specification, we may also
+want to consider all settings that approximate the
+specification.
+
+Similarly, we equip the set of n-tuples π =
+(π1 , . . . , πn ), which will form the set of constructors,
+with a serial and a parallel composition operation.
+We do this by simply defining these operations as the
+corresponding serial and parallel composition operation on functions. That is, for π = (π1 , . . . , πn ) and
+π 0 = (π10 , . . . , πn0 ),
+
+In this section, we formalize this idea by introducing
+the notion of an ²-extension R² of an n-specification
+R. It is defined as the set consisting of all n-settings
+that are close to an element in the extension ext(R) :=
+∪R∈R ext(R) of R, with respect to some metric.
+
+π ◦ π 0 = (π1 ◦ π10 ), . . . , (πn ◦ πn0 )
+and, similarly,
+π|π 0 = (π1 × π10 , . . . , πn × πn0 ) .
+
+Definition 12. Let R be a specification for effect
+space Ω, equipped with a pseudo-metric δ compatible
+with the equivalence relation ≃ on Ω (see Eq. (2)).
+The ²-extension of R, denoted R² , is given by
+©
+ª
+R² := R : ∃R̄ ∈ ext(R) : δ(R, R̄) ≤ ² .
+
+Finally, the neutral element in the set of constructors
+is defined as the n-tuple id = (1, . . . , 1), where 1 are
+the identity functions.
+Then, according to Definition 6, R vπ S is a reduction, where the component set is the set of specifications, and the set of constructors is the set of n-tuples
+π = (π1 , . . . , πn ).
+
+where δ is the pseudo-metric on the set of n-choice
+settings induced by the pseudo-metric δ on Ω (see Definition 2).
+In an argument consisting of several abstraction
+steps, we typically want to combine the approximations made within the individual steps into one for
+the entire abstraction, in the sense that
+
+Theorem 1. R vπ S is a generally composable reduction.
+Proof. We have already shown that R vπ S is a
+reduction. To prove Condition (i) of Definition 7, as0
+sume that R vπ S and S vπ T . Then, for every
+R ∈ R there exists S ∈ S and ρ = ρ1 × · · · × ρn with
+ρ
+πi−1 ⊆ ρi such that R ≃ S. For this S, there exists
+T ∈ T and ρ0 = ρ01 × · · · × ρ0n with πi0−1 ⊆ ρ0i such that
+
+0
+
+R vπ S ² ∧ S vπ T ²
+
+0
+
+=⇒
+
+0
+
+0
+
+R vππ T ²+² .
+
+This property is essentially a consequence of the following lemma and the triangle inequality (see the remark below).
+
+ρ0
+
+S ≃ T . It follows that for every R there exists T ∈ T
+with R ≃
+
+Approximation and abstraction
+
+As we have seen, the notion of an abstraction captures the idea of describing an object only by certain
+relevant properties without specifying (unimportant)
+details. In other words, an abstract specification of an
+object is the set all objects that have certain properties we are interested in.
+
+(R × S)((α1 , β1 ), . . . , (αn , βn )) =
+R(α1 , . . . , αn ) k S(β1 , . . . , βn ) .
+
+ρρ0
+
+¤
+
+Lemma 3. For any specifications R and S and for
+any ² ≥ 0,
+
+T , and where (πi πi0 )−1 ⊆ ρρ0 .
+
+R vπ S
+
+Condition (ii) of Definition 7 is trivially satisfied because R is isomorphic to itself via the identity relation,
+id.
+
+=⇒
+
+R² vπ S ² .
+
+Proof. Let R be any element from R² . By Definition
+12, there exists R0 ∈ R̄ such that δ(R, R0 ) ≤ ², where
+11
+
+U. MAURER, R. RENNER
+
+δ is the induced pseudo-metric on the effect space.
+Hence, there exists a CFR ρ = ρ1 × · · · × ρn and an
+ρ
+element S 0 ∈ S such that R0 ≃ S 0 and πi−1 ⊆ ρi .
+
+A key property of a reasonable abstract theory of
+systems is composition-order independence, which is a
+type of generalized associativity.
+
+Let A1 , . . . , An and B1 , . . . , Bn be the choice spaces
+of R0 and S 0 , respectively. Since the relations ρi
+(for any i ∈ {1, . . . , n}) are complete, there exist
+functions fi : Bi → Ai such that fi−1 ⊆ ρi and which
+are identical to πi−1 on their common domain. Furthermore, by choosing an appropriate setting S̄ 0 ∈ S̄,
+the functions fi can be extended to functions f¯i : B̄i →
+Ai that have full range, i.e., f¯i (B̄i ) = Ai . We can now
+define a choice setting S̄ with choice spaces B̄1 , . . . , B̄n
+by
+S̄(b1 , . . . , bn ) := R(f¯1 (b1 ), . . . , f¯n (bn ))
+
+Definition 13. A set of systems with composition
+operations is composition-order independent if for any
+system composed of several systems, the order in
+which the systems are composed does not matter.16
+In this paper we consider only three special types of
+systems: resource systems, converter systems, and distinguishers.17 A resource system (or simply resource),
+usually denoted by capital letters (e.g. R or S), is a
+system with interface label set I (e.g. I = {1, . . . , n}
+or I = {A, B, E}). Typically (but not only) one can
+think of each interface being accessible to one party.
+A converter system (or simply converter)18 , usually
+denoted by a Greek letter (e.g. α or β), is a system
+with two interfaces, where one interface is designated
+as the outside interface and the other as the inside interface. The inside interface of a converter α can be
+connected to interface i ∈ I of a resource system R;
+the outside interface of α serves as the new interface
+i of the combined system, which is again a resource
+system and is denoted αi R.19
+
+It is easy to verify that S̄ is isomorphic to R via a
+CFR ρ0 = ρ01 × · · · × ρ0n satisfying πi−1 ⊆ ρ0i , i.e.,
+ρ0
+
+R ≃ S̄ .
+Furthermore, because δ is an induced metric, the distance cannot increase when prepending a function,
+i.e.,
+δ(S̄, S̄ 0 ) ≤ δ(R, R0 ) ≤ ² .
+This implies that S̄ ∈ S ² and thus concludes the
+proof.
+¤
+
+We can consider a resource construction, say Z,
+which takes as an argument a resource, say R. (Formally, the system Z is a special type of system with
+2n interfaces.) The combined resource is denoted as
+Z(R) or simply ZR. In particular, let [·||S] be the
+resource construction which simulates the resource S
+and makes it available in parallel (on the right side)
+to the argument of the construction. In other words,
+[·||S]R = R||S for any R. Moreover, [S||·] is defined
+analogously.
+
+Remark 1. Lemma 3 together with the triangle inequality implies
+0
+
+S vπ T ²
+
+0
+
+=⇒
+
+0
+
+S ² vπ T ²+²
+
+0
+
+for any ², ²0 ≥ 0.
+
+6
+6.1
+
+Theory of systems
+
+We will often consider vectors α = (αi )i∈I of converters, one for each interface of a resource. Such a
+list is denoted by a boldface Greek letter. For convenience, we will often assume that I = {1, , . . . , n}, for
+
+Systems: resources, converters,
+and distinguishers
+
+At the highest level of abstraction, a system is an
+abstract object with interfaces by which it interacts
+with its environment and with other systems. Interfaces are labeled with elements of a label set. Two
+systems can be composed into a single system by connecting one interface from each system.15
+
+16 This is, for example, what one has in mind when drawing a configurations of several composed systems as a diagram,
+with systems being boxes and interfaces being lines leaving the
+boxes. The very fact that the order in which one draws such a
+diagram is irrelevant implies that one postulates compositionorder independence.
+17 They allow to model all systems occurring in a cryptographic context, e.g. protocols, simulators, adversaries, etc.
+18 One can think of such a system as converting or transforming an interface into an interface with a different behavior.
+19 A system composed of a resource and converters has a starshaped topology, with a resource in the center and a (possibly
+empty) chain of converter systems attached to each interface.
+The resulting system is again a resource with the same interface
+set.
+
+15 At this level of abstraction there is no need to model different types of interfaces. It need not be defined how systems
+interact (analog or digital communication, one message or a
+ping-pong protocol, synchronous or asynchronous communication, etc.). All that is required is that the composition of systems is defined, at least for those types of composition we are
+interested in. Of course, at lower levels of abstraction, the definition of the interface will matter.
+
+12
+
+ABSTRACT CRYPTOGRAPHY
+
+with a parallel composition operation || 20 , a set Σ of
+converters, and an equivalence relation on the set Φ,
+together with a mapping21 Σ × Φ × I 7→ Φ defining
+the resource obtained when converter α is attached to
+interface i of resource R, denoted as αi R, such that
+
+example α = (α1 , . . . , αn ), but we continue to state
+results for a general interface set I when appropriate.
+When αi is connected to interface i of R we usually
+write αi R instead of αii R. Applying α to R is defined naturally: αR = α1 α2 · · · αn R. For a vector
+α = (α1 , . . . , αn ) of converter systems and for a subset P ⊂ I of the interfaces, we denote by αP the
+vector α with components only P, and αP R is understood as the resource resulting when for every i ∈ P,
+αi is attached to interface i of R.
+
+(i) Converter application at different interfaces commutes: αi β j R ≈ β j αi R for all i 6= j, R ∈ Φ, and
+α ∈ Σ.
+(ii) Attaching no converter is defined as a special
+neutral converter 1 ∈ Σ: 1i R ≈ R for all i ∈ I
+and R ∈ Φ.22
+(iii) If R ≈ S then αi R ≈ αi S.
+(iv) If R ≈ S then (R||T ) ≈ (S||T ) and (T ||R) ≈
+(T ||S).
+
+A distinguisher D (for n-interface resources) is a
+system with n + 1 interfaces, where n interfaces connect to the interfaces of a resource R and the other
+(outside) interface outputs a bit. When a distinguisher D is connected to resource R we write DR
+for the resulting system. Note that DR is simply a
+binary random variable.
+
+The commutativity condition of the above definition is the specialization of the previously mentioned
+composition-order independence to the specific setting
+with resources and converters. It states that if two
+converters are connected to distinct interfaces, then
+the order in which these operations are performed is
+irrelevant.
+
+The typical pseudo-metrics in cryptography are
+distinguisher-based metrics, i.e., the distance between
+two resource systems is the best advantage a distinguisher in a certain class D of distinguishers can
+achieve:
+R ≈² S :⇐⇒ ∆D (R, S) ≤ ²,
+where D is, for example, either the set of all distinguishers (information-theoretic security) or the set of
+feasible distinguishers (computational security). Here
+
+One can naturally define serial and parallel composition operations on the converter set Σ as follows:
+• serial composition: αβ (or α ◦ β) is defined by
+(αβ)i R := αi β i R
+
+∆D (R, S) = sup ∆D (R, S),
+D∈D
+
+for all i and R. This composition operation
+is associative because function composition is:
+(αβ)γ = α(βγ). Note that 1α = α1 = α.
+• parallel composition: α||β is defined by
+
+where ∆D (R, S) is the advantage of D in distinguishing R nd S, i.e., the statistical distance of the binary
+random variables DR and DS.
+
+(α||β)i (R||S) := αi R||β i S
+
+We write
+R≈S
+
+for all i and R, S ∈ Φ.23
+
+instead of R ≈0 S to denote that R and S are equivalent (according to the equivalence relation implied by
+∆D ). We point out that for describing most cryptographic settings it suffices to consider an equivalence
+relation rather than a (more general) pseudo-metric.
+In an asymptotic setting, the metric is 0/1-valued (0
+corresponding to negligible, and 1 corresponding to
+not negligible).
+
+6.2
+
+Definition 15. A distinguisher D is a mapping from
+Φ to the set of binary distributions
+D : R 7→ DR .
+A distinguisher D emulating a converter α ∈ Σi at
+interface i induces a new distinguisher, denoted Dαi ,
+20 For every i ∈ I, the i-interface of R||S consists of the two
+i-interfaces of R and S merged into a single interface, by some
+addressing mechanism that is not (yet) of interest at this level
+of abstraction.
+21 This may be a partial mapping, i.e., defined on a subset
+only.
+22 We do not postulate that there is a converter system that
+behaves like 1, for example by forwarding all messages, but it
+may be reasonable to assume that 1 is an actual system.
+23 Note that (α||β)i T need not be explicitly defined if T is not
+of a the form T = R||S. Note also that α||1 6= α.
+
+Cryptographic algebras
+
+We are now formalizing the notions introduced
+above.
+Definition 14. A cryptographic algebra hΦ, Σ, ≈i for
+an interface set I consists of a set Φ of I-resources
+13
+
+U. MAURER, R. RENNER
+
+defined by
+
+By choosing the sets in the feasibility notion appropriately, we obtain different security notions:
+
+(Dαi ) : R 7→ D(αi R) .
+
+Similarly, a distinguisher emulating a resource S ∈
+Φ in parallel induces a new distinguisher, denoted
+D[·||S] ⊆ D, and defined by
+
+• The notion defined by (Φf , Σf , Df ) corresponds to
+computational security, if we request the protocol
+f
+converters πi to be in Σe . The pseudo-metric ∆D
+is 0/1-valued, where the value 0 means that the
+distinguishing advantage for the two (asymptotic
+families of) resources is negligible.
+• The notion defined by the classes of unbounded
+systems (superscript u), (Φu , Σu , Du ), corresponds to information-theoretic security.
+• Efficient information-theoretic security is defined
+like information-theoretic security, but where the
+protocol converters πi are required to be in Σe .
+
+D[·||S] : R 7→ D(R||S) .
+Definition 16. A distinguisher class D is said to be
+compatible with a cryptographic algebra hΦ, Σ, ≈i if
+the following holds
+• DΣi ⊆ D for i ∈ I, i.e. D is closed under emulation of a converter in Σ.24
+• D[·||Φ] ⊆ D, i.e. D is closed under emulation of a
+resource in Φ.
+• If R ≈ S then DR = DS, for any D ∈ D.
+
+6.3
+
+The latter distinction is meaningful and necessary since information-theoretic security does not imply computational security, but efficient informationtheoretic security does.
+
+Efficiency, feasibility and types of
+security
+
+Systems (resources, converters, distinguishers) can
+be implemented by algorithms. We need to define two
+complexity notions for algorithms for implementing
+systems: efficient and feasible. Honest parties are generally restricted to efficient computation and dishonest parties are (in a computational setting) restricted
+to feasible computation, where the feasible complexity class includes the efficient complexity class. In
+traditional cryptography, no distinction between efficient and feasible is made and they are both defined
+as polynomial-time (in some suitable manner). In our
+abstract context, it suffices to postulate certain closure properties (which a reasonable polynomial-time
+notion satisfies).
+
+7
+
+Filtered resources as specifications
+
+We now make the n-choice specifications introduced
+in Section 5 more concrete by describing their elements, the choice settings, using the notion of systems
+introduced in Section 6.
+
+7.1
+
+Resource systems as choice
+settings
+
+Cryptographic algebras are a concretization of the
+concepts introduced in Section 4. A resource system
+R is a choice setting in the sense introduced in Section
+4, namely a function from choice spaces to an effect
+space. The choices are converters (a party can apply
+to a resource) and the effect is the resulting resource
+when the converters are applied to R. More precisely,
+each party’s choice space is Σ (or a subset of Σ), and a
+resource system R corresponds to the function Σn →
+Φ defined by α 7→ αR, where α = (α1 , . . . , αn ) and
+αi is party i’s choice. Note that Ω = Φ, i.e., the
+effect space Ω is the resource set Φ, equipped with the
+equivalence relation ≈.
+
+More specifically, we consider a feasibility notion
+which is defined by a class of feasible resource systems,
+Φf ⊆ Φ, a class of feasible converters Σf ⊆ Σ, and a
+class of feasible distinguishers Df ⊆ D. Similarly, an
+efficiency notion is defined by a set of efficient converters, Σe ⊂ Σ. We postulate that these obey certain
+closure properties.
+Definition 17. A feasibility notion (Φf , Σf , Df ) is said
+to be closed if the cryptographic algebra restricted to
+the sets Φf and Σf is still a cryptographic algebra,
+and the distinguisher class Df is compatible with this
+algebra.
+
+7.2
+
+Furthermore, an efficiency notion Σe is said to be
+compatible with the feasibility notion, if Σe ⊆ Σf and
+Σe ◦ Σe ⊆ Σe .
+
+Filtered specifications: guaranteed
+and possible choice spaces
+
+In the following we consider special resource specifications where for each interface i the choice domain
+Ai is known to be between a guaranteed choice space
+
+24 DΣi is defined naturally: DΣi = {Dαi : D ∈ D, α ∈ Σ}.
+
+14
+
+ABSTRACT CRYPTOGRAPHY
+
+7.3
+
+of the form
+Σφi = {αφi : α ∈ Σ}
+
+Recall the notion of an abstraction of a resource
+specification. To apply this notion to filtered specifications Rφ and Sψ , we require an explicit mapping
+from the guaranteed choices of Sψ to the guaranteed
+choices of Rφ , i.e., a mapping from Σψi to Σφi , for
+all i ∈ I. This mapping is achieved by means of a
+converter πi , as follows:
+
+for some converter φi , and the possible (full) choice
+space Σ:
+Σφi ⊆ Ai ⊆ Σ.
+
+Abstraction of filtered specifications
+
+(4)
+
+Here φi can be seen as a filter restricting access to
+R. A guaranteed choice αi φi ∈ Σφi is specified by
+the converter αi . Similarly, the possible choices are
+those potentially (but not guaranteed to be) available
+to a party behaving dishonestly. Such a party can
+be thought of as removing the filter φi and therefore
+having possibly more powerful access to R than an
+honest party.
+
+Σψi → Σφi : αψi 7→ απi φi .
+Let π = (π1 , . . . , πn ). If we understand πi as a
+function, as just described, then Sψ is a π-abstraction
+of Rφ , denoted
+Rφ vπ Sψ ,
+if for every R0 ∈ Rφ there exists S 0 ∈ Sψ and a CFR
+ρ = ρ1 ×· · ·×ρn between the choice spaces A1 ×· · ·×An
+of R0 and B1 × · · · × Bn of S 0 such that
+
+Definition 18. Let φ1 , . . . , φn be converters and
+let φ = (φ1 , . . . , φn ). Then Rφ denotes the nspecification defined as the set of all resources R,
+where at each interface i the choice domain Ai satisfies (4). An n-specification of this form will be called
+filtered.
+
+ρ
+
+R0 ≃ S 0
+and, for all i,
+{(γπi φi , γψi ) : γ ∈ Σ} ⊆ ρi .
+
+Note that by considering this set of resources, it is
+(by definition) considered irrelevant what the actual
+choice spaces for the parties are, as long as the guaranteed choices are available and not more than the
+maximal choices are available. As mentioned, the set
+captures that we do not know (or care to state) the
+particular actual choice spaces.
+
+7.4
+
+Proving abstraction using local
+simulators
+
+We can now state a central theorem in our abstract
+theory of cryptography which allows to prove statements of the form Rφ vπ
+² Sψ . What is crucial is that
+the simulation can be performed locally (rather than
+jointly) and, in contrast to [1], the simulation must be
+ongoing, not only for the final transcript (or view).
+
+A canonical way to think of such filtered nspecifications is as follows: The resource R has buttons for some or all of the parties which, when pressed,
+gives that party additional functionality. The role of
+the filters φi is to shield the button, i.e., to make it unavailable. The act of removing the filter can (but need
+not) be considered as a “corruption bit” by which a
+party “declares” to want to have access to the possible
+choice space.
+
+Theorem 2. Let hΦ, Σ, ≈i be a cryptographic algebra
+and, for any i ∈ I, let φi , ψi , πi , σi ∈ Σ be converters.
+Then
+∀P ⊆ I : π P φP R ≈ σ P ψ P S
+=⇒ Rφ vπ Sψ .
+Proof. For fixed P ⊆ I, the equation
+
+Example 1. A resource modeling the secret key generated by a typical key-agreement protocol (e.g. standard Diffie-Hellman) has the property that at least
+one party can influence the key. This can be modeled by a button which, if pressed, gives the party the
+capability to set the key. It is important that this feature (the button) is not guaranteed (i.e.. filtered) since
+an actual protocol typically does not guarantee (but
+only not exclude) that a party can freely choose the
+key. In contrast, a resource without buttons models
+the stronger primitive generating a common random
+string.
+
+π P φP R ≈ σ P ψ P S
+means that αR ≈ βS for all α = (α1 , . . . , αn ) and
+β = (β1 , . . . , βn ) such that
+½
+{(γπi φi , γψi ) : γ ∈ Σ} if i ∈ P
+(αi , βi ) ∈
+{(γ, γσi ) : γ ∈ Σ}
+if i ∈ P,
+i.e., such that
+15
+
+U. MAURER, R. RENNER
+
+(α, β) ∈
+
+O
+
+[2] M. Backes, B. Pfitzmann, and M. Waidner. A
+gen-eral composition theorem for secure reactive
+sys-tems. In M. Naor, editor, Theory of Cryptography, TCC 2004, volume 2951 of Lecture Notes
+in Com-puter Science, pages 336-354. Springer,
+2004.
+
+{(γπi φi , γψi ) : γ ∈ Σ}
+
+i∈P
+
+×
+
+O
+
+{(γ, γσi ) : γ ∈ Σ}.
+
+i6∈P
+
+Hence the left side of Theorem 2 (i.e., ∀P ⊆ I :
+π P φP R ≈ σ P ψ P S) is equivalent to αR ≈ βS for
+all α and β with (α, β) ∈ ρ, where
+
+[
+O
+{(γπi φi , γψi ) : γ ∈ Σ}
+ρ=
+P⊆{1,...,n} i∈P
+
+[3] R. Canetti. Universally composable security: A
+new paradigm for cryptographic protocols. In
+FOCS, pages 136-145, 2001.
+[4] R. Canetti, Y. Dodis, R. Pass, and S. Walfish. Uni-versally composable security with global
+setup. In S.P.Vadhan, editor, Theory of Cryptography, TCC 2007, volume 4392 of Lecture Notes
+in Computer Science, pages 61-85. Springer,
+2007.
+
+
+×
+
+O
+
+{(γ, γσi ) : γ ∈ Σ} .
+
+i6∈P
+
+According to Lemma 1, we have ρ =
+
+Nn
+
+i=1 ρi with
+
+[5] R. Canetti and M. Fischlin. Universally composable commitments. In J. Kilian, editor, Advances
+in Cryptology-CRYPTO 2001, volume 2139 of
+Lecture Notes in Computer Science, pages 19-40.
+Springer, 2001.
+
+ρi = {(γπi φi , γψi ) : γ ∈ Σ} ∪ {(γ, γσi ) : γ ∈ Σ}.
+Let now R0 be any resource in Rφ with choice space
+A1 × · · · × An , where Σφi ⊆ Ai ⊆ Σ. We consider S 0
+in Sψ with choice space B1 × · · · × Bn , where
+
+[6] R. Canetti, O. Goldreich, and S. Halevi. The random oracle methodology, revisited (preliminary
+version). In ST OC, pages 209-218, 1998.
+
+Bi = Σψi ∪ Ai σi
+and claim that Rφ vπ Sψ . If we restrict the relation
+ρi from above to
+
+[7] S. Goldwasser, S. Micali, and C. Rackoff. The
+knowledge complexity of interactive proof systems. SIAMJ. Comput., 18(1): 186-208, 1989.
+
+ρ0i = {(γπi φi , γψi ) : γ ∈ Σ} ∪ {(γ, γσi ) : γ ∈ Ai },
+then the two conditions required by Definition 11 are
+satisfied: We have both {(γπi φi , γψi ) : γ ∈ Σ} ⊆ ρ0i ,
+and ρ0 is a CFR on the action spaces of R0 and S 0
+ρ
+such that R0 ≈ S 0 .
+¤
+
+[8] U. Maurer. Indistinguishability of random systems. In L.R.Knudsen, editor, Advances in Cryptology-EUROCRYPT 2002, volume 2332 of Lecture Notes in Computer Science, pages 110-132.
+Springer, 2002.
+
+Acknowledgments
+
+[9] U. Maurer. Abstraction in cryptography. In S.
+Halevi, editor, Advances in Cryptology-CRYPTO
+2009, volume 5677 of Lecture Notes in Computer
+Science, page 465. Springer, 2009.
+
+This work was developed, refined, and used in teaching over many years.25 Many people have given feedback. In particular, it is a pleasure to thank Joël Alwen, Zuzana Beerliova, Martin Hirt, Dennis Hofheinz,
+Christoph Lucas, Dominik Raub, Björn Tackmann,
+Stefano Tessaro, and Vassilis Zikas for very helpful
+discussions.
+
+[10] U. Maurer. Constructive cryptography-a primer.
+In R.Sion, editor, Financial Cryptography, volume 6052 of Lecture Notes in Computer Science,
+page1. Springer, 2010.
+[11] U. Maurer, R. Renner, and C. Holenstein. Indifferentiability, impossibility results on reductions,
+and applications to the random oracle methodology. In M. Naor, editor, Theory of Cryptography,
+TCC 2004, volume 2951 of Lecture Notes in Computer Science, pages 21-39. Springer, 2004.
+
+References
+[1] J. Alwen, A. Shelat, and I. Visconti. Collusionfree protocols in the mediated model. InD. Wagner, ed-itor, Advances in Cryptology-CRYPTO
+2008, vol-ume 5157 of Lecture Notes in Computer
+Science, pages 497-514. Springer, 2008.
+
+[12] U. Maurer and B. Tackmann. On the soundness
+of authenticate-then-encrypt. In ACM Conference on Computer and Communications Security,
+pages 505-515, 2010.
+
+25 Some concepts of this paper were presented in an invited
+lecture at CRYPTO 2009 [9]. A video of the talk is available at
+http://www.iacr.org/conferences/ crypto2009/videos/.
+
+16
+
+ABSTRACT CRYPTOGRAPHY
+
+α
+
+[13] B. Pfitzmann and M. Waidner. Composition and
+integrity preservation of secure reactive systems.
+In ACM Conference on Computer and Communications Security, pages 245-254, 2000.
+
+Theorem 3. A reduction {−→}α∈Γ (for component
+set Ω and constructor set Γ) is sound for step-wise
+refinement if and only if it is generally composable.
+
+[14] M. Prabhakaran and M.Rosulek. Cryptographic
+complexity of multi-party computation problems:
+Classifications and separations. In D. Wagner,
+editor, Advances in Cryptology-CRYPTO 2008,
+vol-ume 5157 of Lecture Notes in Computer Science, pages 262-279. Springer, 2008.
+
+B
+
+The following is a more detailed description of the
+argument sketched in Section 4.2, which justifies the
+ρ
+use of the relation R ≃ S. For the matter of concreteness, one may think of n parties who, in a setting
+R, interact using a given device. Each of the parties chooses a strategy ai from a set Ai of possible
+strategies. The use of the device according to these
+strategies will result in a particular effect, specified by
+R(a1 , . . . , an ). We compare this setting to an alternative setting, S, where the n parties use a different
+device. Here they can choose strategies bi ∈ Bi , and
+the effect is given by S(b1 , . . . , bn ).
+
+[15] D.Unruh and J.Müller-Quade. Universally composable incoercibility. In T.Rabin, editor, Advances in Cryptology-CRYPTO 2010, volume
+6223 of Lecture Notes in Computer Science, pages
+411-428. Springer, 2010.
+
+A
+
+Soundness of step-wise refinement
+
+Here we formalize the claim that general composability (cf. Definition 7) is sufficient for the step-wise
+refinement paradigm to work.
+
+We will now show that if the effect captures all aspects that may be relevant to any of the parties, then
+none of them would prefer one of two isomorphic settings, R or S, over the other. Our argument is by
+induction over n.
+
+For this, we think of a construction represented by
+a tree as follows. Any node v of the tree labels a
+component, called Sv , as well as, if v is not a leaf, a
+constructor, called αv . Furthermore, for any non-leaf
+node v we define the constructor αv∗ of the underlying
+tree inductively as
+½
+αv∗
+
+=
+
+id
+¡
+¢
+αv ◦ αv∗1 | · · · | αv∗d
+
+Explanation for the definition of
+isomorphism
+
+For n = 1, i.e., one single party making a choice,
+the existence of an isomorphism between R and S via
+a relation ρ = ρ1 immediately implies that equivalent effects can be reached in the two settings, i.e.,
+formally,26
+
+if v is a leaf
+otherwise.
+
+ρ
+
+R ≃ S =⇒ R(A1 ) ≃ S(B1 ).
+Since, by assumption, all relevant aspects of the setting are captured by the effect, the condition on the
+right hand side, R(A1 ) ≃ S(B1 ) is sufficient to infer that no setting is preferable over the other. This
+already concludes the argument for n = 1.
+
+We now formalize what it means for the step-wise
+refinement paradigm to work.
+α
+
+Definition 19. A reduction {−→}α∈Γ for component
+set Ω and constructor set Γ is called sound for stepwise refinement if for every tree the following holds:
+If at every node v of the tree we have
+
+For the induction step, we consider two n-choice
+settings R and S which are isomorphic via some fixed
+CFR ρ = ρ1 × · · · × ρn . Note that if the nth party
+fixes a strategy an ∈ An in setting R, one obtains the
+(n − 1)-choice setting R(· · · , an ) : A1 × · · · × An−1 →
+Ω. Hence, we can interpret R as a 1-choice setting,
+denoted
+
+α
+
+v
+Sv1 || · · · ||Svd −→
+Sv
+
+(a local property in the tree), then for the root r and
+the leaves `1 , . . . , `k we have
+α∗
+
+r
+S`1 || · · · ||S`k −→
+Sr
+
+R↓n : An → ΩAn̄ : an 7→ R(· · · , an )
+
+(a global property of the tree).
+
+(for the nth party), whose effect space ΩAn̄ is the set
+of (n − 1)-choice settings A1 × · · · × An−1 → Ω (for
+
+By induction over the tree it is straightforward to
+prove the following theorem, which ultimately justifies
+our definition of general composability (Definition 7).
+
+26 The equivalence between sets is defined such that for any
+element in one there is an equivalent element in the other.
+
+17
+
+U. MAURER, R. RENNER
+
+simply αRβ instead of α1 β 2 R.27
+
+the first n − 1 parties). Similarly, for the setting S,
+we can define a 1-choice setting S ↓1 with effect space
+ΩBn̄ := (B1 × · · · × Bn−1 ) → Ω).
+
+For a protocol π = (π1 , π2 ) we have
+
+
+π1 Rπ2≈ S 
+
+
+
+
+
+π1 R ≈ Sσ2
+∃σ1 , σ2 :
+⇐⇒ R vπ S .
+Rπ2≈ σ1 S 
+
+
+
+
+
+R ≈ σ1 Sσ2
+
+Let us now compare the (n − 1)-choice settings
+R↓n (an ) and S ↓n (bn ) that are obtained when the nth
+party makes a choice an or bn in the original settings
+R and S, respectively. By the assumption of our induction step, we already know that none of the two
+settings is preferable over the other if the two settings
+are related via a CFR ρ0 = ρ1 × · · · × ρn−1 , i.e., if
+
+The direction =⇒ follows from Theorem 2. To see
+the direction ⇐=, consider the relation ρ = ρ1 × ρ2
+guaranteed to exist according to the definition of R vπ
+ρ
+S, namely such that R ≈ S. Since ρi is complete,
+(1, αi ) ∈ ρi for some αi . Now we can let σi = αi .
+
+ρ0
+
+R↓n (an ) ≃ S ↓n (bn ) .
+Therefore, in order to show that none of R or S is
+preferable it is sufficient to verify that any choice an is
+mapped via ρn to a choice bn such that R↓n (an ) and
+S ↓n (bn ) satisfy the above condition, and vice versa,
+i.e.,
+
+If the UC framework for two parties is phrased abstractly, then one arrives at the first three equations of
+(5). Since in the UC framework, the case where both
+parties are corrupted is not considered, the fourth
+equation is not present. For n ≥ 3, the UC framework is in a strict sense a special case since it involves
+only a single simulator.
+
+ρ0
+
+∀an , bn : an ρn bn → R↓n (an ) ≃ S ↓n (bn ) .
+ρ0
+
+This corresponds to the relation R↓n (ρn / ≃) S ↓n (see
+ρ
+Eq. 1), which is equivalent to R ≃ S. We have thus
+shown that, whenever the latter relation holds for two
+n-choice settings R and S, then none of them is preferable over the other.
+
+C
+
+C.2
+
+Communication channel as a
+neutral resource
+
+We now consider a further special case where R is a
+communication channel C, which is a neutral resource.
+For example, π1 Cπ2 = π1 π2 since C only connects π1
+and π2 .
+
+The Two-party case
+
+The following appendices describe how the abstraction ideas of the framework can be used in explain
+known contexts and results. However, while here we
+stay close to the language used in the literature (e.g.
+the concept of honest and dishonest parties), later descriptions of these results in abstract cryptography my
+look quite different, focusing on the abstraction notion.
+
+C.1
+
+(5)
+
+Definition 20. A plain communication channel is the
+2-party resource C for which αCβ = αβ for all α,
+β ∈ Σ.
+Of particular interest in cryptography is the question which resources can be obtained from a communication channel, i.e., for which R we have C vπ R
+for some protocol π = (π1 , π2 ).
+
+The equations for unfiltered
+resources
+
+C.3
+
+An impossibility result
+
+We now prove a general impossibility result which
+implies, as a special case, the impossibility of realizing
+universally composable commitments from a communication channel proved originally in [5]. Note that in
+the 2-party case, a resource can also be considered as
+a converter (as in the expression SγS below).
+
+In this section we look at the special case of two
+parties (n = 2) and where only unfiltered resources
+(i.e., singleton sets) R and S are considered, i.e., where
+the guaranteed and the possible choice space are both
+Σ.
+For n = 2, one can write the algebraic expressions
+involving systems in a simple form, by considering the
+left and the right side of a resource R as the two interfaces. For example, if converter α (β) is attached
+to the first (second) interface of R, then we can write
+
+Theorem 4. If SγS 6≈ S for all γ ∈ Σ, then there
+27 For n ≥ 3 interfaces, putting the interface index as a superscripts is necessary to maintain linear expressions for composed
+systems. An alternative would be to use formulas that are not
+linear but make use of the two-dimensional plain.
+
+18
+
+ABSTRACT CRYPTOGRAPHY
+
+exists no protocol π = (π1 , π2 ) such that C vπ S.
+
+D
+
+Proof. C vπ S means that π1 π2 ≈ S and π1 ≈ Sσ2
+and π2 ≈ σ1 S for some σ1 and σ2 . Replacing π1 in
+π1 π2 ≈ S using π1 ≈ Sσ2 yields
+
+In this section we give a simple explanation of the
+theory of indifferentiability [11], as a special case of our
+abstraction notion. Indifferentiability is used today as
+a key tool for proving the soundness of hash function
+constructions.
+
+Sσ1 π2 ≈ S.
+Now replacing π2 using π2 ≈ σ1 S yields
+
+Modeling indifferentiability
+
+By R ≡ S we denote the information-theoretic
+equivalence of resources R and S [8] (i.e., R and S
+have the identical behavior).
+
+Sσ1 σ2 S ≈ S,
+which contradicts ∀γ : SγS 6≈ S (one can choose γ =
+σ1 σ2 ).
+¤
+
+Definition 21. For a 1-interface resource R, let R
+denote the 2-interface resource that behaves (identically) at both interfaces as (the same instantiation of)
+R.
+
+The commitment resource Com is defined as follows. At interface 1 one can input a value v (from a
+certain set). Then a “committed” message is output
+at interface 2. After that an “open” message can be
+input at interface 1, which causes v to be output at
+interface 2.
+
+For example, if R is a uniform random function,
+then R is a uniform random function accessible (identically) at two interfaces. Let ⊥ is the special converter that blocks access to an interface.
+
+Corollary 1. There exists no protocol π = (π1 , π2 )
+such that C vπ Com.
+
+Definition 22. A resource T is out-bound at interface
+i if ⊥i αi T ≡ ⊥i T for all α, i.e., if no converter α can
+have an effect at the other interfaces.
+
+Proof. To prove that
+Com γ Com 6≈ Com
+
+In the plain form of indifferentiability, one considers
+single resources of the type R which are out-bound (at
+both interfaces), where the first interface is modeled as
+honest and the second interface is modeled as dishonest. This allows to model a resource providing public
+randomness which is also accessible to the adversary.
+Examples of such public randomness resources are a
+public random string required for implementing a hash
+function, and a public random oracle (see below).
+
+for all γ ∈ Σ, we consider the distinguisher for resources Com γ Com and Com which commits to a
+random message and opens the message and outputs
+the bit 1 if and only if in the commitment phase the
+resource outputs “committed” and if in the opening
+phase the correct message is output.
+For the resource Com γ Com, either no message
+is committed to in the second copy of Com, or the
+message output at the opening phase is independent of
+the committed message. The distinguishing advantage
+is at least 1 − 1/k, where k is the cardinality of the
+message space of Com.
+¤
+
+In the described setting, one can show that the four
+conditions of (5) are reduced to the single condition,
+given in [11]:
+Definition 23. S is reducible to R in the sense of
+indifferentiability if
+
+A delay channel Del is a resource which takes as input a message from a domain at the first interface and,
+after a fixed time t, outputs the message at the second interface. Such a resource would be of substantial
+interest, as it would for example allow to implement
+fair exchange between two parties.
+
+πR ≈ Sσ
+for some converters π and σ.
+This definition captures both the informationtheoretic and the computational setting.
+
+Corollary 2. There exists no protocol π = (π1 , π2 )
+such that C vπ Del.
+
+We now prove an impossibility result.
+Assume that for resource R the entire randomness
+can efficiently be read out. Formally, there exists an
+efficient converter α which in a first phase interacts
+only at its inner interface and, in a second phase, only
+interacts at its outside interface, such that
+
+Proof. The following distinguisher has advantage 1 in
+distinguishing Del from DelγDel for any γ. It inputs a message and checks whether the message is
+output after time t.
+¤
+19
+
+U. MAURER, R. RENNER
+
+communication resource (e.g., an insecure channel)
+that may be partially controlled by an adversary, Eve.
+The 23 = 8 conditions of Theorem 2 can be shown to
+reduce to the following two conditions, phrased here
+for singleton specifications (no filters). (See also [12]
+for a more detailed discussion of the two conditions.)
+
+Rα ≡ R,
+i.e., α can reproduce the behavior of R after having
+read out its randomness. Let H(R) be the entropy of
+R, i.e., the entropy of the random variable passed in
+α between the first and the second phase.
+
+The first condition models availability and states
+what must be achieved if no adversary is present.
+
+Theorem 5. If one can (efficiently) extract all the
+randomness from R and one can (efficiently) extract
+(considerably) more than H(R) entropy from S, then
+S is not reducible to R in the sense of indifferentiability.
+
+π1A π2B ⊥E R ≈ ⊥E S.
+For example, if R is an insecure channel in parallel
+to a secret key, S is an authenticated channel, and π1
+and π2 are the protocol engines that append a MAC
+and check a MAC, respectively, then the above condition states that if Eve is not present, the message
+must be delivered.
+
+Proof. We need to prove that there are no π and σ
+such that
+πR ≈ Sσ.
+Let α be the converter that extracts the randomness
+from R, as described above. Then
+
+The second condition models security and states if
+Eve is present, anything she could do in the real setting she could also do in the ideal setting:
+
+πRαπ ≡ πR
+is a symmetric resource. In contrast,
+
+π1A π2B R ≈ σ E S.
+
+Sσαπ
+is not symmetric and one can easily detect this by
+reading out sufficiently much entropy at the left interface of Sσαπ and testing for equality with the corresponding output at the right interface. For πRαπ
+equality will hold while for Sσαπ it will not (with high
+probability), hence this gives a distinguisher.
+¤
+
+F
+
+In this section we briefly explain how one can model
+what encryption achieves, in a context where Alice,
+Bob, and Eve could all be potentially dishonest. This
+leads to making the coercibility of encryption explicit.
+
+A (public) random oracle is a resource with two
+interfaces which provides at both interfaces access to
+the same random function. A (public) random string
+is a resource with two interfaces which provides at
+both interfaces access to the same uniform random
+string of fixed (i.e. small) length.
+
+We consider resources with interface set I =
+{A, B, E}. The real resource specification R consists
+of a secret key and an authenticated channel from A
+to B, which is potentially accessible to E, modeled by
+a button for E which (potentially) releases the message or parts of it to E. The filters φA and φB are
+trivial (i.e., 1), and φE hides the button.
+
+The following corollary corresponds to the impossibility result of [6, 11], by considering the hash function
+as the converter π which at its inside interface reads
+a (public) hash function parameter and at its outside
+interface answers hashing queries.
+
+The ideal resource specification S consists of a secure channel from A to B, which is leakable in the
+sense that both A and B have a button they can press,
+in which case the message is (potentially) released to
+E. The filters ψA and ψB hide the corresponding buttons.28
+
+Corollary 3. A (public) random oracle is not reducible (in the sense of indifferentiability) to a (public)
+finite random string.
+
+E
+
+Encryption and leakable channels
+
+This feature is necessary to achieve the strong abstraction notion, Rφ vπ Sψ , i.e., local simulatability.
+This models the fact that Alice and Bob are coercible
+since they potentially have the possibility to leak the
+message.
+
+The Alice-Bob-Eve setting with
+honest Alice and Bob
+
+A standard cryptographic setup consists of two honest parties, Alice and Bob, connected by a certain
+
+28 Formally, also E has a button, hidden by ψ , but not disE
+cussed further here.
+
+20
+
+ABSTRACT CRYPTOGRAPHY
+
+Note that it is crucial that the buttons are filtered
+since otherwise, if the leaking feature were guaranteed, then an encryption scheme could be used as a
+commitment scheme (from A to E) which, as we saw,
+is impossible to realize from plain communication. In
+other words, the filtered resource specification models
+that the message could potentially leak, but that this
+is not guaranteed.
+Actually, S also consist of a secret key with leakage
+buttons. This is necessary for the simulation to work
+and makes explicit that in encryption, sender and receiver become potentially committed to the key they
+used (i.e., could possibly be coerced to leak it).
+We point out that the term coercibility can be used
+to interpret the feature of the specification Sψ that A
+and B have the leakage buttons. In our framework, it
+does not correspond to a new security notion.
+In view of the above it seems desirable to realize
+an unleakable channel, i.e., with no leakage buttons
+for A and B. Unfortunately this can be shown to
+be impossible. The proof is similar in spirit to the
+impossibility proof for commitments.
+Theorem 6. An unleakable secure channel cannot
+be realized from an authenticated channel and a secret
+key.
+
+21
+
+

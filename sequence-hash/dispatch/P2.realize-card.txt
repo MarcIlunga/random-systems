@@ -1,0 +1,47 @@
+STEP 0 — non-negotiable:
+1. PURE CR18 IDIOM, NOT H-technique. Systems are `PFunPDS`; distances are
+   `Δ`=`maxAdvantage`, query bounds `⌈q⌉`=`filterQueries`. `advPRF`/`advNPRF`/`Adv`
+   are H-technique — DO NOT use. No game/adversary/oracle objects.
+2. NEVER REPROVE; reuse; generalize. AUTOMATION FIRST.
+
+TASK P2.realize — Hop 0: define the SequenceMAC converter step `macStep` and prove
+that `sequenceMACReal` realizes the actual SequenceMAC function.
+File: sequence-hash/SequenceHash/RandomSystems/SequenceMACPRF.lean.
+
+CONTEXT: `sequenceMACReal := PFunPDS.applyDDC (ofStep (macStep …)) (compReal f)`,
+where `compReal` is the keyed-compression resource (`f` under a uniform chaining
+key). `macStep` is currently `sorry`. It is the compression-call-granular analogue
+of `RandomSystemsModel.sequenceHashStep` in
+sequence-hash/SequenceHash/RandomSystems/Converter.lean (whose resource evaluated a
+whole hash; here the resource is a single compression call `B → C`).
+
+SOURCE: sketch `sequence-hash/sketches/A2-sequencemac-prf.md` Hop 0; spec
+`sequencehash.md` `SequenceFunction` (F = 1); `Converter.lean`
+`sequenceHashStep`/`sequenceHashSystem_realization` (mirror the realization proof).
+
+DELIVERABLE:
+  - `macStep codec iv L digestBytes b κ hκU128 S : InputSequence → List C → B ⊕ C`
+    — the block-level schedule over compression calls: emit each native MD block of
+    the key/customization run-up (`headerI b 1 K ‖ K'` for inner, `headerO b 1 S K
+    ‖ S' ‖ K'` for outer, via `codec.blockify`) and the inner item blocks / outer
+    framing blocks as successive compression queries (`Sum.inl`), threading the
+    chaining value, and returning the final digest (`Sum.inr`). Reuse `mdIterate`/
+    `mdIterate_append`, `headerI`/`headerO`/`derive`, `encodeItems`/`encodeMSBF`,
+    `digestBytes`. NOTE: the SequenceMAC key `K` is part of the CONVERTER (the
+    construction), not the resource — the resource is only the compression `f`.
+  - a realization lemma `sequenceMACReal_realizes …` : `sequenceMACReal …` equals
+    the law-level SequenceMAC function over `compReal` — mirror
+    `sequenceHashSystem_realization` (use `PFunConverter.DDC.apply_ofStep…` /
+    `applyDDC_ofFunDist` and split MD folds with `List.foldl_append`).
+
+GUARDRAIL — FROZEN: `sequenceMAC_prf_bound` and its signature; and `macStep`'s
+signature (fill its `sorry`, don't change its type). Do not touch other files. If
+you need a signature change, STOP and report it.
+
+ACCEPTANCE: `lake build SequenceHash.RandomSystems.SequenceMACPRF` green; `macStep`
++ realization axiom-clean; no new `advPRF`/`advNPRF`/`Adv`/game objects; goal
+statement byte-identical; reused Converter/MDHash idiom (no reproof). This is a
+hard construction — if you cannot fully realize it, leave `sorry` ONLY inside
+`macStep`/its realization and REPORT precisely what remains and why.
+
+Report: the `macStep` definition, the realization lemma, reused defs, residuals.

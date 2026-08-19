@@ -1,0 +1,50 @@
+TASK P4-badmass-leaves — discharge the 4 TRACTABLE named leaves of `h_badmass` (`h_primHit`,
+`h_singleColl`, `h_key`, `h_derive`), leaving `sequenceGraphBad_equalTop` as the SOLE residual, then add
+`sequenceMAC_generic_prf_tight_final`. Sorry-free, additive, whole-repo green. NEVER discharge or `sorry`
+the equal-top corner — it stays a NAMED residual.
+
+The leaves (`SequenceMACGenericCount.lean:299–` ): each is `∀ E respecting, probBad
+(sequenceFunctionICIdealExtension …) (sub-event) ≤ term`. The ideal extension's compression outputs are
+UNIFORM (URF over the compression range), which drives every counting leaf.
+
+DISCHARGE:
+1. `h_primHit` (`SequencePrimHitMassBound`) ≤ `pqλ/2^c`: each of the ≤ p·q·λ construction compression
+   calls has a fresh-UNIFORM chaining state (cardinality `2^c`), so its mass of equalling a FIXED prior
+   `Prim` input is ≤ `1/2^c`; union over the ≤ p·q·λ (call, prim) pairs. Reuse the uniform-mass single-
+   charge `1/2^c` leaf (mirror CBC `mass_chargedEvent_le`, `CBCStructureGraph.lean:759`) + `Counting`/
+   `pairCollisionUnionBound`. Establish the `2^c` cardinality (relate the chaining-state / digest space's
+   `Fintype.card` to `2^c`; grep the model for the state bit-width `c` — add a public cardinality lemma if
+   missing).
+2. `h_singleColl` (`SequenceSingleCollMassBound`) ≤ `C(q,2)(λ+2)/2^c`: single construction collision —
+   the same uniform single-charge leaf, C(q,2) eval-pairs × (λ+2)/2^c.
+3. `h_key` (`SequenceKeyMassBound`) ≤ `B_key` via `KeyPointMassBound` (`hkey`): raw-key repeat
+   (`C(users,2)/2^{κ*}`) + secret-bearing input guessing (`2·users·p/2^{κ*}`). If the codec-level
+   secret-site injection is missing (the skeleton flagged `MDCodec does not yet expose the call-site
+   injection`), ADD the minimal PUBLIC, reusable exposure needed — do NOT hack around it, do NOT `private`.
+4. `h_derive` (`SequenceDeriveMassBound`) ≤ `deriveCostGeneric …` via `SequenceFunctionTraceBound`
+   (`htrace`); target is `0` for `rK = rS = 0` (reuse `deriveCostGeneric_zero`).
+
+THEN: add `sequenceMAC_generic_prf_tight_final` = `sequenceMAC_generic_prf_tight_norm` with `h_badmass`
+replaced by `sequenceFunction_badmass_of_named_leaves` (`SequenceMACGenericCount.lean:507`) fed the 4
+discharged leaves + `sequenceGraphBad_equalTop` as the SINGLE named residual. Do NOT modify `_norm`/`_tight`.
+
+*** VALVE: if a leaf needs substantial model-plumbing (the codec secret-site for `h_key`, or the
+`digest = 2^c` cardinality), STOP after the leaves you discharged + report which remain + the precise
+plumbing. NEVER `sorry`. Do NOT add `_final` until ALL 4 tractable leaves are discharged (only then is
+equal-top the sole residual — the skeleton correctly refused a premature `_final`). ***
+
+READ: `SequenceMACGenericCount.lean` (the 5 leaf defs, `sequenceFunctionICIdealExtension`, the covers,
+`sequenceFunction_badmass_of_named_leaves`), the ideal extension/reveal defs
+(`sequenceFunctionICIdeal*`), `KeyPointMassBound`/`SequenceFunctionTraceBound`, the compression model's
+state/digest cardinality, `CBCStructureGraph.lean:759/833` (single-charge leaf template), `Counting.lean`,
+`Distinguishing.lean` (`pairCollisionUnionBound`), CHEATSHEET.md (repo root, uniform-mass/birthday facts).
+
+ADDITIVE: extend `SequenceMACGenericCount.lean` (+ `SequenceMACGeneric.lean` for `_final`). Do NOT modify
+the bridge, normalization, eq-on-good, facade, R1–R6, or the existing headlines.
+
+ACCEPTANCE: whole-repo `lake build RandomSystems RandomSystemsCC SequenceHash` green; axiom-clean
+{propext, Classical.choice, Quot.sound} (NO `sorryAx`); sorry-free; NO `private`; the 4 tractable leaves
+discharged (or valved with a precise report); `sequenceGraphBad_equalTop` remains the SOLE named residual
+of `_final` (if added). Report: each leaf's discharge (proof + reuse) or valve reason, any public model
+exposure added, the `2^c` cardinality lemma, the `_final` headline + confirmation equal-top is its only
+residual, reuse map, axiom line.

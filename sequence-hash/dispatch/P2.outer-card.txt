@@ -1,0 +1,40 @@
+STEP 0 — non-negotiable:
+1. PURE CR18 idiom: `PFunPDS`, `Δ`=`maxAdvantage`, `⌈q⌉`=`filterQueries`.
+   `advPRF`/`advNPRF`/`Adv` are H-technique — DO NOT use. No game/adversary/oracle
+   objects.
+2. NO GUESSWORK — follow Gaži 2014 (`2014-578.pdf`) §3.1 exactly.
+3. NEVER REPROVE; reuse framework DPI / collision / birthday lemmas.
+
+TASK P2.outer — discharge the final two Theorem-1 `sorry`s in
+  sequence-hash/SequenceHash/RandomSystems/SequenceMACPRF.lean, completing
+  `nmac_prf_bound` (Prop. 1 is already proven):
+  - `gazi_outer_prf_hop` — §3.1: replace the outer call `f_{K₂}` by the URF `r`,
+    the `+ Δ(⌈q⌉ f_K, ⌈q⌉ r)` term (randomized-converter DPI / converter
+    monotonicity, exactly like the CBCMAC round-function substitution).
+  - `gazi_outer_random_collision_bound` — §3.1 condition C, Eq. (2): on the
+    no-inner-collision event the random-outer world equals the VIL URF; the
+    collision probability is bounded by the prefix-free birthday term `q²/|C|`
+    (collision tester + birthday), à la CBCMAC's `cbc_mac_randomness_expander`.
+
+SOURCE: Gaži 2014 §3.1 (read the outer-substitution and condition-C / Eq. (2)
+paragraphs verbatim); mirror `RandomSystems/CBCMAC.lean`
+(`cbc_mac_randomness_expander`, `blindMaxWinProb`, `pairCollisionUnionBound`,
+`bday`, `PrefixFree`) for the collision/birthday half.
+
+REUSE (search + confirm): `AbsorbDPI.maxAdvantage_filterQueries_applyDDC_le`,
+`maxAdvantage_triangle`, `CBCMAC` birthday/collision machinery (`bday`,
+`bday_mono`, `pairCollisionUnionBound(_le_birthday)`, `PrefixFree`),
+`Distinguishing.maxAdvantage`. Generalize, don't duplicate.
+
+GUARDRAIL: `nmac_prf_bound`/`sequenceMAC_prf_bound` and both lemma STATEMENTS are
+frozen — fill only their `sorry`s. Leave the final `sequenceMAC_prf_bound` triangle
+untouched. If a statement is wrong/unprovable as stated, STOP + report.
+
+ACCEPTANCE: `lake build SequenceHash.RandomSystems.SequenceMACPRF` green; both
+lemmas axiom-clean (`propext`/`Classical.choice`/`Quot.sound`, no `sorryAx`);
+`nmac_prf_bound` then fully closes (its only remaining dependency was these two);
+pure `Δ`, no advPRF/advNPRF/Adv/game. If the birthday half can't fully close,
+leave `sorry` only at the single collision-counting step and report the Gaži eq.
+
+Report: how each was proved, reused lemmas, residuals (with Gaži refs), and
+confirm whether `nmac_prf_bound` is now sorry-free.

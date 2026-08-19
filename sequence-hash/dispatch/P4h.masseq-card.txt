@@ -1,0 +1,45 @@
+TASK P4h.masseq — R4 step 3 FINAL piece: prove the per-transcript MASS EQUALITY that the filtered
+endpoint consumes, then package the R4 equality-on-good. Everything around it is DONE (3a freshness,
+3b reveal maps + per-call reduction, 3c the `Filt`-premised endpoint). Sorry-free. NO `B_SEQ`/
+`h_badmass`/final theorem (step 4).
+
+GOAL: prove, for budget-respecting good transcripts,
+  `SequenceFunctionTaggedBudgetRespects … tz.1 → ¬ Bad_SEQ tz →
+     extFixedQueryTranscriptDistRep realP realF realReveal xs tz
+       = extFixedQueryTranscriptDistRep idealP idealF idealReveal xs tz`
+and feed it to `adv_le_of_extFixedQueryRep_eq_on_good_filtered_of_filter`
+(`RandomSystems/HTechnique/IdealCompression.lean:378`) to obtain the R4 equality-on-good lemma.
+
+THE ARGUMENT (CBC `condEquiv` per-transcript identity, adapted — everything needed exists):
+- Off `Bad_SEQ`, every construction compression call is FRESH:
+  `sequenceFunctionFreshCompressionValues_uniform` (3a) gives fresh outputs jointly uniform+independent.
+- The reveal maps agree on all HONEST (non-terminal) entries and only the TERMINAL entry is
+  programmed: `sequenceFunctionProgrammedTrace_call_reduction` + `..._final_output` (3b).
+- So the real terminal value (fresh uniform) and the ideal programmed value (independent uniform)
+  are equal in distribution ⇒ the extended transcript masses coincide.
+This is EXACTLY `condEquiv_of_transcript_mass_reductions` (CBCStructureGraph.lean) — adapt its
+reduction chain; do NOT reprove the mass-identity engine.
+
+READ FIRST: `SequenceMACGenericFiberMass.lean` (3b reveal maps + reductions),
+`SequenceMACGenericFiber.lean` (3a freshness/uniform), `IdealCompression.lean:378` (the endpoint +
+its EXACT premise shape), `CBCStructureGraph.lean` (`condEquiv_of_transcript_mass_reductions`).
+
+ADDITIVE: extend `SequenceMACGenericFiberMass.lean`. Do NOT modify 3a, the facade endpoints,
+steps 1–2, or R1–R6.
+
+DELIVER (sorry-free):
+1. The honest-prefix mass agreement (non-terminal entries identical real vs ideal).
+2. The terminal-entry uniform/programmed value equality (fresh ⇒ real value distributes as the ideal
+   independent reply).
+3. Their composition = the per-transcript mass equality above.
+4. Package via `adv_le_of_extFixedQueryRep_eq_on_good_filtered_of_filter` ⇒ the named R4
+   equality-on-good lemma (ε_ratio = 0 on budget-respecting good transcripts).
+
+ACCEPTANCE: whole-repo `lake build` green; axiom-clean {propext, Classical.choice, Quot.sound};
+sorry-free / axiom-free / no `private`; additive; reuse 3a + 3b + CBC `condEquiv_of_transcript_mass_reductions`
++ the endpoint by name; the R4 equality-on-good lemma is now PROVEN. NO `B_SEQ`/`h_badmass`/final
+theorem. Report: the mass-equality lemma, the packaged R4 eq-on-good lemma, which CBC lemma was the
+engine, reuse map, axiom line, and confirm step 4 is the ONLY remaining R4-spine work.
+
+*** VALVE: if the terminal-entry reduction is too large, STOP after item 1 (honest-prefix agreement)
+sorry-free + report the remaining terminal step. Never leave a `sorry`. ***

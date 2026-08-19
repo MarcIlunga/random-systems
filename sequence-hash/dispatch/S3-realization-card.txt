@@ -1,0 +1,52 @@
+STEP 0 — non-negotiable:
+1. NO GUESSWORK — follow the C2SP construction (sequencehash.md) and our proven
+   block-level theorem EXACTLY. This is a WRITING task: produce a pen-and-paper
+   sketch; NO Lean, NO file edits except writing the sketch markdown.
+2. PURE CR18 idiom (PFunPDS / Δ / ⌈q⌉); advPRF/advNPRF/Adv are H-technique —
+   excluded. No game/adversary/oracle objects. No `private`.
+
+TASK S3 — sketch how the LITERAL SequenceHash (over InputSequence) connects to
+the already-proven generic block-level theorem.
+
+PROVEN (frozen, block-level): in
+  sequence-hash/SequenceHash/RandomSystems/SequenceMACPRF.lean,
+  `sequenceMAC_prf_bound` : Δ(⌈q⌉ sequenceMACReal, ⌈q⌉ macIdeal) ≤ ε_KS
+     + Δ(⌈q⌉ f_K, ⌈q⌉ r) + (ℓ+1)q·ε_na + q²/|C|,
+  where the systems are over abstract `BlockString B ℓ` (block-lists) with
+  `f : C → B → C`. This is Gaži-faithful but NOT yet about the concrete
+  SequenceHash construction.
+
+GOAL of the sketch: how does the CONCRETE SequenceHash — over `InputSequence`,
+using `Spec.headerI/headerO/derive`, `Encoding.encodeItems`, customization `S`,
+`H = MD[f]` — instantiate / reduce to the block-level theorem? Cover, following
+the spec (sequencehash.md) precisely and citing it:
+  (a) The concrete real system over `InputSequence` (the `Converter.lean`
+      `sequenceHashStep`/`sequenceHashSystem` realization, keyed, F=1).
+  (b) The InputSequence→blocks map: `M ↦ blockify(headerI ‖ K' ‖ encodeItems(M))`
+      etc.; how a concrete query becomes a `BlockString`.
+  (c) PREFIX-FREENESS: discharge it from `encodeItems_injective` + the outer
+      framing (item count `MSBF(n)`, length `MSBF(L)`) + the double-hash envelope
+      — NOT by assuming `MDCodec.blockify_prefixFree`. The spec (line 20) says
+      SequenceHash is safe "even when the underlying hash [is length-extendable]",
+      so the prefix-free/unambiguity side-condition must come from SequenceHash's
+      OWN encoding. State precisely which lemma discharges it.
+  (d) `ε_KS` for the CONCRETE key schedule: the distinct run-ups `headerI` vs
+      `headerO` + one `Derive(K)` give independent inner/outer keys under ORDINARY
+      compression PRF (no RKA) — as a Δ between the concrete system and the
+      independent-key `nmacReal`. And the HMAC-envelope→NMAC step (the outer is a
+      short cascade, not a single call): absorb the fixed outer tail.
+  (e) The resulting CONCRETE theorem statement `sequenceHash_prf_bound` over
+      `InputSequence` (the guardrail we will freeze), and its proof plan (which
+      reuses `sequenceMAC_prf_bound` + the realization + the discharges).
+  (f) Reuse-vs-new map (cite existing lemmas: `sequenceMAC_prf_bound`,
+      `encodeItems_injective`, `Converter.sequenceHashSystem_realization`,
+      `mdIterate_append`, …). Flag anything genuinely new.
+
+Be explicit about what is DISCHARGED (proven from the encoding) vs ASSUMED.
+Note any place where the concrete construction does NOT cleanly reduce to Gaži's
+block model, and how to handle it faithfully.
+
+OUTPUT: write the full sketch to
+  sequence-hash/sketches/A3-sequencehash-realization.md
+Use `$$…$$` / `$…$` math. In your final message, summarize the concrete theorem
+statement, the prefix-free discharge, and the reuse-vs-new split.

@@ -1,0 +1,4 @@
+{
+  "known_orphans": {},
+  "note": "Modules reachable from NO declared lean_lib target, so compiled by no build. The 2026-07-27 classification (application / legacy-bridge / foundation-unwired) is resolved: applications live in lean_lib RandomSystemsApplications, legacy bridges in lean_lib RandomSystemsLegacyBridge, and the foundation-unwired modules are imported by RandomSystems.lean. Anything listed here is NEW debt: classify it or wire it."
+}

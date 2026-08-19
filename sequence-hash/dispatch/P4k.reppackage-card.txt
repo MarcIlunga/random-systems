@@ -1,0 +1,40 @@
+TASK P4k.reppackage — R4 step 3 FINAL plumbing: apply the PROVEN fiber-card to the extended
+representative mass and package the R4 equality-on-good. Sorry-free. NO `B_SEQ`/`h_badmass`/final
+theorem (step 4).
+
+ALREADY PROVEN (reuse by name): `sequenceFunction_fiber_card` +
+`sequenceFunction_fiber_card_of_not_Bad_SEQ` (the fiber-cardinality factorization);
+`sequenceFunctionTerminalShift` + `_state`/`_compose`/`_zero`; 3a freshness
+(`sequenceFunctionConstructionCall_fresh_of_not_Bad_SEQ`, `..._uniform`); 3b reveal maps +
+`sequenceFunctionProgrammedTrace_call_reduction`/`_final_output`; the honest-prefix agreement.
+The COMBINATORIAL CRUX IS DONE — this task is the H-technique representative plumbing only.
+
+DELIVER (your own remaining 4, sorry-free):
+1. The terminal-free representative skeleton, with prefix/terminal disjointness derived DIRECTLY from
+   the global construction `Nodup` (`Bad_SEQ` freshness, 3a) — no new DomainSeparation theorem.
+2. Apply `sequenceFunction_fiber_card_of_not_Bad_SEQ` to `extFixedQueryTranscriptDistRep`.
+3. The DIRECT real/ideal representative-mass equality (using 1–2 + the shift uniformity):
+     `SequenceFunctionTaggedBudgetRespects … tz.1 → ¬ Bad_SEQ tz →
+        extFixedQueryTranscriptDistRep realP realF realReveal xs tz
+          = extFixedQueryTranscriptDistRep idealP idealF idealReveal xs tz`
+   — the fresh terminal value's uniformity gives the terminal factor; the honest prefix agrees. NO
+   game, NO `condEquiv`, NO `|≡`.
+4. Package via `adv_le_of_extFixedQueryRep_eq_on_good_filtered_of_filter`
+   (`IdealCompression.lean:378`) ⇒ the named R4 equality-on-good lemma. After this, step 4 IS the
+   only remaining R4-spine work.
+
+READ FIRST: `SequenceMACGenericFiberMass.lean` (fiber-card + shift + reveal/reduction);
+`IdealCompression.lean:378` (the endpoint + the exact `extFixedQueryTranscriptDistRep` premise shape);
+`SequenceMACGenericFiber.lean` (3a).
+
+ADDITIVE: extend `SequenceMACGenericFiberMass.lean`. Do NOT modify 3a, the facade, steps 1–2, R1–R6.
+
+ACCEPTANCE: whole-repo `lake build` green; axiom-clean {propext, Classical.choice, Quot.sound};
+sorry-free / axiom-free / no `private` / no games / no `condEquiv`; additive; reuse the fiber-card +
+shift + 3a/3b + endpoint by name; the R4 equality-on-good lemma is PROVEN. NO `B_SEQ`/`h_badmass`/
+final theorem. Report: skeleton + disjointness, the representative application, the direct mass-eq,
+the packaged eq-on-good lemma, reuse map, axiom line, and confirm step 4 is the ONLY remaining
+R4-spine work.
+
+*** VALVE: if the representative application is large, STOP after the skeleton + disjointness (1)
+sorry-free + report the remaining plan. Never leave a `sorry`. ***

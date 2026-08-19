@@ -1,0 +1,53 @@
+TASK P4m.coordexch — prove the named FRAMEWORK lemma, then CLOSE the R4 equality-on-good with it.
+Two parts. Sorry-free. NO `B_SEQ`/`h_badmass`/final theorem (step 4).
+
+PART A — the framework lemma (generic, reusable). Add it PUBLIC to a framework file
+(`RandomSystems/Counting.lean` or `RandomSystems/Dist.lean` if it fits the generic mass API there;
+otherwise `RandomSystems/HTechnique/Derivation.lean`). This is a general product-uniform
+coordinate-exchange fact — NOT SequenceHash-specific — so it must be reusable, not a scheme helper:
+
+```lean
+theorem Dist.mass_prod_uniform_coordinate_exchange
+    [Fintype F] [Nonempty F] [Fintype K] [Nonempty K]
+    [Fintype G] [Nonempty G] [Fintype A] [Nonempty A]
+    (DK : Dist K) (R : F → K → Prop) (I : F → K → G → Prop) (P : K → F → Prop)
+    (coordF : F → A) (coordG : G → A) (a : A)
+    (hR : ∀ f k, R f k ↔ coordF f = a ∧ P k f)
+    (hI : ∀ f k g, I f k g ↔ coordG g = a ∧ P k f)
+    (hF : ∀ k, (Finset.univ.filter fun f => coordF f = a ∧ P k f).card * Fintype.card A
+              = (Finset.univ.filter fun f => P k f).card)
+    (hG : (Finset.univ.filter fun g => coordG g = a).card * Fintype.card A = Fintype.card G) :
+    (Dist.prod (Dist.uniform F) DK).mass (fun fk => R fk.1 fk.2)
+      = (Dist.prod (Dist.uniform F) (Dist.prod DK (Dist.uniform G))).mass
+          (fun fkg => I fkg.1 fkg.2.1 fkg.2.2)
+```
+
+Proof is pure counting: both sides = `(1/|F|) · Σ_k DK(k) · |{f : P k f}| / |A|`, using `hF` on the
+left (real coordinate fixed to `a` uniform among `P`-good `f`) and `hG` on the right (ideal
+coordinate `= a` with prob `1/|A|`, `f` free among `P`). Reuse the existing uniform/prod mass API
+(`Dist.mass_prod_*`, `Dist.uniform`, `uniform_mass_eq_mass_mul_mass_of_card_mul_eq` where applicable);
+do NOT reprove basic mass facts.
+
+PART B — CLOSE R4 equality-on-good using Part A. Instantiate `Dist.mass_prod_uniform_coordinate_exchange`
+with: F = the real terminal compression coordinate space, K = the key law carrier, G = the
+independent ideal-function coordinate space, A = the shared output type; `hF` = the proven
+`sequenceFunction_fiber_card_of_not_Bad_SEQ`; `hG` = the ideal terminal coordinate uniformity; `P` =
+`Bad_SEQ`-free predicate; the skeleton shift-invariance (`sequenceFunctionTerminalFreeSkeleton_terminalShift`,
+already proven) supplies the honest-prefix agreement. Derive the DIRECT representative-mass equality
+  `SequenceFunctionTaggedBudgetRespects … tz.1 → ¬ Bad_SEQ tz →
+     extFixedQueryTranscriptDistRep realP realF realReveal xs tz
+       = extFixedQueryTranscriptDistRep idealP idealF idealReveal xs tz`
+and PACKAGE it via `adv_le_of_extFixedQueryRep_eq_on_good_filtered_of_filter`
+(`IdealCompression.lean:378`) ⇒ the FINAL named R4 equality-on-good lemma.
+
+READ: `SequenceMACGenericFiberMass.lean` (all the proven fiber/shift/skeleton lemmas),
+`IdealCompression.lean:378` (endpoint), the framework mass API you extend.
+
+ADDITIVE: Part A in the framework file (public, reusable, non-breaking); Part B extends
+`SequenceMACGenericFiberMass.lean`. Do NOT modify 3a, the facade endpoints, steps 1–2, R1–R6.
+
+ACCEPTANCE: whole-repo `lake build` green; axiom-clean {propext, Classical.choice, Quot.sound};
+sorry-free / axiom-free / no `private` / no games / no `condEquiv`; Part A is generic + reusable (not
+scheme-local); the FINAL R4 equality-on-good lemma is PROVEN and packaged. NO `B_SEQ`/`h_badmass`/
+final theorem. Report: the framework lemma's home, the closed R4 eq-on-good lemma name, reuse map,
+axiom line, and confirm step 4 is now the ONLY remaining R4-spine work.

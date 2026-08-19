@@ -1,0 +1,52 @@
+STEP 0 — DO THIS BEFORE ANYTHING (non-negotiable):
+1. KNOW THE FRAMEWORK. RandomSystems is an algebraic framework instantiating
+   AbstractCrypto (../abstract-crypto). It has the high-level theorems. Read the
+   relevant surface; do not re-derive framework facts.
+2. NEVER REPROVE. Search first (grep + lean_local_search/loogle/leansearch +
+   #check). Reuse what exists. If a fact is not SequenceHash-specific, GENERALIZE
+   in place — never a specialized copy. Never prove the same thing twice.
+3. AUTOMATION FIRST. Use custom tactics (cr18_*, etc.) + grind/bound/gcongr/omega.
+   Pen-and-paper-feel proofs; no hand-rolled bookkeeping a tactic does.
+
+TASK P2.obj — R2 objects, part 1: the Merkle–Damgård model + compression system.
+Result R2. Depends: the accepted A2 sketch.
+
+GOAL: replace the stub definitions for the MD model and the compression system
+with real, faithful definitions, following the A2 sketch §(a). Do NOT define the
+construction-specific systems yet (sequenceMACSystem / framedNMACSystem / epsKS /
+omegaS stay as stubs — that is the next task).
+
+SOURCE: the accepted sketch
+  sequence-hash/sketches/A2-sequencemac-prf.md  §(a) "MD and compression model".
+Build the MD model DIRECTLY and self-contained: `mdIterate` in `MDHash.lean` is
+already `List.foldl`; the block-append/threading law is `List.foldl_append`
+(REUSE it, do not reprove). DO NOT base the model on the legacy Boneh–Shoup
+cascade (`BonehShoupCascade.lean`, `cascadeEval`) — it is NOT relevant to this
+work; ignore the sketch's reference to it.
+
+GUARDRAIL — FROZEN, do not touch:
+  sequence-hash/SequenceHash/RandomSystems/SequenceMACPRF.lean ::
+  `sequenceMAC_prf_bound` (the `-- GUARDRAIL` R2 goal theorem). Do not change its
+  statement, name, or type. Its `compSystem` reference must keep type-checking.
+
+DELIVERABLE:
+  - `MDHash.lean`: add the MD model per sketch §(a) — an abstract block type and
+    `blockify` with the codec laws stated as the sketch lists them (full-block
+    output, block-boundary split commutes with iteration), `MD[f]`, and the
+    block-append/threading law (this is `List.foldl_append` — REUSE it, do not
+    reprove). Relate to / generalize `cascadeEval` where possible.
+  - `SequenceMACPRF.lean`: replace the `compSystem` stub with the real keyed
+    compression system (per sketch §(a): `functionEvaluator (Dist.uniform C)
+    (fun k m => f k m)` giving `ProbPDS B C`). Leave the other four stubs.
+
+ACCEPTANCE (I will check all):
+  - `lake build SequenceHash.RandomSystems.MDHash` and
+    `lake build SequenceHash.RandomSystems.SequenceMACPRF` both green.
+  - New/changed defs axiom-clean (no new `axiom`; `sorry` only on the four
+    remaining stubs and the goal theorem).
+  - `sequenceMAC_prf_bound` statement byte-identical.
+  - You reused `List.foldl_append` (not a hand-rolled proof); did NOT pull in the
+    Boneh–Shoup cascade; no fluff.
+
+In your final message, report: what you reused vs. generalized vs. added, and any
+codec-law hypotheses you introduced.

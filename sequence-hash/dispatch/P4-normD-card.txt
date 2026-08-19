@@ -1,0 +1,57 @@
+TASK P4-normD — FINISH h_norm: the advantage domination + the generic normalization lemma + the DISCHARGE.
+All transforms are built (`suppressViolating`, `padRespecting`) with their structural properties. This is
+the final closing dispatch. Sorry-free, additive, whole-repo green.
+
+DONE + REUSE BY NAME:
+- `RandomSystems/FilterDomNormalization.lean`: `suppressViolating` + `advantage_suppressViolating_eq_filterDom`
+  (⟹ `advantage D (filterDom P S) (filterDom P T) = advantage (fTransform (suppressViolating P) D) S T`);
+  `padRespecting` (needs `h0 : P []`), `queriesExactly_ddToDDE_padRespecting`.
+- `distinguisherRespects_padRespecting` (`Derivation.lean:1707`).
+- `QExtensible`/`QBounded`/`PrefixClosed` (`PFunDDS.lean`); `budgetHist_prefixClosed`,
+  `budgetHist_qExtensible` (needs `0<users`), `budgetHist_qBounded`, `budgetHist_nil`;
+  `sequenceFunctionICReal/Ideal_totalOnNonempty`.
+
+DELIVER (codex's own precise plan, sorry-free):
+1. REPLAY INVARIANT: align `suppressViolating`'s admitted-query state with `padRespecting`'s state — padding
+   never replaces a suppressed query; the padded run's first `q`-and-fewer admitted queries reproduce the
+   suppressed run.
+2. STOP-BY-q: using `QBounded`, the suppressed distinguisher stops by query `q` (another admitted query would
+   make a P-history of length `q+1`, contradicting `QBounded`). So `padRespecting` only APPENDS respecting
+   queries to a run already ≤ q, reaching exactly q.
+3. VERDICT EQUIVALENCE (deterministic, vs TOTAL systems): the padded distinguisher's verdict against base
+   `S`/`T` equals the suppressed distinguisher's verdict — the appended respecting queries are answered by
+   the total base systems and do not change the verdict (they occur AFTER the decision-relevant prefix, or
+   the verdict is read at the end; make this precise). Lift to `winProb`/`verdictProb` via
+   `winProb_fTransform_left/right` + `winProb_congr_support`, preserving mass through `fTransform`.
+4. ADVANTAGE DOMINATION + THE GENERIC LEMMA:
+   `advantage (fTransform (suppressViolating P) D) S T
+      ≤ advantage (fTransform (padRespecting … ∘ suppressViolating P) D) S T`
+   (from 3, the padded advantage equals or dominates), then
+     `deltaFilterDomFiniteQueryNormalization_of_extensible` (near `GameOf.lean:1203`):
+       `PrefixClosed P → QExtensible P q → QBounded P q → P [] → TotalOnNonempty S → TotalOnNonempty T →
+           DeltaFilterDomFiniteQueryNormalization P hP q S T`
+   via the witness `D' := fTransform (padRespecting … ∘ suppressViolating P) D` (exactly-q by 2 +
+   `queriesExactly_ddToDDE_padRespecting`; `DistinguisherRespects P` by `distinguisherRespects_padRespecting`;
+   advantage domination by Step-1 equality + this). Keep `deltaFilteredFiniteQueryNormalization_of_totalOnNonempty`
+   (:1203) green.
+5. DISCHARGE: add `sequenceMAC_generic_prf_tight_norm` — the headline with `h_norm` REPLACED by
+   `deltaFilterDomFiniteQueryNormalization_of_extensible` instantiated with `budgetHist_prefixClosed`,
+   `budgetHist_qExtensible`, `budgetHist_qBounded`, `budgetHist_nil`, and the two `..._totalOnNonempty`.
+   ADD the hypothesis `0 < users` (required by `budgetHist_qExtensible`). Only `h_badmass` remains a
+   hypothesis. Do NOT modify the existing `sequenceMAC_generic_prf_tight`.
+
+*** VALVE: if the verdict-equivalence/domination (3–4) genuinely resists, STOP after the replay invariant +
+stop-by-q (1–2) green + the precise remaining equality. NEVER sorry. ***
+
+READ: `FilterDomNormalization.lean` (all Step-1/2 lemmas + the replay/`absorbGo` discipline),
+`GameOf.lean:1175–1260` (`padDDD` advantage domination `advantage_padDDDDist_*`, `winProb_*`),
+`Derivation.lean:1700–1722`, `SequenceMACGeneric.lean` (the headline), CHEATSHEET.md (repo root).
+
+ADDITIVE: extend `FilterDomNormalization.lean` / the framework + `SequenceMACGeneric.lean`. Do NOT modify
+the bridge, eq-on-good, facade, R1–R6, the existing headline, or the built suppression/padding lemmas.
+
+ACCEPTANCE: whole-repo `lake build RandomSystems RandomSystemsCC SequenceHash` green; axiom-clean
+{propext, Classical.choice, Quot.sound}; sorry-free; NO `private`; count-filter normalization preserved;
+`sequenceMAC_generic_prf_tight_norm` PROVEN (only `h_badmass` remains), unless valved. Report: the replay
+invariant, stop-by-q, verdict equivalence, domination, the generic lemma, the discharged `_norm` headline
+(or valve + the precise remaining equality), reuse map, axiom line. This CLOSES R4's `h_norm`.

@@ -1,0 +1,61 @@
+STEP 0 — non-negotiable:
+1. PDS, PURE RANDOM SYSTEM — the Gaži proof is NOT H-technique. `advPRF`,
+   `advNPRF`, and `Adv` live in `HTechnique/*` and ARE H-technique tools —
+   DO NOT USE THEM. Use ONLY the pure CR18 distinguishing advantage:
+   `Δ(S, T)` = `maxAdvantage` and `⌈q⌉ G` = `PFunPDS.filterQueries q G`.
+2. Mirror the CBCMAC security theorem shape EXACTLY:
+   `RandomSystems/CBCMAC.lean :: cbc_mac_randomness_expander` —
+   `Δ(⌈q⌉ cbcReal bf, ⌈q⌉ Vn) ≤ bound`, with systems `PFunPDS` and the ideal
+   `Vn = PFunPDS.URF`, the real `cbcReal = PFunPDS.applyDDC (ofStep cbcStep) 𝖱`.
+3. NEVER REPROVE; reuse; generalize. AUTOMATION FIRST.
+
+TASK P2.reshape — RE-STATE the R2 goal in the CBCMAC idiom. This SUPERSEDES the
+current `advPRF`/`ProbPDS` version in
+  sequence-hash/SequenceHash/RandomSystems/SequenceMACPRF.lean
+Rewrite that file so the systems are `PFunPDS` and the goal is a `Δ(⌈q⌉·,⌈q⌉·)`
+bound. No `advPRF`/`advNPRF`/`Adv`, no game/adversary objects.
+
+SYSTEMS (all `PFunPDS`, mirroring `cbcReal`/`Vn`):
+  - `compReal (f) : PFunPDS B C` — the keyed compression `f` under a uniform
+    chaining-input key, as a PFunPDS (use the PFunPDS-level `ofFunDist` /
+    function-evaluator, NOT `PFunPDS.Prob.functionEvaluator`).
+  - `compIdeal : PFunPDS B C := PFunPDS.URF` (the `𝖱` analogue).
+  - `sequenceMACReal codec iv L digestBytes b κ hκU128 S f : PFunPDS InputSequence C`
+    — the SequenceMAC schedule as `PFunPDS.applyDDC (ofStep macStep) (compReal f)`.
+    REUSE / adapt `Converter.lean`'s `sequenceHashStep` / `sequenceHashSystem`
+    (the 2/3-call schedule) for the keyed MAC (headers carry `K`, F = 1).
+  - `framedNMACReal … : PFunPDS InputSequence C` — the independent-key framed
+    version (Hop 1).
+  - `macIdeal : PFunPDS InputSequence C := PFunPDS.URF` (the `Vn` analogue).
+
+BOUND TERMS (all pure `Δ`):
+  - `epsKS … : ℝ := Δ(⌈q⌉ sequenceMACReal …, ⌈q⌉ framedNMACReal …)`  (Δ, not Adv).
+  - `omegaS` : the long-`S` Δ-term — stub OK.
+
+GOAL THEOREM `sequenceMAC_prf_bound` (keep this NAME; state it in CBCMAC shape):
+  Δ(⌈q⌉ sequenceMACReal …, ⌈q⌉ macIdeal)
+    ≤ epsKS …
+      + Δ(⌈q · (ℓ+1)⌉ compReal f, ⌈q · (ℓ+1)⌉ compIdeal)   -- compression PRF, Δ shape
+      + ((q ^ 2 : ℕ) : ℝ) / (Fintype.card C : ℝ)
+      + δ_S            -- 0 if |S| ≤ b else ω_S
+  Adapt the Gaži bound faithfully to the pure-Δ / query-budget idiom (the
+  compression-PRF term is a single `Δ` over the compression with the cascade's
+  query budget `q·(ℓ+1)`, exactly as CBCMAC folds the round-function calls into
+  the DPI budget `q·L`). If the precise budget/shape differs, use what the
+  CBCMAC-style DPI accounting dictates and REPORT it.
+
+BUILD: the file must compile green; the GOAL statement must fully elaborate.
+Heavy system bodies may be `sorry`-stubs, but the goal `Δ(⌈q⌉·,⌈q⌉·)` statement
+and `epsKS`/`compReal`/`compIdeal`/`macIdeal` must type-check. Keep `sorry` only
+where a construction body genuinely needs later work.
+
+REUSE: `CBCMAC.lean` (cbcReal/Vn/PrefixFree idiom), `Converter.lean`
+(`sequenceHashStep`/`sequenceHashSystem`/`applyDDC`), `PDS.lean`
+(`PFunPDS.URF`/`ofFunDist`/`filterQueries`), `Distinguishing.lean`
+(`maxAdvantage`/`Δ`), `AbsorbDPI.lean` (`maxAdvantage_filterQueries_applyDDC_le`,
+`maxAdvantage_triangle`).
+
+ACCEPTANCE: builds green; NO `advPRF`/`advNPRF`/`Adv`/game objects anywhere in the
+file; goal is `Δ(⌈q⌉ real, ⌈q⌉ URF) ≤ …`; systems are `PFunPDS`; reused CBCMAC/
+Converter idiom. Report the exact new goal statement + reused defs + any budget/
+shape decision or gap.

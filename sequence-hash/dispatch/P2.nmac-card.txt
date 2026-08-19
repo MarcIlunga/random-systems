@@ -1,0 +1,39 @@
+STEP 0 — non-negotiable:
+1. PURE CR18 idiom: `PFunPDS`, `Δ`=`maxAdvantage`, `⌈q⌉`=`filterQueries`.
+   `advPRF`/`advNPRF`/`Adv` are H-technique — DO NOT use. No game/adversary/oracle
+   objects (the NA-PRF assumption is the existing `CompNASecure` predicate).
+2. NO GUESSWORK — follow Gaži 2014 (`2014-578.pdf`) §3.1 + Appendix A exactly.
+3. NEVER REPROVE; reuse the framework Δ/hybrid/telescoping/switching lemmas.
+
+TASK P2.nmac — prove `nmac_prf_bound` (Gaži Theorem 1 for NMAC) in
+  sequence-hash/SequenceHash/RandomSystems/SequenceMACPRF.lean (currently `sorry`).
+
+MODEL (already in the file, frozen): `f : CompressionFamily C B = C → B → C`;
+`cascade`/`nmac` (§2.2); `compReal = f_K` vs `compIdeal = r` (§2.1);
+`CompNASecure` = the NA-PRF assumption; `macIdeal` = VIL URF. The bound to prove is
+Gaži Eq. (1) for NMAC:
+  Δ(⌈q⌉ nmacReal, ⌈q⌉ macIdeal) ≤ Δ(⌈q⌉ f_K, ⌈q⌉ r) + (ℓ+1)·q·εna + q²/|C|.
+
+PROOF (copy Gaži §3.1 + Appendix A EXACTLY):
+  - Proposition 1: NA-PF security of `Casc^f` ≤ ℓ·q·εna, via
+    Lemma 5 (length-position hybrid, Eq. (9), factor ℓ) and
+    Lemma 6 (oracle-index hybrid, Eq. (10), factor q).
+  - Theorem 1: combine Prop 1 with the outer PRF call (`+ Δ(f_K, r)`) and the
+    prefix-free / birthday collision term (`+ q²/|C|`). Match the paper's steps.
+
+REUSE (search + confirm): `AdvantageSeq.advantage_telescope`,
+`AdvantageSeq.maxAdvantage_le_adjacent_sum`, `AbsorbDPI.maxAdvantage_triangle`,
+`CBCMAC` birthday/`bday` + `PrefixFree` machinery, `MDHash.mdIterate_append`,
+`Dist.prodProbDist`/`Dist.fTransform_comp`. Generalize, don't duplicate.
+
+GUARDRAIL: `nmac_prf_bound` and `sequenceMAC_prf_bound` statements are FROZEN
+(fill `nmac_prf_bound`'s proof; leave the final-triangle `sequenceMAC_prf_bound`
+proof). Do not weaken `CompNASecure`. If you need a statement change, STOP + report.
+
+ACCEPTANCE: `lake build SequenceHash.RandomSystems.SequenceMACPRF` green; pure `Δ`
+(no `advPRF`/`advNPRF`/`Adv`/game objects); reused framework hybrid/telescoping
+infra. This is a hard two-hybrid proof — if you cannot fully close it, leave
+`sorry` ONLY at the deepest hybrid step(s), keep every intermediate lemma stated,
+and REPORT precisely what remains and which Gaži step it is.
+
+Report: proof structure, reused lemmas, and any residual `sorry` (with Gaži ref).

@@ -1,0 +1,389 @@
+{
+  "schema": 1,
+  "note": "Baseline for RandomSystemsCC/audit_surface.py.  Keys are module::declaration::token, deliberately line-number-free.  Every entry must be named and justified in STATUS.md.",
+  "allowed_axioms": [
+    "RandomSystemsCC.Frost.secp256k1_q_prime"
+  ],
+  "admission": [
+    {
+      "key": "RandomSystemsCC.Frost.Group::RandomSystemsCC.Frost.secp256k1_q_prime::axiom",
+      "count": 1,
+      "first_seen_at": "RandomSystemsCC/Frost/Group.lean:186",
+      "detail": "declared `axiom RandomSystemsCC.Frost.secp256k1_q_prime`"
+    },
+    {
+      "key": "RandomSystemsCC.Symmetric.AffineOneTimeMAC::RandomSystemsCC.Symmetric.AffineOneTimeMAC.affine_one_time_mac_securely_constructs::sorry",
+      "count": 1,
+      "first_seen_at": "RandomSystemsCC/Symmetric/AffineOneTimeMAC.lean:172",
+      "detail": "`sorry` in theorem `RandomSystemsCC.Symmetric.AffineOneTimeMAC.affine_one_time_mac_securely_constructs` (declared at line 166)"
+    },
+    {
+      "key": "RandomSystemsCC.Symmetric.BoundedURFMAC::RandomSystemsCC.Symmetric.BoundedURFMAC.bounded_urf_mac_securely_constructs::sorry",
+      "count": 1,
+      "first_seen_at": "RandomSystemsCC/Symmetric/BoundedURFMAC.lean:170",
+      "detail": "`sorry` in theorem `RandomSystemsCC.Symmetric.BoundedURFMAC.bounded_urf_mac_securely_constructs` (declared at line 162)"
+    },
+    {
+      "key": "RandomSystemsCC.Symmetric.FreshOTP::RandomSystemsCC.Symmetric.FreshOTP.fresh_otp_securely_constructs::sorry",
+      "count": 1,
+      "first_seen_at": "RandomSystemsCC/Symmetric/FreshOTP.lean:214",
+      "detail": "`sorry` in theorem `RandomSystemsCC.Symmetric.FreshOTP.fresh_otp_securely_constructs` (declared at line 207)"
+    },
+    {
+      "key": "RandomSystemsCC.Symmetric.MACThenOTP::RandomSystemsCC.Symmetric.MACThenOTP.affine_mac_with_otp_key_securely_constructs::sorry",
+      "count": 1,
+      "first_seen_at": "RandomSystemsCC/Symmetric/MACThenOTP.lean:431",
+      "detail": "`sorry` in theorem `RandomSystemsCC.Symmetric.MACThenOTP.affine_mac_with_otp_key_securely_constructs` (declared at line 422)"
+    },
+    {
+      "key": "RandomSystemsCC.Symmetric.MACThenOTP::RandomSystemsCC.Symmetric.MACThenOTP.otp_stage_securely_constructs::sorry",
+      "count": 1,
+      "first_seen_at": "RandomSystemsCC/Symmetric/MACThenOTP.lean:362",
+      "detail": "`sorry` in theorem `RandomSystemsCC.Symmetric.MACThenOTP.otp_stage_securely_constructs` (declared at line 355)"
+    },
+    {
+      "key": "RandomSystemsCC.Symmetric.MACThenOTP::RandomSystemsCC.Symmetric.MACThenOTP.polynomial_urf_mac_with_otp_key_securely_constructs::sorry",
+      "count": 1,
+      "first_seen_at": "RandomSystemsCC/Symmetric/MACThenOTP.lean:492",
+      "detail": "`sorry` in theorem `RandomSystemsCC.Symmetric.MACThenOTP.polynomial_urf_mac_with_otp_key_securely_constructs` (declared at line 478)"
+    },
+    {
+      "key": "RandomSystemsCC.Symmetric.SpongeIndifferentiability::RandomSystemsCC.Symmetric.SpongeIndifferentiability.sponge_indifferentiability_datum::sorry",
+      "count": 1,
+      "first_seen_at": "RandomSystemsCC/Symmetric/SpongeIndifferentiability.lean:181",
+      "detail": "`sorry` in theorem `RandomSystemsCC.Symmetric.SpongeIndifferentiability.sponge_indifferentiability_datum` (declared at line 176)"
+    },
+    {
+      "key": "RandomSystemsCC.Symmetric.UHFThenURF::RandomSystemsCC.Symmetric.UHFThenURF.polynomial_hash_then_urf_constructs_long_urf::sorry",
+      "count": 1,
+      "first_seen_at": "RandomSystemsCC/Symmetric/UHFThenURF.lean:162",
+      "detail": "`sorry` in theorem `RandomSystemsCC.Symmetric.UHFThenURF.polynomial_hash_then_urf_constructs_long_urf` (declared at line 155)"
+    },
+    {
+      "key": "RandomSystemsCC.Symmetric.UHFThenURF::RandomSystemsCC.Symmetric.UHFThenURF.uhf_then_urf_constructs_long_urf::sorry",
+      "count": 1,
+      "first_seen_at": "RandomSystemsCC/Symmetric/UHFThenURF.lean:107",
+      "detail": "`sorry` in theorem `RandomSystemsCC.Symmetric.UHFThenURF.uhf_then_urf_constructs_long_urf` (declared at line 101)"
+    },
+    {
+      "key": "RandomSystemsCC.Symmetric.UHFURFMAC::RandomSystemsCC.Symmetric.UHFURFMAC.polynomial_uhf_urf_mac_securely_constructs::sorry",
+      "count": 1,
+      "first_seen_at": "RandomSystemsCC/Symmetric/UHFURFMAC.lean:322",
+      "detail": "`sorry` in theorem `RandomSystemsCC.Symmetric.UHFURFMAC.polynomial_uhf_urf_mac_securely_constructs` (declared at line 310)"
+    },
+    {
+      "key": "RandomSystemsCC.Symmetric.UHFURFMAC::RandomSystemsCC.Symmetric.UHFURFMAC.uhf_hash_layer_securely_constructs::sorry",
+      "count": 1,
+      "first_seen_at": "RandomSystemsCC/Symmetric/UHFURFMAC.lean:249",
+      "detail": "`sorry` in theorem `RandomSystemsCC.Symmetric.UHFURFMAC.uhf_hash_layer_securely_constructs` (declared at line 240)"
+    },
+    {
+      "key": "RandomSystemsCC.Symmetric.UHFURFMAC::RandomSystemsCC.Symmetric.UHFURFMAC.urf_mac_layer_securely_constructs::sorry",
+      "count": 1,
+      "first_seen_at": "RandomSystemsCC/Symmetric/UHFURFMAC.lean:261",
+      "detail": "`sorry` in theorem `RandomSystemsCC.Symmetric.UHFURFMAC.urf_mac_layer_securely_constructs` (declared at line 253)"
+    }
+  ],
+  "surface": [],
+  "performance": [
+    {
+      "key": "RandomSystemsCC.Symmetric.OTP::RandomSystemsCC.Symmetric.OTP.decryptGlobalStep_issues_iff::set_option maxHeartbeats 800000 in",
+      "count": 1,
+      "first_seen_at": "RandomSystemsCC/Symmetric/OTP.lean:464",
+      "detail": "`set_option maxHeartbeats 800000 in` guarding `RandomSystemsCC.Symmetric.OTP.decryptGlobalStep_issues_iff`"
+    }
+  ],
+  "endpoint_axioms": {
+    "RandomSystemsCC.CBCMAC.cbc_randomness_expander": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "RandomSystemsCC.CBCMAC.cbc_urp_randomness_expander": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "RandomSystemsCC.CBCMAC.round_limited_cbc_randomness_expander": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "RandomSystemsCC.CBCMAC.urp_constructs_round_limited_urf": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "RandomSystemsCC.Frost.FrostGroup.gameBound_of_aomdl": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "RandomSystemsCC.Frost.FrostGroup.gameBound_of_forking": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "RandomSystemsCC.Frost.Setup.available": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "RandomSystemsCC.Frost.Setup.dkgStage": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "RandomSystemsCC.Frost.Setup.secure": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "RandomSystemsCC.Frost.Setup.secure_of_aomdl": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "RandomSystemsCC.Frost.Setup.signStage": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "RandomSystemsCC.Frost.frost_instantiated": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "RandomSystemsCC.Frost.gameBound_of_problem_reduction": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "RandomSystemsCC.Frost.gameBound_of_reduction": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "RandomSystemsCC.LiftingExample.flip_constructs": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "RandomSystemsCC.MauRen16.constructs_of_correlated_honest_pair": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "RandomSystemsCC.MauRen16.lemma6": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "RandomSystemsCC.ParallelChecks.extract_constructs": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "RandomSystemsCC.ParallelChecks.extract_constructs_par": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "RandomSystemsCC.Symmetric.AffineOneTimeMAC.affine_one_time_mac_securely_constructs": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext",
+      "sorryAx"
+    ],
+    "RandomSystemsCC.Symmetric.BoundedURFMAC.bounded_urf_mac_securely_constructs": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext",
+      "sorryAx"
+    ],
+    "RandomSystemsCC.Symmetric.FreshOTP.fresh_otp_securely_constructs": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext",
+      "sorryAx"
+    ],
+    "RandomSystemsCC.Symmetric.MACThenOTP.affine_mac_then_otp_securely_constructs": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext",
+      "sorryAx"
+    ],
+    "RandomSystemsCC.Symmetric.MACThenOTP.affine_mac_with_otp_key_securely_constructs": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext",
+      "sorryAx"
+    ],
+    "RandomSystemsCC.Symmetric.MACThenOTP.mac_then_otp_securely_constructs": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext",
+      "sorryAx"
+    ],
+    "RandomSystemsCC.Symmetric.MACThenOTP.otp_stage_securely_constructs": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext",
+      "sorryAx"
+    ],
+    "RandomSystemsCC.Symmetric.MACThenOTP.polynomial_urf_mac_then_otp_securely_constructs": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext",
+      "sorryAx"
+    ],
+    "RandomSystemsCC.Symmetric.MACThenOTP.polynomial_urf_mac_with_otp_key_securely_constructs": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext",
+      "sorryAx"
+    ],
+    "RandomSystemsCC.Symmetric.OTP.otp_securely_constructs": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "RandomSystemsCC.Symmetric.SpongeIndifferentiability.perm_constructs_random_oracle": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext",
+      "sorryAx"
+    ],
+    "RandomSystemsCC.Symmetric.UHFThenURF.polynomial_hash_then_urf_constructs_long_urf": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext",
+      "sorryAx"
+    ],
+    "RandomSystemsCC.Symmetric.UHFThenURF.uhf_then_urf_constructs_long_urf": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext",
+      "sorryAx"
+    ],
+    "RandomSystemsCC.Symmetric.UHFURFMAC.polynomial_uhf_urf_mac_securely_constructs": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext",
+      "sorryAx"
+    ],
+    "RandomSystemsCC.Symmetric.UHFURFMAC.uhf_hash_layer_securely_constructs": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext",
+      "sorryAx"
+    ],
+    "RandomSystemsCC.Symmetric.UHFURFMAC.uhf_urf_mac_securely_constructs": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext",
+      "sorryAx"
+    ],
+    "RandomSystemsCC.Symmetric.UHFURFMAC.urf_mac_layer_securely_constructs": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext",
+      "sorryAx"
+    ],
+    "RandomSystemsCC.TypedFinite.constructs_of_advantage": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "RandomSystemsCC.TypedFinite.constructs_of_contextualEDist": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "RandomSystemsCC.TypedFinite.constructs_of_smul_eq": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "RandomSystemsCC.TypedFinite.primitive_constructs": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "RandomSystemsCC.TypedFinite.primitive_constructs_of_smul_eq": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "RandomSystemsCC.TypedFinite.securelyConstructs_trans_of_supported": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "RandomSystemsCC.TypedFiniteChecks.generic_cc_receipt": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "RandomSystemsCC.TypedFiniteChecks.generic_constructs_receipt": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "RandomSystemsCC.TypedFiniteChecks.generic_mpc_receipt": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "RandomSystemsCC.TypedParallelChecks.par_resource_in_cc_judgment": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "RandomSystemsCC.TypedPropertyTransfer.forgeable_not_mem_prop_spec": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "RandomSystemsCC.TypedPropertyTransfer.ideal_mem_game_spec_zero": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "RandomSystemsCC.TypedPropertyTransfer.ideal_mem_prop_spec": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "RandomSystemsCC.TypedPropertyTransfer.real_mem_game_spec": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "RandomSystemsCC.TypedPropertyTransfer.real_mem_game_spec_gate": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "RandomSystemsCC.constructsForAdversaryStructure_eball_of_exact": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "RandomSystemsCC.constructsForAdversaryStructure_of_leaves": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "RandomSystemsCC.constructsForAdversaryStructure_of_securelyConstructs": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "RandomSystemsCC.securelyConstructs_of_constructsForAdversaryStructure": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ]
+  }
+}

@@ -1,0 +1,45 @@
+STEP 0 — non-negotiable:
+1. PURE CR18 idiom (PFunPDS / Δ=maxAdvantage / ⌈q⌉=filterQueries). No
+   advPRF/advNPRF/Adv, no game/adversary/oracle objects. NO `private`, EVER.
+2. NO GUESSWORK — follow the C2SP construction (sequencehash.md) and the accepted
+   sketch `sequence-hash/sketches/A3-sequencehash-realization.md` EXACTLY.
+3. NEVER REPROVE; reuse; generalize.
+
+TASK T3.obj — place the concrete SequenceMAC-over-InputSequence realization
+objects + the guardrail theorem, STATEMENT-FIRST (proof stays `sorry`). This
+connects the proven block-level `sequenceMAC_prf_bound` to the literal C2SP
+construction. File(s): the R2 file / a new sibling in
+sequence-hash/SequenceHash/RandomSystems/.
+
+DELIVERABLES (per sketch §sections):
+  1. `blockify_prefixFree` is DORMANT/unused — REMOVE it from `MDCodec`
+     (`MDHash.lean`). If the realization needs a weaker codec premise (the
+     sketch identifies it), add THAT instead. Rebuild MDHash + dependents green.
+  2. Concrete objects over `InputSequence` (all `PFunPDS`):
+     - the concrete real system = `Converter`'s SequenceMAC schedule (F=1, keyed)
+       applied over the compression resource `compReal` (reuse
+       `sequenceHashStep`/`sequenceHashSystem_realization`);
+     - the bounded injective map `InputSequence → BlockString B ℓ`
+       (M ↦ blockify(headerI ‖ K' ‖ encodeItems M) …), reusing `encodeItems`;
+     - `epsC2SP` := the bridge `Δ(⌈q⌉ concreteReal, ⌈q⌉ <block-level
+       sequenceMACReal instantiated via the map>)` — this is where the concrete
+       run-up + the multi-block OUTER-ENVELOPE normalization live (C2SP's outer is
+       a cascade, NOT NMAC's single call — keep that normalization INSIDE
+       `epsC2SP`; do not claim a definitional NMAC equality).
+  3. GUARDRAIL statement `sequenceMAC_prf_bound_concrete`:
+       Δ(⌈q⌉ concreteReal, ⌈q⌉ URF_InputSequence)
+         ≤ epsC2SP + Δ(⌈q⌉ f_K, ⌈q⌉ r) + (ℓ+1)q·εna + q²/|C|
+     stated with `:= by sorry`. It must ELABORATE and the file must BUILD GREEN
+     (heavy object bodies may be `sorry`, but every type must be faithful).
+
+GUARDRAIL: do NOT touch the proven `sequenceMAC_prf_bound`/`nmac_prf_bound`
+statements or proofs. No `private`. If you need a parameter the statement lacks,
+STOP + report (don't guess).
+
+ACCEPTANCE: `lake build SequenceHash` green; `blockify_prefixFree` gone; the
+concrete `sequenceMAC_prf_bound_concrete` statement elaborates; only intended
+`sorry`s (its proof + heavy object bodies); no `private`/advPRF/game; reused
+Converter/Encoding/block-level theorem.
+
+Report: the concrete statement, the objects, what you removed (blockify_prefixFree)
++ any weaker premise added, and the reuse map.

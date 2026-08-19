@@ -12,3 +12,6 @@ __pycache__/
 *.trace
 *.hash
 .DS_Store
+scratchpad/
+tmp_gazi.txt
+*.bak

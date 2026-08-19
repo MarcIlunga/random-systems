@@ -1,0 +1,63 @@
+STEP 0 — KNOW THE TERRAIN (non-negotiable):
+1. RandomSystems is an algebraic framework instantiating AbstractCrypto
+   (../abstract-crypto). Reuse its high-level theorems; do not re-derive
+   framework facts. The sketch must map onto existing objects/theorems.
+2. Never plan to reprove: assume needed lemmas exist (grep + lean_local_search/
+   loogle/leansearch); mark "NEW" only after searching; generalize in place
+   rather than making scheme-specialized copies.
+
+TASK S2r — REVISE the R2 sketch. Two correctness fixes to the existing sketch.
+This is a WRITING/RESEARCH task: revise the markdown, no Lean, no proofs.
+
+BASE: read the current sketch at
+  sequence-hash/sketches/A2-sequencemac-prf.md
+and the spec at sequence-hash/sequencehash.md (esp. lines 183-205 `Derive`,
+216-237 header run-up, 239-263 `SequenceFunction`). Keep everything that is
+correct; apply the two fixes below; rewrite the affected sections.
+
+FIX 1 — SequenceMAC key derivation is BETTER than HMAC; Hop 1 is wrong.
+The spec (SequenceFunction, lines 245-260) computes the derived key block
+K' = Derive(K,H,b) ONCE, then processes it from DISTINCT "run-up" states: the
+inner cascade absorbs `HeaderI(b,F,K) || K'`, the outer absorbs
+`HeaderO(b,F,S,K) || S' || K'`. HeaderI and HeaderO are guaranteed distinct
+(leading 8 bytes 'SEQHSH_I' vs 'SEQHSH_O', line 237). Hence the inner key k_I and
+outer key k_O are the keyed compression cascade evaluated at TWO DISTINCT
+header-prefixed inputs.
+  - Unlike HMAC (inner/outer keys = K⊕ipad, K⊕opad — RELATED keys, needing a
+    PRF-under-related-key/RKA assumption, Gaži §1.2), SequenceMAC's k_I,k_O are
+    INDEPENDENT under ORDINARY (data-input) PRF security of the compression f.
+    The spec designed this deliberately (line 218: "independently-keyed inner and
+    outer hash functions").
+  - So Hop 1 must NOT invoke the HMAC→NMAC related-key bridge. Replace it with a
+    clean domain-separation/independence argument: replacing (k_I,k_O) by
+    independent uniform values is a STANDARD PRF/URF hop on the two distinct-input
+    run-up evaluations of f — a normal PRF-advantage term, NO related-key
+    assumption. Redefine ε_KS accordingly (the compression-PRF cost of the
+    domain-separated key-derivation run-up), and fold in the Derive(K) hash call
+    when |K|>b. State the assumption as ordinary PRF security of f, not RKA.
+
+FIX 2 — Gaži has NOTHING to do with the H-technique. Remove ALL H-technique
+routing from R2. Gaži–Pietrzak–Rybár 2014 is a classical game-hop / hybrid
+reduction proof (standard PRF→random-function swaps; hybrids over block depth and
+oracle index, Appendix A Lemmas 5&6; birthday collision bounds). It does NOT use
+Maurer's H-coefficient / H-technique.
+  - Delete every reuse of the H-technique endpoints from the R2 skeleton:
+    `adv_le_of_extFixedQueryRep_eq_on_good`, the extended fixed-query
+    representative, the RectHashThenPRF reveal-key pattern, etc.
+  - Reprove the hops with the CLASSICAL distinguishing-advantage / reduction
+    infrastructure: advantage triangle + telescoping (`advantage_telescope`,
+    `maxAdvantage_le_adjacent_sum`, `statDist_triangle`), the PRF/NPRF advantage
+    definitions (`advPRF`, `advNPRF` as plain adaptive/nonadaptive advantages),
+    explicit hybrid arguments, and `bday` for collisions. `advNPRF`
+    (nonadaptive/fixed-query advantage) is fine as the standard nonadaptive PRF
+    notion — just do not route through the H-coefficient representative endpoints.
+  - The H-technique is reserved for R4 (Shen et al. 2025). Note this explicitly.
+
+KEEP: the five-term final theorem shape
+  advPRF_q(SequenceMAC_{f,S}) ≤ ε_KS + ε_ad + (ℓ+1)q·ε_na + q²/N + δ_S
+(the ε_KS term stays but is now the ordinary-PRF domain-separation cost, not RKA);
+the MD model; the short/long customization split; the reuse-first discipline.
+
+OUTPUT: overwrite sequence-hash/sketches/A2-sequencemac-prf.md with the revised
+full sketch. Use $$...$$ / $...$ math (GitHub-renderable), NEVER \[...\] or \(...\).
+In your final message, summarize exactly what changed for Fix 1 and Fix 2.

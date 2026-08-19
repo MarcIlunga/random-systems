@@ -1,0 +1,3604 @@
+Overcoming Impossibility Results in Composable
+Security using Interval-Wise Guarantees?
+Daniel Jost
+
+and Ueli Maurer
+
+Department of Computer Science, ETH Zurich, 8092 Zurich, Switzerland.
+{dajost, maurer}@inf.ethz.ch
+
+Abstract. Composable security definitions, at times called simulationbased definitions, provide strong security guarantees that hold in any
+context. However, they are also met with some skepticism due to many
+impossibility results; goals such as commitments and zero-knowledge that
+are achievable in a stand-alone sense were shown to be unachievable
+composably (without a setup) since provably no efficient simulator exists.
+In particular, in the context of adaptive security, the so-called “simulator
+commitment problem” arises: once a party gets corrupted, an efficient
+simulator is unable to be consistent with its pre-corruption outputs. A
+natural question is whether such impossibility results are unavoidable or
+only artifacts of frameworks being too restrictive.
+In this work, we propose a novel type of composable security statement
+that evades the commitment problem. Our new type is able to express the
+composable guarantees of schemes that previously did not have a clear
+composable understanding. To this end, we leverage the concept of system
+specifications in the Constructive Cryptography framework, capturing
+the conjunction of several interval-wise guarantees, each specifying the
+guarantees between two events. We develop the required theory and
+present the corresponding new composition theorem.
+We present three applications of our theory. First, we show in the context of symmetric encryption with adaptive corruption how our notion
+naturally captures the expected confidentiality guarantee—the messages
+remain confidential until either party gets corrupted—and that it can
+be achieved by any standard semantically secure scheme (negating the
+need for non-committing encryption). Second, we present a composable
+formalization of (so far only known to be standalone secure) commitment
+protocols, which is instantiable without a trusted setup like a CRS. We
+show it to be sufficient for being used in coin tossing over the telephone,
+one of the early intuitive applications of commitments. Third, we reexamine a result by Hofheinz, Matt, and Maurer [Asiacrypt’15] implying that
+IND-ID-CPA security is not the right notion for identity-based encryption,
+unmasking this claim as an unnecessary framework artifact.
+
+?
+
+A preliminary version of this paper appears in the proceedings of CRYPTO 2020.
+This is the full version.
+
+1
+
+Introduction
+
+1.1
+
+A Plea for Composable Security
+
+Common security definitions found in the literature are game-based, i.e., they
+require that an adversary cannot win a game that exports certain oracles to the
+adversary. The goal of such a security game is to capture the adversary’s potential
+attacks in a minimal manner. However, the mapping of the game’s interface to
+potential attacks in the real-world use of the cryptographic protocol is commonly
+not straight-forward. Thus, it is often a-priori unclear which game-based security
+notion is required in order for the protocol to be secure in a specific application.
+Rather, that aspect is often informally considered and passed down outside the
+security definitions, becoming “folklore” over the years.
+Composable frameworks, such as [5,22,17,12], on the other hand, provide
+operational security definitions instead. The way they formalize security is based
+around comparing the execution of the protocol in the real world to an idealized
+world that intrinsically has the desired security properties. Importantly, this
+definition is with respect to any environment, thereby ensuring that the security
+guarantees not only do not exclude any attacks but also hold irrespective of other
+protocols (or multiple instances of the same one) being executed. For instance,
+the composable security definition of a symmetric encryption scheme is the
+construction of a secure communication channel from an authentic one and a key,
+with different assumed and constructed channels leading to different notions (e.g.,
+whether replaying is possible). Hence, for a given application it is now trivial to
+decide whether a certain scheme suffices.
+Finally, composable frameworks facilitate modularity. First, they are based
+on defining components with clean abstraction boundaries (e.g., a secure channel)
+that abstract away the details of how that module has been constructed (or
+otherwise obtained). This idealized module can then be used by a higher-level
+protocol with the security of the combined overall protocol following directly
+from the composition theorem. Thus, the security of complex protocols can be
+neatly proven by composing it from smaller sub-protocols.
+1.2
+
+Obstacles for Composable Security
+
+While the clear semantics, modularity, and high security guarantees suggest that
+all protocols should be proven secure in a composable framework rather than
+in an ad-hoc game-based manner, composable definitions are still not prevalent
+with the majority of new research still carried out using game-based definitions.
+One of the main reasons hindering adoption might be that many primitives are
+known to be impossible to achieve in the plain UC model, such as zero knowledge
+[5] and commitments [6]. Furthermore, Lindell has shown [13] that impossibility
+results are not specific to the UC model but inherent to any kind of similar
+model based around the existence of an efficient simulator. As a consequence,
+respective protocols have to rely on additional setup assumptions, such as a
+common reference string, and are also generally less efficient.
+2
+
+One particular obstacle composable definitions often face is the so-called
+“simulator commitment problem”, which mainly arises when considering adaptive
+security. In a nutshell, it describes the simulator’s inability to explain some of its
+previous choices the moment a party gets corrupted. More concretely, consider the
+example of two parties securing their communication using symmetric encryption.
+The intuition is that the adversary does not learn the messages until either of the
+parties gets corrupted, thereby revealing the key. Before, the adversary should
+learn at most the length. As a result, the simulator, in the first phase, has to
+output a fake ciphertexts independent of the real messages. For any semantically
+secure encryption scheme he can actually do so. This, however, commits him on
+those fake ciphertexts. At the moment a party gets corrupted, the simulator then
+needs to be able to explain those ciphertexts by outputting a matching encryption
+key. Even if he learns all the previous messages, he will not be able to do so for
+regular encryption schemes. Note, however, that the commitment problem is not
+restricted to adaptive corruptions only. Similar issues also arise, for instance, in
+the context of password-based security [9] or identity-based encryption [10], where
+it has been shown that due to this commitment problem the standard game-based
+notions do not induce the expected corresponding composable statements.
+On a general level, this raises the fundamental question whether such impossibility results actually indicate a security issue, and hence protocols not satisfying
+the stronger composable definitions should not be used, or whether they present
+an artifact of the framework. Especially for the commitment problem, the common understanding is that the latter is true. Furthermore, the obstacles are often
+dealt with by either reverting to composable security with static corruptions only,
+or by simply retracting to game-based definitions. As a result, there is a clear
+need for a better composable security notion that lets us settle this question and
+remedy the issue of the spurious impossibilities.
+1.3
+
+Existing Attempts to Overcome the Obstacles
+
+A number of approaches have been proposed in order to circumvent the aforementioned issues of composable security.
+First, Canetti and Krawczyk proposed the notion of non-information oracles
+[8] within the UC-framework. A non-information oracle is essentially a game-based
+definition embedded into an ideal functionality. For instance, rather than saying
+that an encryption scheme should realize a secure channel that only leaks the
+length, the respective functionality leaks the output of the non-information oracle,
+which is required to satisfy a CPA-like definition. While this circumvents the
+commitment problem, there are two drawbacks. First, it weakens composition by
+requiring explicit reductions to the embedded games in the security proof of the
+higher-level protocols using the functionality. Second, for each ideal functionality a
+different type of non-information oracle needs to be defined, without providing any
+generic template. As a consequence, the question of the “right” non-information
+oracle re-arises, just like when defining a security game.
+Second, a line of work considers super-polynomial simulators [21,23,4]. The
+initial proposal by Pass [21] considered sub-exponential simulators and polynomi3
+
+ally bounded environments. This implies, however, that the simulator cannot be
+absorbed into the environment, ceding some of the most fundamental composition
+properties of the UC-framework. The later works by Prabhakaran and Sahai
+[23] and Broadnax et al. [4] empower the simulator in a more controlled manner,
+preserving most natural composition properties. Their adoption, however, still
+suffers from being rather technical, and moreover, still quite limited in the number
+of issues a more powerful simulator can overcome. For instance, when considering
+a PRG whose seed might leak, even an all powerful simulator will not be able to
+explain a truly randomly chosen output with an appropriate seed.
+Finally, Backes, Dürmuth, Hofheinz, and Küsters [1] proposed an approach
+where the real-world resource would just disallow certain activation sequences by
+the environment that were otherwise impossible to simulate. While this avoids
+the complications of the other approaches, it scarifies the evident semantics of
+composable security notions by excluding certain—deemed artificial—attacks. A
+similar approach has recently been used by Jost, Maurer and Mularczyk in [11].
+1.4
+
+Contributions
+
+Interval-wise guarantees. In this work, we propose an alternative solution to
+the simulator-commitment problem that is aimed at expressing the guarantees of
+regular schemes within a composable framework. More concretely, we introduce
+a novel type of construction notion within the Constructive Cryptography (CC)
+framework that avoids the commitment problem while providing a number of
+distinct benefits. First, it provides a clean semantics of how the guarantees should
+be interpreted. Second, it holds in any environment, just as any statement in the
+CC framework. Third, it is equipped with a composition theorem.
+Since the commitment problem usually occurs at a very specific point of
+the protocol execution, such as when a party gets corrupted, where the security
+guarantees of the protocol anyway inherently change, our novel construction
+notion is centered around the very natural idea of formalizing guarantees that
+hold in a certain interval (between two events). That is, our notion for instance
+allows to formalize separate security guarantees before and after the corruption
+event. In contrast to existing simulation-based notions, we thereby only require
+the simulation to work within each interval, not forcing the simulation to be
+consistent between the intervals (which causes the initial commitment issues). We
+discuss how the security guarantees provided by our notion should be interpreted,
+when stronger notions might still be desirable, and how our notion fits into the
+space of static versus adaptive security.
+Theory extensions. On a technical level, we leverage the specification-based
+approach of the CC framework, where proving a protocol π to be secure corresponds to modeling the assumed real-world specification R, and showing that the
+resulting specification πR is contained in an ideal specification S, i.e, πR ⊆ S.
+We formalize interval-wise guarantees as a novel type of specifications within
+the CC framework. We carefully consider the subtleties arising when defining
+such specifications and show how they interact with the other aspects of the
+4
+
+framework. Finally, we present the respective composition theorem, that actually
+supersedes all the existing ones, and in particular allows to syntactically combine
+multiple such interval-wise construction statements, or an interval-wise one with
+a regular construction statement.
+Applications. As a third contribution, we apply our methodology to several
+examples. First, we consider the encrypt-then-MAC paradigm in a setting where
+the keys can adaptively leak to the adversary, stylizing adaptive passive corruptions. Using our interval-wise guarantees, we obtain a simple composable security
+definition thereof without the need for non-committing encryption. More concretely, we consider the following three properties. First, we require the messages
+to be confidential as long as neither the encryption nor the authentication key
+leaked. (An IND-CPA secure scheme cannot guarantee confidentiality without
+authenticity.) In our definition, this is phrased as the construction of a secure
+channel up to that point. Second, between the exposure of the encryption key
+and the authentication key, we require communication to still be authentic, i.e.,
+an authenticated channel to be constructed. Finally, after the encryption key has
+been exposed, we still require correctness.
+As a second application, we show a composable formalization of informationtheoretically binding commitment schemes realizable in the plain model. We then
+show how, based on such a commitment scheme, Blum’s protocol constructs a
+composable coin-toss notion. Applying composition then directly implies that
+this formalization can be achieved in the plain model as well. While the resulting
+specification is obviously too weak to serve as a common reference string, it
+guarantees unbiasedness. Hence, it is provides a good enough type of randomness resource whenever unbiasedness is sufficient, in particular formalizing and
+formally validating the intuitive-level argumentation about flipping a coin over
+the telephone of the corresponding papers of that time.
+Finally, we consider the composable guarantees of identity-based encryption.
+We revisit the result by Hofheinz, Matt, and Maurer [10] that shows the standard
+ind-id-cpa notion to be too weak when considering a traditional composable
+statement based on the existence of a single simulator, even when considering
+static corruptions, due to the commitment problem. Furthermore, the authors
+have shown that the same weaker construction that actually can be achieved,
+could also be achieved by a weaker game-based notion ind-id1-cpa, modeling
+so-called lunch-time attacks. We refute their results in the following way: Based
+on interval-wise guarantees we formalize a composable specification of IBE that
+corresponds exactly to the standard ind-id-cpa notion.
+1.5
+
+Outline
+
+In Section 3, we provide a high-level motivation and introduction to our notion,
+before presenting the technical details in Section 4. As a running example, we
+consider encrypt-then-MAC with symmetric keys that might get leaked to the
+adversary. In Section 5 we present a novel composable definition of perfectly
+5
+
+binding commitments and its application to coin tossing. Finally, in Section 6 we
+revisit composable security of identity-based encryption.
+
+2
+
+Preliminaries: Constructive Cryptography
+
+This work builds upon some more recent aspect of the Constructive Cryptography
+(CC) framework [17,14]. We therefore revisit the key aspects thereof, follows the
+exposition introduced in [17], with some adaptations from [11].
+2.1
+
+Resources, Converters, and the Interaction Model
+
+At its heart, the Constructive Cryptography framework views cryptography as
+a resource theory, in which parties use certain resources (e.g., communication
+channels and a shared secret key) to construct another resource via a protocol.
+Global events. In this work, we use the version of Constructive Cryptography
+introduced in [11] that enriches the interaction model by a notion of globally
+observable events. Formally, events are a generalization of monotone binary
+outputs (MBO) introduced by Maurer et al. [16]. Roughly, an MBO is a value
+that can change from 0 to 1 but not back, which can be interpreted as a single
+event happening once the MBO changes to 1. An event then just corresponds to
+a named MBO and the global event history E is a list of event names without
+duplicates (to model that every event can occur at most once). For an event name
++
+n, we denote by E ← En the act of appending n to E (or leaving it unchanged if
+it is already contained). Moreover, we use En as a short-hand notation to denote
+that n is in the list E, and say that the event happened. Finally, we denote by
+En1 ≺ En2 that the event n1 precedes the event n2 in the event history.
+Resources. A resource1 R is a reactive system that interacts in the following
+two ways with the rest of the world: First, it allows interaction at one or several
+named communication interfaces, in the following just called interfaces, at which
+it can be queried an input x, and must answer with an output y at the same
+interface. Second, during an activation, the resource R can depend on the global
+event history E, and can furthermore append events from a predefined set of
+names. We call this set of names the events controlled by R.
+Formally, resources are modeled as random systems [15], where the interface
+address, the actual input x, and the current state of the event history are encoded
+as part of the input. Analogously, the answer y and the new state of the event
+history are encoded as part of the output, under the constraint that the old state
+of the event history is a prefix of the new one. For the sake of this paper, a reader
+unfamiliar with the CC framework might however just think of a resource as the
+behavior of an oracle machine, where each interface corresponds to an oracle and
+1
+
+The analogon to functionalities in the UC framework [5].
+
+6
+
+the event history being similar to the “directory” ITI used in the recent version
+of UC [5]. Note, however, that a resource only defines the behavior of the system
+and not its description, i.e., two different (pseudo-code descriptions of) ITMs
+having the same input-output behavior denote the same resource.
+A set of resources can be viewed as a single one, with the interface set of
+the composed resource being the union. For resources R1 , . . . , Rn (with disjoint
+interface sets) we denote by [R1 , . . . , Rn ] the parallel composition.
+Converters and protocols. In the Constructive Cryptography framework,
+converters express the local action executed by one party. A converter expects
+to be connected to a given number of interfaces at the “inside”, and emulates a
+certain set of interfaces at the “outside”. Upon an input at an outside interface,
+the converter is allowed to make a bounded number of oracle queries to the inside
+interfaces, before returning a value at the queried interface.
+For a converter π and a resource R, let I denote a tuple describing an injective
+mapping from π’s inside interfaces to interfaces of R. We then denote by R0 := π I R
+the resource obtained from connecting the converter accordingly. The resource R0
+no longer exposes those interfaces but the ones emulated by π instead. Converter
+attachment satisfies the natural property of composition order independence,
+stating that the composition order does not matter—only the final system does.
+Proposition 1. Let π1 and π2 be two converters, let R be a resource and let I1
+and I2 be such that they assign disjoint interfaces. Then, π1I1 π2I2 R = π2I2 π1I1 R.
+Moreover, if S is another resource
+  such that
+ the interface sets of R and S are
+disjoint, then we have π1I1 R, S = π1I1 R, S .
+We define a protocol to be a set of converter-connection pairs, i.e,. π :=
+{(π1 , I1 ), . . . , (πn , In )} with pairwise disjoint Ii ’s. Moreover, we say that π is
+a protocol for a resource R, if R has all the required interfaces for the protocol
+application to be well-defined, and write πR to denote its application.
+The environment (distinguisher). The distinguisher D is a special type of
+environment that first interacts with a resource R by making queries to the
+resource’s interfaces. Between two such queries it can access the global event
+history and append events to it, except the ones controlled by R. Note that
+activations are atomic, i.e., at any moment in time either the resource or the
+distinguisher is activated, but not both. Finally, the distinguisher ends the
+interaction with the resource by outputting a bit. The advantage of D is then
+defined as
+
+
+
+
+
+∆D R, S := Pr DE (S) = 1 − Pr DE (R) = 1 ,
+where we use the syntax DE (·) to make explicit that the distinguisher has oracle
+access to the global event history E.
+2.2
+
+Constructions
+
+Specifications. It is natural to consider only certain desired (or assumed)
+properties of a system and deliberately not specify others. Some of those choices
+7
+
+are intrinsic to the mathematical model we use, such as only considering the
+input-output behavior and ignoring the physical aspects. Other properties can be
+purposefully ignored by considering specifications of systems that simply leave
+out those aspects, focusing only on the relevant properties. Following [18], we
+model specifications as sets of resources R that all have the same interface set.
+For each property, such as confidentiality, one has in mind, one can consider the
+set R of resources satisfying that property. Vice versa, each set of resources R
+can be interpreted as the set of properties common to all elements. For instance,
+authenticated communication might be modeled as the set of all communication
+channels that are authentic—not specifying the level of confidentiality by including
+both confidential as well as non-confidential channels.
+Constructions as subsets. In provable security one typically considers the
+execution of a protocol π that makes use of some assumed specification R, such
+as a communication network or a public-key infrastructure. In short, one wants
+to show that the specification πR := {πR | R ∈ R} satisfies the desired security
+properties. As explained in the previous section, those properties are formalized
+as a specification S, and thus proving security means proving πR ⊆ S. Note that
+obviously the guarantees given by S are generally weaker than the ones by πR.
+The purpose of such a statement is, however, that the security properties are in
+S both more explicit and simpler to analyze. In other words, the goal is to distill
+out the relevant properties and abstract away the others.
+Traditionally, the statement πR ⊆ S is read as the protocol π constructing the
+specification S from the specification R, or in UC-jargon the protocol securely
+realizing the specification S in the R-hybrid model. Hence, as a shorthand
+notation we introduce the following construction notion.
+Definition 1. Let R and S be specifications, and let π be a protocol for R. Then,
+π
+we say that π constructs S from R, denoted R −−→ S, if and only if πR ⊆ S,
+i.e.,
+π
+R −−→ S :⇐⇒ πR ⊆ S.
+π
+
+π
+
+In slight abuse of notation, we write R −−→ S in lieu of {R} −−→ {S} for singleton
+specifications.
+This construction notion is associated with the usual composition properties
+of Constructive Cryptography: sequential and parallel composition—which form
+the equivalence of the universal composition theorem of the UC-framework.
+Theorem 1. Let R, S, and T be arbitrary specifications, and let π and π 0 be
+arbitrary protocols for R and S, respectively. Then, we have
+π
+
+π0
+
+π 0 ◦π
+
+1. R −−→ S ∧ S −−→ T =⇒ R
+−−−→
+ T,
+π
+π 
+2. R −−→ S =⇒ R, T −−→ S, T .
+Proof. The first property follows directly from the transitivity of the subset
+0
+0
+relation,
+
+ π πR ⊆π S ⊆ T , and the second property follows from Proposition 1:
+π R, T = πR, T ⊆ S, T .
+8
+
+The specifications πR and S are often referred to as real- and ideal-world,
+respectively, according to the so-called real-world/ideal-world paradigm on which
+most composable frameworks [5,22,17,12] are based. Following that paradigm,
+security statement affirm that the real word is “just-as-good” as the ideal world,
+meaning that for all parties, no matter whether honest or adversarial, it does
+not make a difference whether they live in the real (where an arbitrary element
+of πR is present), or in the ideal world (where some element of S is present).
+Hence, if the honest parties are content with the guarantees they get from the
+ideal specification, they can safely execute the protocol in the real world instead.
+
+The (in)existence of a simulator. Simulation-based security turned out to
+be one of the most fundamental concepts in cryptography and is closely linked
+with the real-world / ideal-world paradigm. It not only forms the foundation
+of semantic security, zero knowledge, and the security of MPC, but also of
+virtually every composable framework. Whereas the former definitions tend to
+require an after-the-fact simulation of the transcript, composable frameworks get
+their stronger guarantees from requiring on-line simulation, where an adaptive
+environment interacts with the simulator. The common understanding of those
+security definitions is then that the simulator “translates” the attacks from the
+real-world adversary to the ideal world such that they achieve the same effect.
+While the initial version of the Constructive Cryptography framework also
+hard-coded the existence of a simulator (with respect to the dummy adversary),
+starting from [18], the simulator is no longer an integral part of the construction
+notion. Rather, employing a simulator is just one way of defining an ideal specification, σS that makes the achieved security properties obvious. For instance, the
+specification of confidential channels can then be written as the specification S
+of channels that only leak the message length, combined with an arbitrary simulator. From this description it is apparent that for any resource in the combined
+specification σS, only the length is leaked.
+If one restricts oneself to specifications of this type, then the following more
+specific composition theorem can be deduced.
+Proposition 2. Let R, S, and T be specifications, and let π and π 0 be protocols
+for R and S, respectively. For any simulators σ (for S) and σ 0 (for T ), such
+that the set of interfaces controlled by the simulators are disjoint from the ones
+controlled by the protocols, we have
+π
+
+π0
+
+π 0 ◦π
+
+0
+1. R −−→ σS ∧ S −−→ σ 0T =⇒ R −−
+−→ σσ T ,
+π
+π
+2. R −−→ σS =⇒ R, T −−→ σ S, T .
+
+Proof. By composition order invariance we have π 0 σS = σπ 0 S ⊆ σσ 0 T , implying
+π0
+
+π0
+
+S −−→ σ 0 T =⇒ σS −−→ σσ 0 T . The first property then follows directly from
+combining this with Theorem 1. The second property follows from Theorem 1
+and Proposition 1 as well: π[R, T ] = [πR, T ] ⊆ [σS, T ] = σ[S, T ].
+t
+u
+9
+
+2.3
+
+Relaxations
+
+The basic construction notion does not take into account statistical errors or
+computational assumptions. Those aspects are formalized by so-called relaxations,
+as introduced in [18]. On an abstract level, a relaxation is a mapping from
+specifications to weaker, so-called relaxed, specifications. For our purpose, where
+we instantiate specifications by sets of resources, we can define a relaxation as a
+function mapping a single resource to a set of resources.
+Definition 2. Let Θ denote the set of all resources. A relaxation φ is a function
+φ : Θ → 2Θ (where 2Θ denotes the power set of Θ) such that R
+S ∈ φ(R) for all
+R ∈ Θ. In addition, for a specification R, we define Rφ := R∈R φ(R) as a
+shorthand notation.
+A concrete relaxation thereby formalizes some notion of resources being
+“almost-as-good” in some context. That is, if we were happy with constructing
+a resource specification S, then we should also be happy with S φ , if we believe
+the weakening φ to be justifiable in the given context. For instance, one could
+consider the relaxation that maps the resource R to the set of all computationally
+indistinguishable resources from R under some computational assumption. Hence,
+if we believe the computational assumption to be valid, we should be as content
+with the relaxed specification as with the original one.
+Abstracting away irrelevant properties is a core paradigm of any modular
+analysis. Applied to Constructive Cryptography, this means that ideally we
+should be able to “forget” relaxations. That is, if one shows that one protocol
+constructs S φ (from some assumed resources), one should be able to compose it
+with another statement that assumes S instead. On the most abstract level, it is
+easy to see that the following rules apply to any relaxation.
+Proposition 3. For any specifications R and S, and any relaxation φ, we have
+1. R ⊆ Rφ ,
+2. R ⊆ S =⇒ Rφ ⊆ S φ ,
+3. (R ∩ S)φ ⊆ Rφ ∩ S φ ,
+4. (R ∪ S)φ = Rφ ∪ S φ .
+Proof. All properties trivially follow from R ∈ φ(R).
+The reduction relaxation. We now introduce the most fundamental relaxation,
+which captures computational security based on explicit reductions. This is defined
+as a function  that maps distinguishers to their respective performance in [0, 1],
+where (D) typically refers to the winning probability of a modified distinguisher
+D0 (the reduction) on the underlying computational problem.
+Definition 3. Let  be a function that maps distinguishers to a value in [0, 1].
+Then, the induced relaxation on a resource R, denoted R , is defined as
+
+R := S ∀D : |∆D (R, S)| ≤ (D) .
+We call such a relaxation generally an -relaxation or reduction relaxation.
+10
+
+We now discuss several properties that -relaxations have. First, the errors
+just add up, as expressed by the following theorem.
+Theorem 2. Let R be an arbitrary
+and let 1 and 2 be arbitrary
+2 specification,
+-relaxations. Then we have R1
+⊆ R1 +2 .
+Proof. This follows directly from the triangle inequality of the distinguishing
+advantage. A more detailed proof is given in Appendix A.1.
+Second, they naturally commute with protocol application and parallel composition of additional resources, i.e., the relaxation can be “pulled out”. In such a
+step, however, the additional resource or converter has to be explicitly accounted
+for in the reduction.
+Theorem 3. The -relaxation is compatible with protocol application in the
+
+following sense that π (R ) ⊆ (πR) π , for π (D) := (Dπ(·)), where Dπ(·)
+denotes the distinguisher that first attaches π to the given resource and then
+
+executes D. Moreover, it is compatible with parallel composition, i.e., R , S ⊆
+[R, S]S , for S (D) := supS∈S (D[ · , S]), where D[ · , S] denotes the distinguisher
+that emulates S in parallel to the given resource and then lets D interact with
+them.
+Proof. The proof is given in Appendix A.2.
+The composition theorem with -relaxations then follows directly from these
+compatibility results. The following corollary phrases the corresponding result—
+which in older version of Constructive Cryptography used to be called the
+composition theorem, thereby hard-coding computational security.
+Corollary 1. For any specifications R, S, and T , any protocols π and π 0 , and
+any -relaxation  and 0 , we have
+π
+
+π0
+
+0
+
+π 0 ◦π
+
+0
+
+1. R −−→ S  ∧ S −−→ T  =⇒ R −−−→ T π0 + ,
+π
+π
+2. R −−→ S  =⇒ [R, T ] −−→ [S, T ]T ,
+where π and S are defined as in Theorem 3, respectively.
+Proof. The proof can be found in Appendix A.3.
+
+3
+
+Interval-Wise Guarantees: Motivation and Intuition
+
+In this section, we outline the general approach, and its motivation, proposed in
+this work, before we deep dive into the technicalities in Section 4. In particular,
+we believe that the conceptual contributions are of interest independent from the
+exact mathematical formalization.
+11
+
+3.1
+
+A Motivating Example
+
+Consider two parties, Alice and Bob, who want to communicate securely over the
+Internet. If they have a pre-shared secret key available, e.g. from running a key
+agreement protocol, then it is well known that the encrypt-then-MAC paradigm
+achieves the desired goal. Assuming independent keys for the encryption and
+MAC scheme, this construction is secure if the underlying encryption scheme is
+IND-CPA secure and the MAC scheme is weakly unforgeable.
+What, however, if we assume that in reality the keys to not be one hundred
+percent secure? Intuitively one should expect the scheme to remain secure until
+either of the keys leak to an adversary, and the security properties then to
+gracefully downgrade accordingly. More concretely, there is little reason to doubt
+the following security guarantees should be provided by the scheme:
+1. until either of the keys leak, the scheme should provide both confidentiality
+and authenticity;
+2. if only the encryption key leaked so far, then the scheme should still provide
+authenticity;
+3. once the MAC key leaked, the scheme should at least still provide correctness,
+i.e., allow the parties to communicate in the absence of an active network
+attack.
+(Note that if first the MAC key gets exposed, then a scheme that is only IND-CPA
+secure might not provide full confidentiality.)
+3.2
+
+A Naive Attempt
+
+While the encrypt-then-MAC paradigm has composably proven to be sound in
+a context where both parties are honest and the keys are secure (e.g. [8,19]),
+extending those results to deal with key exposures has turned out to be surprisingly
+strenuous.
+Intuitively, one might model the achieved security guarantees as an secure
+channel with downgradable security, which waives confidentiality and authenticity
+once the respective keys leaked. The protocol should then construct such a
+channel from an insecure channel and two leakable keys2 , for authentication and
+encryption, respectively. See Figure 1 for a formal definition of the respective
+resources InsecCh, AuthKey, and EncKey (for the assumed resources), and SecCh
+for the secure channel with downgradable security. Following the paradigm
+of modularity, one might try to formalize and prove this in two steps and first
+consider authentication only, as modeled by a downgradable authenticated channel
+AuthCh (c.f. Figure 1 as well). Indeed, one can show the following construction.
+2
+
+In CC, the adversary by definition only has access to interfaces statically assigned to
+him. Hence, adaptive corruptions are modeled by introducing explicit memory and
+computation resources with an adversarial interface, granting the adversary access
+once the party is corrupted. For simplicity, we here consider directly leaking key
+resources instead. Assuming secure erasure, this is equivalent to passive corruptions.
+
+12
+
+Resource InsecCh
+Initialization
+MA [·] ← ⊥
+mB ← ⊥
+n←0
+Interface A
+Input: (send, m)
+n←n+1
+MA [n] ← m
+output ok
+Interface B
+Input: receive
+output mB
+
+Resource AuthCh
+
+Interface E
+Input: (leak, i)
+output MA [i]
+
+Initialization
+MA [·] ← ⊥
+mB ← ⊥
+n←0
+
+Input: (inject, m)
+mB ← m
+output ok
+
+Interface A
+Input: (send, m)
+n←n+1
+MA [n] ← m
+output ok
+
+Interface W
+Input: (deliver, i)
+mB ← MA [i]
+output ok
+
+Interface B
+Input: receive
+output mB
+
+Resource SecCh
+Initialization
+MA [·] ← ⊥
+mB ← ⊥
+n←0
+Interface A
+Input: (send, m)
+n←n+1
+MA [s] ← m
+output ok
+Interface B
+Input: receive
+output mB
+
+Interface E
+Input: (leak, j)
+output MA [j]
+Input: (inject, m)
+leaked
+if EAuthKey
+then
+mB ← m
+else
+mB ← ⊥
+output ok
+Interface i ∈ {E, W}
+Input: (deliver, j)
+mB ← MA [j]
+output ok
+
+Resource ResKey
+Interface E
+Input: (leak, j)
+if MA [j] = ⊥ then
+output ⊥
+leaked
+leaked
+else if EEncKey
+∨ EAuthKey
+then
+output MA [j]
+else
+output |MA [j]|
+Input: (inject, m)
+leaked
+then mB ← m
+if EAuthKey
+else mB ← ⊥
+output ok
+Interface i ∈ {E, W}
+
+for Res ∈ {Auth, Enc}
+Initialization
+kK
+Interface i ∈ {A, B}
+Input: fetch
+output k
+Interface E
+Input: read
+leaked
+then
+if EResKey
+output k
+else
+output ⊥
+
+Input: (deliver, j)
+mB ← MA [j]
+output ok
+
+Fig. 1: The resources involved in the encrypt-then-MAC example. Observe how
+the authenticated and the secure channel degrade their guarantees once the
+respective keys have been leaked.
+
+Proposition 4. Let AuthCh denote the authenticated channel that degrades its
+security once the respective key is leaked, as formally defined in Figure 1, and
+let πMAC denote the simple protocol that applies a MAC scheme to the messages.
+Then, there exists a simulator σMAC such that
+
+ π
+
+AuthKey, InsecCh −−MAC
+−→ σMAC AuthCh MAC ,
+where MAC denotes a simple reduction to the MAC-forgery game.
+Proof. This is a well-known result, which has for instance been sketched in [14].
+13
+
+However, once we turn our attention towards the second construction step—
+using encryption to achieve confidentiality—we run into the so-called simulator
+commitment problem of composable security, as expressed by the following
+proposition.
+Proposition 5. Let SecCh denote a secure channel that degrades the respective
+guarantees once the keys have been exposed, as depicted in Figure 1, and let πENC
+be the protocol that applies a symmetric encryption scheme. For any (efficient)
+simulator σENC , and (an efficiency preserving) reduction CPA to the IND-CPA
+game, we have
+
+ π
+
+EncKey, AuthCh −6−ENC
+−→ σENC SecCh CPA ,
+i.e., IND-CPA security does not suffice.
+Proof (Sketch). In the first phase, the simulator has to produce, without knowing
+the message, fake ciphertexts c1 , c2 , . . . , cn that look indistinguishable from the
+real one. For an IND-CPA secure scheme, he can easily do so by encrypting an
+arbitrary message of the correct length. The moment the encryption key leaks
+in the real world, he however has to output a uniformly looking key that makes
+his ciphertexts decrypt to the correct messages. Even knowing the messages by
+now, this is infeasible unless we assume a non-committing encryption scheme.
+Furthermore, as long as the requested key is shorter than n, Nielsen [20] showed
+that NCE cannot be achieved in the standard model by non-interactive protocols.
+Of course one could avoid this impossibility by utilizing stronger primitives
+and/or assumptions, such as non-committing encryption. In some contexts, such
+as when considering deniability, their stronger guarantees might even be inherently
+necessary. In this work, we however pose the following question: How can we
+express the aforementioned security guarantees, that the encrypt-then-MAC
+paradigm using regular encryption intuitively does provide, in a composable
+framework? That is, rather than establishing a stronger security notion, we aim
+at expressing the exact guarantees provided by existing game-based notions.
+3.3
+
+Our Solution
+
+So how to express the natural properties that are achieved? First, let us have
+another look at the reason for the impossibility: traditional simulation-based
+security notions require the simulator to commit to a ciphertext, emulating the
+encryption, based on the length only. Even if the simulator later gets to learn
+the entire message, it cannot come up with an encryption key that decrypts the
+previously output ciphertext to this message. Observe, however, that outputting
+the length only is just a technical way of expressing confidentiality until either
+one of the keys leak. In principle, there is no inherent requirement for a consistent
+simulation strategy across the different phases of the experiments. This is exactly
+what our proposal of interval-wise guarantees builds on: allowing disjoint simulation strategies for different phases of a protocol run. In other words, we simply
+make three disjoint security statements, one guaranteeing confidentiality and
+14
+
+authenticity until either key is leaked, one only guaranteeing authenticity between
+the exposure of the encryption key and the MAC key, and one guaranteeing
+correct delivery of messages afterwards. Given the specification centric approach
+of Constructive Cryptography, this can be phrased as
+πENC πMAC [AuthKey, EncKey, InsecCh] ⊆ S1 ∩ S2 ∩ S3 ,
+where S1 to S3 are specifications formalizing the respective guarantees.
+Phrasing separate statements can trivially be done in any framework, but also
+comes with a number of drawbacks. First, having to specify three constructions
+of unconnected, potentially differently described, specifications incurs a certain
+cognitive overhead, making the overall achieved security more demanding to
+understand. Second, and more severely, one loses some compositional properties.
+In particular, the analysis of another protocol building on top of those guarantees
+would require to make the exact same case distinction.
+To overcome those drawbacks, we phrase each guarantee as an appropriate
+interval-wise relaxation of the same underlying resource: the downgradable secure
+channel. That is, we phrase security as
+πENC πMAC [AuthKey, EncKey, InsecCh] ⊆ SecChφ1 ∩ SecChφ2 ∩ SecChφ3 ,
+where φ1 to φ3 formalize the interval-wise relaxations. Another protocol can then
+simply assume the overly idealized downgradable secure channel SecCh, with
+our novel composition theorem taking care of devising the appropriate overall
+security statement. We formalize this type of relaxation and the corresponding
+composition theorem in the next section, i.e., Section 4.
+Translating the approach to another composable framework, such as UC,
+might be feasible but non-trivial. First, one might try to formalize a single
+interval-wise guarantee as a different corruption model, where for instance the
+adversary simply does not get the encryption key to securely realize a functionality
+analogon to SecCh. To then compose this step with a SecCh-hybrid statement,
+one would probably require some compiler translating the statement. We, thus,
+believe that formalizing our results in CC that allows for arbitrary specifications
+is both simpler and more natural.
+A remark on adaptive versus static security. Our security statement
+makes a static case separation on the intervals considered. This might raise the
+question as to how this differs from simply considering static corruptions only. We
+would like to stress that our statement is about a real-world system, where the
+environment gets to adaptively (depending on all the outputs it sees) choose when
+the appropriate keys are leaked. Hence, our notion lies somewhere in between
+the traditional notions of static and adaptive security.
+To which extent our notion suffices in practice, and when a stronger traditional
+adaptive statement is required, is in our opinion an interesting open research
+problem. On the one hand, fully adaptively secure notions, without doubt,
+play a crucial role as a technical tool in many cryptographic constructions.
+15
+
+On the other hand, very few cases are known where the overall security of an
+application actually seems to be meaningfully impacted by adaptiveness. For
+instance, consider the folklore example of an MPC protocol where an adversary
+knows which party she has to corrupt based on some observed value during the
+execution. Nevertheless, for a polynomially sized adversary structure (i.e., choices
+which parties to corrupt), the adversary could still guess upfront, implying that
+even traditional static security would suffice. This is for instance the case if there
+are only logarithmically (or constant) many parties overall.
+Moreover, even if there super-polynomially many choices, it could still be
+that our interpretation of the static result is wrong: if we distinguish n static
+cases, and in each one of them a certain property is violated with probability
+, then all we can say is that by the union bound the probability of a property
+being violated is bounded by n. Hence, concluding from  being negligible that
+the protocol is overall secure, might simply not be sound in the first place.
+A remark on stronger security guarantees. The primary goal of this work
+is to express the security guarantee of certain schemes in a composable framework,
+for which so far this has not been possible. This does not contradict stronger
+security notions, such as non-committing encryption, being of use as well. For
+instance, insisting that the simulator can explain the ciphertexts (in the traditional
+notion) formalizes that the ciphertexts are never of any value—in a broader sense
+than confidentiality. This might play an important role in advanced properties
+such as deniability, or e.g. in a scenario where an adversary wants to prove to
+another party that he managed to wiretap the channel before the transmitted
+message and the corresponding encryption key are publicly announced. Phrasing
+that no adversary can succeed requires the simulator to work beyond the public
+announcement, and achieving it requires non-committing encryption. Otherwise,
+committing to the ciphertext ahead of the public announcement should convince
+the other party.
+
+4
+
+Interval-Wise Guarantees: Definitions
+
+In this section, we formalize interval-wise guarantees as a type of relaxation
+and provide the corresponding composition theorem. In the spirit of modularity,
+we proceed in several steps. First, we introduce one relaxation that waives all
+guarantees after a certain point, and second, the complementary one that waives
+all guarantees before a certain event. Third, we combine those relaxations and
+show that it fits well into the existing theory. Finally, we present the resulting
+construction notion and phrase the motivating example therein.
+4.1
+
+Guarantees up to Some Point
+
+As we have seen in the motivational example, the confidentiality of the messages
+should be guaranteed until the key is leaked. To phrase this, we, on a high level,
+only require that the simulator works up to this event. We formalize this as a
+16
+
+Resource untilE leaked ∨E leaked (SecCh)
+AuthKey
+
+EncKey
+
+Initialization
+MA [·] ← ⊥
+mB ← ⊥
+n←0
+
+Interface E
+Input: (leak, j)
+
+
+
+leaked
+leaked
+require ¬ EEncKey
+∨ EAuthKey
+∧ MA [j] 6= ⊥
+
+output |MA [j]|
+
+Interface A
+Input: (send, m)
+leaked
+leaked
+require ¬ EEncKey
+∨ EAuthKey
+n←n+1
+MA [n] ← m
+output ok
+
+
+
+Input: (inject, m)
+output ⊥
+Interface i ∈ {E, W}
+Input: (deliver, j)
+leaked
+leaked
+require ¬ EEncKey
+∨ EAuthKey
+
+
+
+mB ← MA [j]
+output ok
+
+Interface B
+Input: receive
+
+leaked
+leaked
+require ¬ EEncKey
+∨ EAuthKey
+output mB
+
+where require cond is a short-hand notation for if ¬cond output ⊥
+
+Fig. 2: The secure channel from Figure 1 when halted once either key leaks. In
+contrast to the original one, this resource never leaks the actual messages.
+
+novel type of relaxation consisting of all systems behaving equally up to this
+point. To this end, for a resource R, we consider the modified resource that halts
+once a certain predicate on the global event history is satisfied.
+Definition 4. Let R denote a resource, and let P (E) denote a monotone predicate
+on the global event history. That is, if E is a prefix of E 0 then P (E) → P (E 0 ).
+Then, we denote by untilP (R) the resource that behaves like R but halts the
+moment P (E) becomes true. That is, it no longer triggers any further events
+and all subsequent (including the one for the query that triggered the condition)
+answers are the special symbol ⊥ .
+Getting back to our example, consider the resource untilP (SecCh) for P (E) :=
+leaked
+leaked
+EAuthKey
+∨ EEncKey
+, depicted in Figure 2. Since this resource no longer produces
+any output once either event occurred, it clearly never leaks the messages to Eve
+and removes Eve’s capability of injecting messages. Hence, the resulting resource
+closely matches the expected secure channel when ignoring key exposures.
+We now define the according relaxation, which maps a system to the set of
+all systems that behave equivalently up to some event.
+Definition 5. Let P be a monotone predicate on the global event history, indicating until when the behavior must be the same as the one of the resource R.
+Then, the induced relaxation on a resource R, denoted RP ] , is defined as
+
+RP ] := S untilP (R) = untilP (S)
+We call such a relaxation generally an until-relaxation.
+17
+
+As with the -relaxation, the statements only become reusable and thus truly
+composable if we understand how the until-relaxation interacts with the other
+elements of the framework. For this, first observe that equality up to some point
+is monotone, i.e., if two resources are equivalent up to some point, they are
+also equivalent up to every earlier point. This furthermore implies that two
+until-relaxations add up in the natural manner, as follows.
+Theorem 4. Let R and S be two resources, and let P1 and P2 be two monotone
+predicates. Then, we have
+untilP1 (R) = untilP1 (S) =⇒ untilP1 ∨P2 (R) = untilP1 ∨P2 (S).
+In particular, for every specification R, we have RP1 ] ⊆ RP1 ]
+
+P2 ]
+
+⊆ RP1 ∨P2 ] .
+
+Proof. The first property follows directly from the definition of the until()
+P 2 ]
+projection. In order to prove the second property, let S ∈ RP1 ]
+. Then,
+P1 ]
+there exists T ∈ R
+such that untilP2 (S) = untilP2 (T). Moreover, there exists
+R ∈ R such that untilP1 (T) = untilP 1 (R). By the first property we, thus, obtain
+untilP1 ∨P2 (S) = untilP1 ∨P2 (T) = untilP1 ∨P2 (R), concluding the proof.
+t
+u
+Furthermore, on a positive note, the relaxation is compatible with both protocol application and parallel composition, as expressed by the following theorem.
+Those compatibility properties—analogously to Corollary 1—also directly imply
+sequential and parallel composition properties. For the lack of use, we however
+omit explicitly stating them.
+Theorem 5. The until-relaxation is compatible with protocol attachment, i.e.,
+
+P ]
+
+ 
+P ]
+π RP ] ⊆ πR
+and with parallel composition, i.e., RP ] , S ⊆ R, S .
+Proof. A proof is presented in Appendix B.2.
+Unfortunately, however, the until-relaxation does not commute directly with
+the -relaxation, as expressed by the following theorem.
+Theorem 6. There exist specifications R and S, a monotone predicate P , and
+a function  mapping distinguishers to values in [0, 1] such that
+RP ]
+
+
+
+6⊆ R
+
+P ]
+
+and
+
+S
+
+P ]
+
+
+6⊆ S P ] .
+
+Proof. The proof can be found in Appendix B.3.
+This not only raises the question which order actually corresponds to the
+intuitive interpretation of such a combination—the set of all systems which
+behave equally until the condition is triggered assuming the assumption of  is
+valid—but also restricts reuse of such statement. That is, if one construction
+assumes S P ] to obtain T , and another one constructs S  instead, then adjusting
+the former construction to assume S  instead is non-trivial. As a consequence,
+we will introduce a combined relaxation in Section 4.3, resolving both issues.
+18
+
+4.2
+
+Guarantees From Some Point On
+
+In this section, we now consider the complementing type of guarantees: guarantees
+that only hold from a certain point on. Formalizing such guarantees in a model
+where an adaptive environment interacts with the resource is, however, quite
+delicate. In this work, we thus opt for a rather simple (and restricted) version of
+it, where we use again a monotone condition on the global event history. We then
+define the projection that disables access to a system R before that condition is
+met. Clearly, the condition must rely on “external” events only (the ones not
+controlled by R), i.e., satisfying it must not require accessing the resource itself.
+Definition 6. Let P (E) denote a monotone predicate on the global event history.
+For a resource R, let fromP (R) denote the resource that behaves like R, except
+that it only accepts queries once P (E) is true (and before only returns ⊥).
+For instance, the resource fromE leaked (SecCh) only answers queries once the enviEncKey
+
+leaked
+ronment triggered the event EEncKey
+. Thus, in contrast to SecCh, this resource
+always leaks the full message of the adversary, in line with our intuition that it
+describes the behavior after the key has been exposed. A formal definition of the
+resource is depicted in Appendix B.1.
+Based on this projection, we now introduce the corresponding relaxation.
+
+Definition 7. Let P (E) be a monotone predicate, indicating from which point
+on the behavior must be the same as the one of the resource R. Then, the induced
+relaxation on a resource R, denoted R[P , is defined as
+
+R[P := S fromP (R) = fromP (S)
+We call such a relaxation generally a from-relaxation.
+The way the from-relaxation interacts with the other elements of the theory is
+analogous to the until-relaxation. First, two from-relaxations add up naturally: if
+we relax the guarantees offered by a specification to only hold from the moment
+P1 is satisfied, and then further relax them to only hold once P2 is satisfied, then
+the guarantees only hold once P1 ∧ P2 is satisfied.
+Theorem 7. Let R and S be two resources, and let P1 and P2 be monotone
+predicates on the global event history. Then, we have
+fromP1 (R) = fromP1 (S) =⇒ fromP1 ∧P2 (R) = fromP1 ∧P2 (S).
+In particular, for every specification R, we have R[P1 ⊆ R[P1
+
+[P2
+
+⊆ R[P1 ∧P2 .
+
+Proof. The proof is analogous to the one of Theorem 4.
+Second, the relaxation is compatible with protocol application and parallel
+composition, which moreover implies that it graciously interacts with the basic
+construction notion.
+19
+
+Theorem 8. The from-relaxation is compatible with protocol application, i.e.,
+
+[P
+
+ 
+[P
+π R[P ⊆ πR
+and with parallel composition, i.e., R[P , S ⊆ R, S .
+Proof. The proof is analogous to the one of Theorem 5.
+Analogously to the until-relaxation, the from-relaxation, however, does not commute with the -relaxation.
+Theorem 9. There exist specifications R and S, a monotone predicate P (E),
+and a function  mapping distinguishers to values in [0, 1] such that
+
+[P
+[P
+
+R[P 6⊆ R
+and
+S
+6⊆ S [P .
+Proof. The proof is presented in Appendix B.4.
+Finally, consider the interaction between the from- and the until-relaxation.
+While the from-projection and the until-projection commute, i.e.,
+fromP1 (untilP2 (R)) = untilP2 (fromP1 (R)),
+it is an interesting open question whether the two respective relaxations actually
+commute. As a consequence, we introduce a combined from-until relaxation in
+the next subsection.
+4.3
+
+The Interval-Wise Relaxation
+
+As we have seen, the -relaxation commutes neither with the until-relaxation
+nor the from-relaxation, and its unclear whether the from- and until-relaxations
+do. This impedes modularity and reusability of the statements. Furthermore,
+it also deteriorates the intuitive semantics of the statements: if for instance we
+want to express that a system behaves like a certain ideal up to some point, and
+under certain computational assumptions, which order of the relaxations is the
+right one and should be proven? To alleviate those issues, in this section, we
+introduce two combined relaxations that build on the atomic ones introduced in
+the previous section. We then show that they both have natural semantics and
+clean properties.
+First, we consider a relaxation that combines the from- and until-relaxation,
+thereby alleviating the issue that those relaxations might not commute.
+Definition 8. Let P1 (E) and P2 (E) be two monotone predicates, indicating from
+when until when the resource must behave like R. We then define the following
+relaxation
+
+R[P1 ,P2 ] := S untilP2 (fromP1 (R)) = untilP2 (fromP1 (S)) .
+P2 ]
+While this combined relaxation apparently neither corresponds to R[P1
+[P1
+nor RP2 ]
+, it interestingly corresponds to the transitive closure thereof. Taking
+the transitive closure, moreover, also restores symmetry, i.e., S ∈ R[P1 ,P2 ] ⇔ R ∈
+S[P1 ,P2 ] , lost by each of the two individual combinations. Overall, this indicates
+that the combined relaxation best corresponds to the intuition of the “almost-asgood” relation it should intuitively represent.
+20
+
+Theorem 10. For any resource R and any monotone predicates P1 and P2 , we
+have
+
+[ [ 
+R[P1 ,P2 ] =
+Rφ1 ·φ2 ···φn | ∀i ≤ n : φi ∈ {P2 ], [P1 }
+n∈N
+
+=
+
+
+
+R[P1
+
+P2 ] [P1
+
+=
+
+
+
+RP2 ]
+
+[P1 P2 ]
+
+,
+
+where Rφ1 ·φ2 ···φn is a shorthand notation for first applying φ1 , then φ2 , until φn .
+Proof. The proof can be found in Appendix B.5.
+We can now leverage this alternative definition to directly derive properties
+about the combined relaxations based on the proven properties of the two
+underlying ones. In particular, we can show that two such relaxations add up in
+the expected manner and are compatible with both protocol application as well
+as parallel composition.
+Theorem 11. For every specification R, and all monotone predicates P1 , P2 ,
+[P 0 ,P 0 ]
+0
+0
+P10 , and P20 , we have R[P1 ,P2 ] 1 2 ⊆ R[P1 ∧P1 ,P2 ∨P2 ] .
+Proof. This follows directly by combining Theorems 4, 7 and 10.
+
+t
+u
+
+Theorem 12. The combined relaxation is both compatible with protocol ap
+[P1 ,P2 ]
+plication, i.e., π R[P1 ,P2 ] ⊆ πR
+and with parallel composition, i.e.,
+ [P ,P ]  
+[P1 ,P2 ]
+1
+2
+R
+, S ⊆ R, S
+.
+
+P2 ] [P1
+. Using the comProof. By Theorem 10 we have that R[P1 ,P2 ] = R[P1
+patibility of the from-relaxation and until-relaxation, i.e., Theorems 5 and 8,
+directly implies the desired properties.
+t
+u
+As we have seen, neither the until- nor the from-relaxation commute with the
+computational -relaxation, and the same holds true for the from-until-relaxation
+as well. As a consequence, neither (R[P1 ,P2 ] ) nor (R )[P1 ,P2 ] ) seems to capture
+the set of all systems that behave like R in the interval [P1 , P2 ] assuming that
+the computational problem encoded in  is hard. In the spirit of the combined
+from-until relaxation, we solve this issue by introducing a combined relation.
+Since the  relaxation is not idempotent, but the epsilons add up, taking the
+transitive closure, however, does not match the desired relaxation but the following
+restricted version of transitive closure does.
+Definition 9. For two monotone predicates P1 and P2 , and a function  mapping
+distinguishers to values in [0, 1], we define the following relaxation:
+R[P1 ,P2 ]: :=
+
+
+
+R[P1 ,P2 ]
+
+ [P1 ,P2 ]
+
+and call such a relaxation an interval-wise relaxation.
+21
+
+,
+
+We now prove that the interval-wise relaxation has all the desired properties.
+Theorem 13. Let P1 and P2 be two monotone predicates, and let  be a function
+mapping distinguishers to values in [0, 1]. Then, for any specification R we have
+R[P1 ,P2 ]:
+
+[P10 ,P20 ]:0
+
+[P1 ∧P10 ,P2 ∨P20 ]:[P ∧P 0 ,P ∨P 0 ] +0[P ∧P 0 ,P ∨P 0 ]
+
+⊆R
+
+1
+
+1
+
+2
+
+2
+
+1
+
+1
+
+2
+
+2
+
+,
+
+where [P1 ∧P10 ,P2 ∨P20 ] (D) := (D ◦ untilP2 ∨P20 ◦ fromP1 ∧P10 ), i.e., the performance
+of the distinguisher interacting with the projected resource, and analogously for
+0[P1 ∧P 0 ,P2 ∨P 0 ] .
+1
+
+2
+
+Proof. The proof can be found in Appendix B.6.
+Theorem 14. The interval-wise relaxation is compatible with protocol appli
+[P1 ,P2 ]:π
+cation, i.e., π R[P1 ,P2 ]: ⊆ πR
+and with parallel composition, i.e.,
+ [P ,P ]:  
+[P1 ,P2 ]:S
+1
+2
+, S ⊆ R, S
+.
+R
+
+ [P1 ,P2 ]
+Proof. By definition we have R[P1 ,P2 ]: := R[P1 ,P2 ]
+. Using the compatibility of the -relaxation and the from-until-relaxation, i.e., Theorems 3 and 12,
+directly implies the result.
+4.4
+
+The Resulting Construction Notion
+
+Based on the interval-wise relaxation, we now introduce our new construction
+notion. To this end, let Ω denote a set of tuples (P1 , P2 , , σ), where P1 and P2
+are monotone predicates on the global event history,  is a function mapping
+distinguishers to values in [0, 1], and σ denotes a simulator. We then consider
+constructions of the following type:
+\
+π
+R −−→
+(σS)[P1 ,P2 ]: .
+(P1 ,P2 ,,σ)∈Ω
+
+That is, each element in Ω describes a time-interval in which the elements in πR
+can be abstracted as elements in S—with respect to the simulator σ and error .
+Application to the running example. In our example, we want to phrase
+that the symmetric encryption protocol constructs the secure channel from the
+authenticated one and the key in the corresponding intervals.
+Proposition 6. Let πENC = (πenc , πdec ) denote the protocol securing communication using a symmetric encryption scheme. Then, for the resources in Figure 1,
+there exist (efficient) simulators σ1 , σ2 , and σ3 such that
+\
+
+ π
+EncKey, AuthCh −−ENC
+−→
+(σSecCh)[P1 ,P2 ]:
+(P1 ,P2 ,,σ)∈Ω
+
+22
+
+for
+Ω :=
+
+
+
+
+
+leaked
+leaked
+leaked
+true, EEncKey
+∨ EAuthKey
+, CPA , σ1 , EEncKey
+, false, 0, σ2 ,
+leaked
+EAuthKey
+, false, 0, σ3
+
+
+
+,
+
+where CPA denotes a simple reduction from distinguishing the secure and authenticated channel (without key leakage) to the IND-CPA game.
+Proof. A proof sketch is presented in Appendix B.7.
+Composition. Finally, we finish the section by stating the composition guarantees of this type of construction statement. It follows directly from the properties
+proven about the interval-wise relaxation in Theorems 13 and 14.
+Theorem 15. Let R, S, and T be arbitrary specifications, let π and π 0 be
+arbitrary protocols, and let Ω and Ω 0 be arbitrary interval-wise guarantees. Then,
+we have
+\
+\
+0
+0
+0
+π0
+π
+R −−→
+(σS)[P1 ,P2 ]: ∧ S −−→
+(σ 0 T )[P1 ,P2 ]:
+(P10 ,P20 ,0 ,σ 0 )∈Ω 0
+
+(P1 ,P2 ,,σ)∈Ω
+
+=⇒
+
+π 0 ◦π
+
+R −−−→
+
+\
+
+0
+
+0
+
+(σσ 0 T )[P1 ∧P1 ,P2 ∨P2 ]:˜ ,
+
+(P1 ,P2 ,,σ)∈Ω
+(P10 ,P20 ,0 ,σ 0 )∈Ω 0
+
+where ˜ := (π0 )[P1 ∧P10 ,P2 ∨P20 ] + (0σ )[P1 ∧P10 ,P2 ∨P20 ] . Furthermore, we have
+\
+\
+
+ π
+
+[P1 ,P2 ]:T
+π
+R −−→
+(σS)[P1 ,P2 ]: =⇒ R, T −−→
+σ S, T
+.
+(P1 ,P2 ,,σ)∈Ω
+
+(P1 ,P2 ,,σ)∈Ω
+
+Proof. The proof is stated in Appendix B.8.
+Note that this construction notion subsumes all those previously introduced
+in this work. In particular, instantiating P1 = true, P2 = false, (D) = 0, and
+σ = id, i.e., the identity converter, yields (idS)[true,false]:0 = S. As a consequence,
+the above composition theorem also allows to combine constructions according
+to each of the notions introduced in this work. For instance, in our example, we
+can compose the construction of AuthCh from Proposition 4 (according to the
+standard notion) with the interval-wise construction of SecCh from Proposition 6.
+
+5
+
+Application to Commitments and Coin-Tossing
+
+In this section, we present a composable formalization of (perfectly binding)
+commitments that can be constructed in the plain model. To this end, we
+formalize the properties of commitment schemes—correctness, binding, and
+hiding—each as individual specifications. Thereby, hiding is formalized using the
+interval-wise guarantees introduced in the previous section. We then apply Blum’s
+coin-tossing protocol on top of it. While, obviously, the resulting specifications
+are not sufficient to be used as a CRS, we show that it is unbiased.
+23
+
+5.1
+
+Information-Theoretically Binding Commitments
+
+While UC commitments [6] provide clean and strong guarantees, unfortunately
+they intrinsically require setup assumptions such as a common reference string.
+Nevertheless, for many protocols, regular commitments only satisfying the classical
+game-based properties seem to suffice. This raises the question: can we formalize
+a weaker yet composable security notion for (non-interactive) commitments?
+In Constructive Cryptography, the security of a commitment scheme is formalized using three different constructions [17], for each set of potentially dishonest
+parties (ignoring the case of both parties being dishonest). Typically, this is
+presented as one construction parametrized in the set of honest parties, where
+the ideal specification consists of a filtered resource. That is, for each party P, a
+filter φP is specified that when connected to the resource limits the honest party’s
+capabilities. However, there is no fundamental reason for those three construction
+statements’ specifications to be of some unified type. As a result, we henceforth
+focus on specifying each property—hiding, binding, and correctness—individually,
+starting with correctness.
+A
+B
+Definition 10. Let πcom = (πcom
+, πcom
+) denote a non-interactive commitment
+protocol where A commits a value m ∈ M towards B. The scheme is said to be
+(perfectly) correct if
+ A→B
+ πcom
+Ch1 , ChA→B
+−−−→ ComA→B
+2
+M ,
+A→B
+where ComA→B
+M denotes the commitment resource defined in Figure 3, and Ch1
+A→B
+3
+and Ch2
+denote two single-message communications channels from A to B.
+
+Now we proceed to formalize the hiding property. On an intuitive level,
+(computational) hiding of a non-interactive commitment scheme requires that the
+commitment string must not reveal any information about the committed value
+to the receiver B, until the commitment is opened. Clearly, we can directly apply
+our notion from Section 4 and formalize this using an interval-wise relaxation.
+A
+B
+Definition 11. Let πcom = (πcom
+, πcom
+) denote a non-interactive commitment
+protocol. Then, the scheme is said to be (computationally) hiding if
+A
+ πcom
+[true,E opened ]:
+ A→B
+B
+Ch1 , ChA→B
+−−→ σcom
+ComA→B
+,
+2
+M
+
+B
+for some simulator σcom
+and some computational assumption encoded in .
+
+The situation is more challenging with binding. The UC formalization, and
+analogously ComA→B
+M , requires that the adversary inputs the value to which
+it commits to in the initial phase, in order to formalize that it then cannot
+be altered anymore. This, however implies that the simulator must be able
+to extract the value from the commitment string, fundamentally contradicting
+3
+
+That is, a channel that allows the sender to input a single message once. For simplicity,
+assume that the channel has guaranteed immediate delivery, i.e., whenever the sender
+has input a message, the receiver can fetch it.
+
+24
+
+A→B
+∗
+Resource ComA→B
+M and ComM,f with f : {0, 1} → M ∪ {⊥}
+
+Initialization
+v←⊥
+
+Interface A (continued)
+Input: (open, x) ∈ M
+require E committed and only called once
+if x = v then
++
+E ← E opened
+output ok
+
+Interface A
+Input: (commit, x) ∈ M
+require ¬E committed
+v←x
++
+E ← E committed
+output ok
+
+Interface B
+Input: isCommitted
+output E committed
+
+Input: (commitRaw, c) ∈ {0, 1}∗
+require ¬E committed
+v ← f (c)
++
+
+Input: read
+if E opened then
+output v
+else
+output ⊥
+
+committed
+
+E ←E
+output ok
+
+Fig. 3: The commitment resources for message space M. In the basic version,
+Alice has to specify the value at the time of commitment, whereas in the unfiltered
+version she additionally has the ability to commit to f (c).
+
+the hiding property in the plain model. Since such a formalization is just one
+(albeit convenient) manner to specify that the value is fixed at the end of the
+commitment phase, we circumvent this impossibility in another manner. To
+this end, we consider perfect (or information-theoretically secure) commitments
+only, where the commitment string uniquely determines the committed value.
+We leverage this considering a resource ComA→B
+M,f , depicted in Figure 3, which
+allows the dishonest A to input an arbitrary string x in order to commit to the
+value v = f (x). Here, f : {0, 1}∗ → M ∪ {⊥} denotes an arbitrary function that
+maps the commitment string either to a message m, or to ⊥ indicating that it is
+malformed.
+A
+B
+Definition 12. Let πcom = (πcom
+, πcom
+) denote a non-interactive commitment
+protocol where A commits a value m ∈ M towards B. Then, the scheme is said to
+A
+be perfectly binding if there exists an efficient simulator σcom
+such that
+B
+ A→B
+ πcom
+ A
+Ch1 , ChA→B
+−−→ σcom
+ComA→B
+2
+M,f
+
+f : {0, 1}∗ → M ∪ {⊥} ,
+
+where ComA→B
+M,f denotes the extended commitment resource defined in Figure 3.
+As a side note, note that the resource ComA→B
+M can trivially be expressed as a
+filtered version of ComA→B
+M,f , where the filter φA removes access to the commitRaw
+A→B
+oracle. That is, we obviously have φA ComA→B
+M,f = ComM for every function f .
+Remark 1. Observe that the function f is not necessary efficiently computable.
+Actually, for a hiding scheme, f cannot be efficiently computable. This, however,
+25
+
+does not imply that the overall specification has to contain resources that are not
+efficiently implementable, as clearly the real-world resource is efficient, and yet
+corresponds to σ A ComA→B
+M,f for an inefficient f . In other words, the decomposition,
+containing the inefficient resource, is just one way of describing an overall efficient
+resource. The specification could, thus, be restricted to consist of only efficient
+resources, which we did not make explicit here focusing only on the security
+properties. This is somewhat reminiscent of the solution proposed by Broadnax
+et al. [4] to deal with inefficient simulators in a manner that retains the expected
+composition guarantees.
+ElGamal commitments. We briefly consider a variant of ElGamal commitments as a concrete instantiation of the above formalized notion. Let G = hgi
+denote a cyclic group of order n with generator g.
+– To commit to a message m ∈ G, ((g a , g b , m · g ab ), (a, b)) ← Commit(m)
+for a, b ∈ Zn uniformly at random. That is, the commitment string is
+(g a , g b , m · g ab ) and the opening value (a, b).
+– Open((c, A, B), (a, b)) := c · g −ab if A = g a and B = g b , and ⊥ otherwise.
+Proposition 7. Let πElG-com denote the pair of converters implementing the
+aforementioned ElGamal commitment scheme (c.f. Appendix C.1 for a formal definition). Then, πElG-com satisfies correctness, hiding (under the DDH assumption),
+and binding according to Definitions 10 to 12, respectively.
+Proof (Sketch). It is easy to see that the our correctness condition holds. FurtherB
+more, with the simulator σcom
+outputting a random triple of group elements as
+commitment string, hiding holds under the DDH assumption, i.e., for  encoding
+an appropriate reduction to the DDH problem. Finally, consider the function
+f that maps (U, V, W ) ∈ G3 to W · g − DLg (U )·DLg (V ) and all other bit-strings
+A
+to ⊥. For this function, it is easy to see that a simulator σcom
+exists such that
+the construction that formalizes binding holds. See Appendix C.1 for a formal
+description of the respective simulators.
+t
+u
+5.2
+
+Coin-Tossing
+
+In this section, we consider Blum’s simple coin-tossing protocol [2]. The protocol
+assumes to have a commitment resource from Alice to Bob, and a communication
+channel in the reverse direction, at its disposal. It then proceeds as follows: Alice
+chooses X ∈ {0, 1} uniformly at random and commits to it. Once Bob is sure
+that Alice committed, he chooses Y ∈ {0, 1} uniformly at random and sends it
+over to Alice (in clear). Finally, Alice opens the commitment and both parties
+output Z = X ⊕ Y .
+Clearly, this protocol does not provide fairness—even when instantiated with
+a UC-secure commitment. This is due to the fact that both parties can always
+choose to abort the protocol by not responding, and in particular Alice can do
+so after she has seen the result. When instantiating the commitment with the
+26
+
+resource constructed in the last section, one even obtains a weaker resource. Note
+that this is inherent for our construction being in the plain model, as otherwise it
+could be used as the bit of a CRS, contradicting well-known impossibility results.
+In a nutshell, the resource obtained by our construction guarantees that the
+output is not biased, but does not exclude that during the opening phase, one of
+the parties learns some trapdoor allowing it to distinguish it from a uniformly
+random value. For example, our formalization would allow the resulting bit to be
+the first bit of a PRG’s output, while leaking the seed during the opening phase.
+Note that such a coin toss resource is still useful, for instance for lotteries. First,
+if the resulting bit is just used to determine which party gets some good, then
+bias-resistance is obviously good enough irrespective of the fact that the parties
+might be aware that the result is only pseudo-random. Second, in a simple lottery
+where people’s preferences are obvious, fairness can be achieved by declaring the
+party that caused the abort to have lost.
+The coin-toss resource. The ideal specification is expressed in terms of the
+A,B
+resources CTA,B
+M and CTM,f , where the former denotes a restricted version of the
+latter. The resource CTA,B
+M initially draws an element Z ∈ M uniformly at random.
+In order for the coin-toss Z to become available to the parties, A has to initiate
+it, and B has to respond afterwards. From this point on, A can obtain Z and then
+decide whether the value should also be released to B. In the resource CTA,B
+M,f , A
+furthermore can query once a leakage f (c), of some potentially inefficient function
+f . A formal definition of the resources can be found in Figure 4.
+The constructions. First, consider correctness. It is easy to see that the
+following construction holds, i.e., two honest parties actually get to agree on a
+uniform random bit.
+A
+B
+Proposition 8. Let πCT := (πCT
+, πCT
+) denote the pair of converters implementing Blum’s protocol (c.f. Appendix C.2 for a formal definition). Then, we have
+
+
+B→A πCT
+ComA→B
+−−→ CTA,B
+{0,1} , Ch
+{0,1} ,
+
+and thus
+
+ A→B
+ π ◦πcom
+Ch1 , ChA→B
+, ChB→A −−CT
+−−−−→ CTA,B
+2
+{0,1} ,
+
+for any commitment scheme πcom satisfying Definition 10 (correctness).
+Second, consider the guarantee for an honest initiator A.
+A
+B
+Proposition 9. Let πCT := (πCT
+, πCT
+) denote the pair of converters implementB
+ing Blum’s protocol. Then, there exists an efficient simulator σCT
+such that
+
+
+ A
+B→A πCT
+B
+ComA→B
+,
+Ch
+−−→ σCT
+CTA,B
+{0,1}
+{0,1} ,
+and thus, for any commitment scheme πcom satisfying Definition 11 (hiding), we
+have
+A
+A
+ A→B
+ πCT
+[true,E opened ]:˜
+◦πcom
+B
+B
+Ch1 , ChA→B
+, ChB→A −−
+−−−
+→ σcom
+σCT
+CTA,B
+,
+2
+{0,1}
+27
+
+A,B
+∗
+Resource CTA,B
+M and CTM,f with f : {0, 1} → M ∪ {⊥}
+
+Initialization
+ZM
+initiated, responded, released ← false
+
+Interface A (continued)
+Input: release
+require responded and only called once
++
+
+E ← E opened
+released ← true
+output ok
+
+Interface A
+Input: init
+require ¬E committed
+initiated ← true
++
+E ← E committed
+output ok
+
+Interface B
+Input: isInitiated
+output initiated
+
+Input: read
+require responded
+output Z
+
+Input: respond
+require initiated
+responded ← true
+output ok
+
+Input: (getLeakage, c) ∈ M
+require only called once
+output f (c)
+
+Input: read
+require released
+output Z
+
+Fig. 4: The coin-toss resources for coin space M. In the unfiltered version, Alice
+additionally has the capability to once obtain a leakage to f (c), where f is a
+parameter of the resource. Note that neither version provides fairness, as Alice
+can always chooses to not release the value after having seen it.
+
+
+B
+.
+with ˜ := σCT
+[true,E opened ]
+Proof. Recall that ComA→B
+{0,1} only reveals the value X to Bob after he sent his
+value Y . Hence, X and Y are independent and with X chosen uniform at random
+by Alice, implying that Z = X ⊕ Y is a uniform random value. Hence, using the
+B
+simple simulator σCT
+that simulates the output of the commitment resource as
+X := Z ⊕ Y (see Appendix C.2 for a formal definition), it is easy to see that the
+construction actually achieves the coin-toss resource perfectly.
+t
+u
+Note that this implies that the output Z that Alice obtains looks indistinguishable
+from a uniform random value until the value is released for the dishonest party.
+Hence, while it is not guaranteed that the dishonest party does not learn some
+trapdoor afterwards, the value Z is at least unbiased.
+Finally, consider the security guarantees for an honest party B against a
+potentially dishonest party A. To this end, we turn to the unfiltered resources
+A,B
+ComA→B
+{0,1},f and CT{0,1},f , where the latter once allows Alice to obtain f (c) for a
+c of her choice.
+A
+B
+Proposition 10. Let πCT := (πCT
+, πCT
+) denote the pair of converters impleA
+menting Blum’s protocol. Then, there exists an efficient simulator σCT
+such
+
+28
+
+that
+
+
+B→A
+f : {0, 1}∗ → {0, 1, ⊥}
+ComA→B
+{0,1},f , Ch
+ A
+πB
+A,B
+−−CT
+→ σCT
+f : {0, 1}∗ → {0, 1, ⊥} ,
+CT{0,1},f
+and thus, for any commitment scheme πcom satisfying Definition 12 (binding),
+we have
+B
+B
+ A→B
+ πCT
+ A
+◦πcom
+A
+Ch1 , ChA→B
+, ChB→A −−
+−−−
+→ σcom
+σCT
+CTA,B
+2
+{0,1},f
+
+f : {0, 1}∗ → {0, 1, ⊥} .
+
+Proof. Consider the real-world system resulting from attaching Bob’s converter
+only, for some function f . Interacting with this resource, the environment can
+input a commitment string C at Alice’s interface, then see Bob’s bit Y at Alice’s
+channel interface, and finally see the resulting bit Z = f (C) ⊕ Y as the output
+of Bob’s converter. In the following, consider the ideal-world system with the
+same function f as in the real world. It is now easy to see that a simulator can
+easily replicate the real-world behavior by getting Z from the resource, querying
+the leakage-oracle on C getting f (C), and then setting Y = Z ⊕ f (C). A formal
+A
+definition of the simulator σcom
+can be found in Appendix C.2.
+t
+u
+As a final note, observe that formalizing Bob’s security guarantees for the
+commitment resource in terms of an interval-wise relaxation, rather than introducing the unfiltered resource CTA,B
+{0,1},f , would not work. This is due to the
+fact that in the real world Y (requiring the additional capabilities to simulate)
+is output at Alice’s interface before Bob sees Z. Hence, simulating only until
+Alice sends Y would not give any guarantees on Bob’s output. In summary, this
+demonstrates Constructive Cryptography’s advantage of being able to consider
+different types of statements within one (meta-)framework.
+
+6
+
+Revisiting Composable Identity-Based Encryption
+
+In this section, we reexamine a result by Hofheinz, Matt, and Maurer [10] implying
+that IND-ID-CPA security is not the right notion for identity-based encryption,
+unmasking this claim as an unnecessary framework artifact.
+6.1
+
+Background and Motivation
+
+Identity-based encryption (IBE) is a generalization of public-key encryption that
+allows to encrypt messages using a master public key and the identity of the
+receiver, e.g., the e-mail address. This stands in contrast to a regular publickey encryption scheme, where the encryption needs the receiver’s public key,
+suggesting IBE as a solution to the key-distribution problem.
+An IBE scheme IBE := (Gen, Ext, Enc, Dec) consists of four algorithms. The
+key generation algorithm (mpk, msk) ← Gen(1λ ) outputs a master public and
+a master secret key (given the security parameter as input). The extraction
+29
+
+algorithm sk id ← Ext(msk, id) outputs a user secret key given the master secret
+key and the user’s identity. Encryption c ← Enc(mpk, id, m) outputs a ciphertext,
+and m0 ← Dec(sk id , id, c) the corresponding plain-text. For correctness, it is
+required that for all (mpk, msk) ← Gen(), all identities id, all messages m, and all
+sk id ← Ext(msk, id), we always have Dec(sk id , id, Enc(mpk, id, m)) = m. Security,
+on the other hand is classically formalized via game-based definitions. For security
+against passive attacks, the standard notion is ind-id-cpa, as depicted in Figure 5.
+Weaker notions have been proposed as well, such as a version ind-sid-cpa, depicted
+in Figure 5 as well, where the adversary has to choose the identity under attack
+without knowing the master public key.
+
+ind-id-cpa
+Game ExpIBE,A
+
+Game Expind-sid-cpa
+IBE,A
+
+Game Expind-id1-cpa
+IBE,A
+
+b  {0, 1}
+(mpk, msk) ← Gen()
+(st, id, m0 , m1 )
+← AExt(msk,·) (mpk)
+c ← Enc(mpk, id, mb )
+b0 ← AExt(msk,·) (st, c)
+return b = b0
+
+b  {0, 1}
+(mpk, msk) ← Gen()
+(st, id) ← A()
+(st 0 , m0 , m1 )
+← AExt(msk,·) (st, mpk)
+c ← Enc(mpk, id, mb )
+b0 ← AExt(msk,·) (st 0 , c)
+return b = b0
+
+b  {0, 1}
+(mpk, msk) ← Gen()
+st ← AExt(msk,·) ()
+(st 0 , id, m0 , m1 )
+← A(st, mpk)
+c ← Enc(mpk, id, mb )
+0
+Ext(msk,·)
+b ←A
+(st 0 , c)
+return b = b0
+
+Fig. 5: Three game-based security definition of identity-based encryption against
+passive attacks. The standard security definition (left) has been put forward by
+Boneh and Franklin [3]. Later, the weaker static security notion (middle) has
+been introduced in [7] by Canetti, Halevi, and Katz. Finally, Hofheinz, Matt, and
+Maurer proposed a version that loosely corresponds to the standard definition
+under “lunchtime attack” (right). Note that in all of them, A is not allowed to
+query the Ext oracle on the identity it output.
+
+Hofheinz, Matt, and Maurer [10] investigated the composable security of
+IBE in Constructive Cryptography from an application centric point of view. To
+this end, they considered non-interactive communication, the apparent standard
+application of IBE. Assume that there is a trusted party that stores the master
+secret key and handles registration, i.e, hands out the user secret keys to the
+correct users. A set of users, each knowing the master public key and his user
+secret key(s), can now confidentially send messages to each other by encrypting it
+under the receiver’s identity. The obvious security goal is that only the legitimate
+receiver can read the message. In turned out, however, that the standard ind-id-cpa
+security does not imply such a construction in the standard simulation-based
+construction notion—even when considering static corruptions only—due to the
+commitment problem. They, however, managed to show that such a scheme suffices
+in a weaker setting where it is guaranteed that all identities are registered before
+the first ciphertext is ever sent. Furthermore, the authors also introduced a new
+weaker security notion ind-id1-cpa, that essentially considers “lunchtime attack”
+30
+
+and proved that it suffices for the same construction. They hence concluded, that
+the standard notion is at the same time both too strong (to achieve the weaker
+construction) and too weak (to achieve the desired construction).
+Since the weaker construction is not very realistic, e.g., in a company it is
+natural that new employees join long after the first ciphertext has been sent,
+the question about the right security definition remained open. In the remainder
+of this section, we devise a natural composable formalization based on intervalwise guarantees whose security exactly corresponds to the standard ind-id-cpa
+notion—resolving the issue.
+6.2
+
+The Real and Ideal Worlds
+
+On a high level, Hofheinz et al. considered non-interactive secure communication
+in a setting with one honest sender A, n potentially dishonest receivers Bi , and one
+honest party C deriving and distributing the user secret keys. We here consider
+the same setting with essentially the same resources as in the original work.
+In the real world, we assume that the sender A has a broadcast channel
+BCASTn available, through which the ciphertexts are sent. For simplicity, we will
+assume guaranteed delivery throughout the rest of the example. Furthermore,
+we assume the existence of an authenticated channel AUTHC→A
+from C to A to
+P
+transmit the master public key Alice needs for encryption, and n secure channels
+i
+SECC→B
+from C to Bi to transmit the user secret keys. A formal description of the
+P
+corresponding resources can be found in Figure 6. Recall that we consider static
+corruptions here. Hence, the set of corrupted parties P appears as an explicit
+parameter of the resources.
+The protocol securing the communication works as expected: whenever Alice
+wants to send a message to a certain identity, she encrypts it under the given id
+and broadcasts the ciphertext together with the identity. Each honest receiver
+then checks whether he has the corresponding decryption key, i.e., has been
+registered for this identity, and either decrypts the message or discards it. Finally,
+Charlie’s protocol not only sends the master public key to Alice, but also allows
+to register identities for each receiver. Note that each identity can in principle be
+registered to many interfaces, i.e, many parties can posses the same user secret
+key. Furthermore, the assignment is not fixed but chosen by the environment,
+modeling an arbitrary or even adversarially chosen assignment. For completeness,
+Bi
+A
+C
+a formal description of the corresponding converters πEnc,t
+, πDec
+, and πExt
+is given
+in Figure 7.
+Finally, consider the ideal resource DCCID
+n,t,P , which stands for delivery controlled channel. The name derives from the fact that the encryption can be seen
+as a mechanism with which the sender can specify to whom the message should
+be delivered. Hence, the resource acts like the broadcast channel, except that
+each message is only received by parties registered for the specified identity.
+Other dishonest parties may learn the message length, while honest parties ignore
+messages not intended for them. Furthermore, dishonest party might also learn
+which receiver is registered for identities (as the secure channel leaks the length
+of the user keys, which might depend on the identity). A formal definition of the
+31
+
+C→Br
+Resource SECP
+
+Resource AUTHC→A
+P
+Initialization
+M ← empty array
+j←0
+
+Initialization
+M ← empty array
+j←0
+
+Interface C
+Input: (send, m) ∈ M
+j ←j+1
+M [j] ← m
+output ok
+
+Interface C
+Input: (send, m) ∈ M
+j ←j+1
+M [j] ← m
+output ok
+
+Interface A
+Input: (read, k) ∈ N
+require k ≤ j
+output M [k]
+
+Interface Br
+
+Interface Bi , for i ∈ P
+
+Interface Bi for i ∈ P \ {r}
+
+Input: (read, k) ∈ N
+require k ≤ j
+output M [k]
+
+Input: (read, k) ∈ N
+require k ≤ j
+output |M [k]|
+
+Input: (read, k) ∈ N
+require k ≤ j
+output M [k]
+
+Resource BCASTn
+Initialization
+M ← empty array
+j←0
+
+Interface Bi , for i ∈ {1, . . . , n}
+Input: (read, k) ∈ N
+require k ≤ j
++
+
+E ← E read(i,k)
+
+Interface A
+Input: (send, m) ∈ M
+j ←j+1
+M [j] ← m
+output ok
+
+output M [k]
+
+Fig. 6: Description of the assumed resources. The set P ⊆ {1, . . . , n} thereby
+specifies the set of statically corrupted receivers Bi , while the sender A and
+registrar C are assumed to be honest.
+
+32
+
+Bi
+Converter πDec
+
+A
+Converter πEnc,t
+Initialization
+mpk ← ⊥
+j←0
+
+Initialization
+SK ← empty array
+j←1
+
+Emulating Interface A of DCCID
+n,t,P
+
+Emulating Interface Bi of DCCID
+n,t,P
+
+Input: (send, id, m) ∈ ID × M
+require j < t
+if mpk = ⊥ then
+call mpk ← (read)
+at interface A of AUTHC→A
+P
+if mpk 6= ⊥ then
+c ← Enc(mpk, id, m)
+call (send, (id, c))
+at interface A of BCASTn
+j ←j+1
+
+Input: (read, id, k) ∈ ID × N
+// fetch all pending user keys
+repeat
+call (id 0 , sk) ← (read, j)
+C→B
+at interface Bi of SECP i
+0
+if (id , sk) 6= ⊥ then
+SK[id 0 ] ← sk
+j ←j+1
+until (id 0 , sk) = ⊥
+
++
+
+E ← E sent(j,id)
+
+// fetch message and decrypt if possible
+call (id, m) ← (read, k)
+at interface Bi of BCASTn
+if (id, m) 6= ⊥ ∧ SK[id] 6= ⊥ then
+return Dec(SK[id], id, c)
+else
+return ⊥
+
+return ok
+else
+return ⊥
+
+C
+Converter πExt
+Emulating Interface C of DCCID
+n,t,P
+
+Initialization
+mpk, msk ← ⊥
+
+Input: (register, id, i) ∈ ID × {1, . . . , n}
+require msk 6= ⊥
+sk ← Ext(msk, id)
+call (send, (id, sk))
+C→B
+at interface C of SECP i
+
+Emulating Interface C of DCCID
+n,t,P
+Input: init
+require only called once
+(mpk, msk) ← Gen()
+call (send, msk)
+C→A
+at interface C of AUTHP
+return ok
+
++
+
+E ← E registred(id,i)
+return ok
+
+Fig. 7: A formal description of the converters using IBE to achieve confidentiality.
+
+33
+
+Resource DCCID
+n,t,P
+Initialization
+M ← empty array, j ← 0, initiated ← false
+for i ∈ {1, . . . , n} do
+ni ← 0, Ii ← empty array
+
+Interface Bi for i ∈ {1, . . . , n}
+Input: (read, id, k) ∈ ID × N
+require k ≤ j
+(id, m) ← M [k]
++
+
+E ← E read(k,i)
+
+Interface A
+Input: (send, id, m) ∈ ID × M
+require initiated ∧ j < t
+j ← j + 1, M [j] ← (id, m)
+
+if ∃` : Ii [`] = id ∨ E insec(k) then
+output (id, m)
+else if i ∈ P then
+output (id, |m|)
+else
+output ⊥
+
++
+
+E ← E sent(j,id)
+output ok
+Interface C
+Input: init
+require only called once
+initiated ← true
+
+Interface Bi for i ∈ P (additional)
+Input: (identities, k) ∈ {1, . . . , n}
+output Ik
+
+Input: (register, id, i) ∈ ID × {1, . . . , n}
+require initiated
+ni ← ni + 1
+Ii [ni ] ← id
++
+
+E ← E registred(id,i)
+output ok
+
+Fig. 8: The delivery controlled channel with an honest sender A, an honest registrar
+C, and n receivers Bi , with P ⊆ {1, . . . , n} denoting the statically corrupted ones.
+
+resource is depicted in Figure 8. Note that compared to [10], we will use global
+simulators rather than local ones, what allowed us to simplify the resource a bit.
+6.3
+
+The Composable Statement
+
+One of the main results in [10] has been showing that, due to the commitment
+problem, an IBE scheme does not construct the delivery controlled channel even
+under static corruptions.
+Proposition 11 (Theorem 5.1 in [10]). Let P ⊆ {1, . . . , n} denote the set
+P
+of statically corrupted receivers. For every efficient simulator σIBE
+, we have
+
+
+n,t,P
+ πIBE
+ind-id-cpa
+C→B1
+P
+n
+BCASTn , AUTHC→A
+, . . . , SECC→B
+−−6−−→ σIBE
+DCCID
+,
+P , SECP
+n,t,P
+P
+
+where ind-id-cpa denotes a reduction to the ind-id-cpa game and
+[
+ A
+n,t,P
+Bi
+C
+:= πEnc,t
+πIBE
+, πExt
+, ∪
+πDec
+i∈{1,...,n}\P
+
+denotes the protocol where all honest parties apply their converter.
+34
+
+In the end, one is however not interested in such a strong guarantee. Rather,
+the above construction was just intended as a proxy to formalize confidentiality
+of the messages. Using our approach, hence immediately yields a better statement
+based on interval-wise guarantees. More concretely, we consider each message
+individually and guarantee its confidentiality until it trivially leaks because a
+dishonest party is registered for the corresponding receiver’s identity.
+In the following, let E sent(j,id) indicate that the j-th message has been encrypted
+for identity id, E registred(id,i) indicate that the i-th receiver has been registered for
+identity id, and E read(j,i) that the i-th receiver read the j-th message. Moreover,
+let E insec(j) indicate that the j-th message is not confidential. See the dashed
+boxed in Figure 8 for a formal definition of when those events get triggered in
+the ideal world. Note that in the real world the former two events get triggered
+A
+C
+in the converters πEnc,t
+and πExt
+, respectively (c.f. Figure 7), whereas the third
+one gets triggered in the underlying broadcast channel BCASTn (c.f. Figure 6).
+This is due to the fact that Alice and Charlie are assumed to always apply their
+converter, while the dishonest receivers can access the broadcast channel directly.
+Theorem 16. Let t ∈ N denote an upper bound on the number of messages, let
+P ⊆ {1, . . . , n} denote an arbitrary set of statically corrupted receivers, and let
+n,t,P
+πIBE
+denote the protocol where all honest parties apply their converter as in
+P,j
+Proposition 11. For each P, there exists a sequence of efficient simulators σIBE
+and a reduction ind-id-cpa to the ind-id-cpa game, such that
+
+
+C→B1
+n
+BCASTn , AUTHC→A
+, . . . , SECC→B
+P , SECP
+P
+\
+[Ponly(j) ,Pleaked(j) ]:ind-id-cpa
+π n,t,P
+P,j
+−−IBE
+−−→
+σIBE
+DCCID
+.
+n,t,P
+j∈{1,...,t}
+
+where
+Pleaked(j) (E) := ∃i ∈ P : E sent(j,id) ∧ E registred(id,i) ∧ E read(j,i)
+formalizes the event that the j-th message inherently leaked, and
+^
+Ponly(j) (E) :=
+E insec(`)
+`∈{1,...,t}\{j}
+
+formalizes that we do not consider confidentiality of the other messages.
+Proof (Sketch). The simulator initially generates a master secret-key and master
+public-key pair. Observe that for all messages except the j-th one, the ideal-world
+resource outputs the actual message (together with the corresponding identity).
+Hence, the simulator can simply encrypt it himself under the correct identity.
+For the j-th message, observe that the simulator only has to work if none of
+the dishonest receivers obtained the corresponding user key, and this key will
+then never get revealed. Hence, the simulator can encrypt the zero-string of the
+appropriate length. See Figure 9 for a formal definition of the simulator.
+Observe that the reduction from distinguishing the real- and idea-world to the
+ind-id-cpa game is straight-forward. For all but the j-th message, the reduction
+35
+
+P,j
+Converter σIBE
+Initialization
+(mpk, msk) ← Gen()
+
+C→A
+Emulating Int. Bi of AUTHP
+for i ∈ P
+
+Input: (read, k) ∈ N
+if k = 1 ∧ ∃id : E sent(1,id) then
+return mpk
+else
+return ⊥
+
+Emulating Int. Bi of BCASTn for i ∈ P
+Input: (read, k) ∈ N
+if M [k] = ⊥ then
+if k 6= j then
+call (id, m) ← (read, k)
+at interface Bi of BCASTn
+if (id, m) 6= ⊥ then
+M [k] ← (id, Enc(mpk, id, m))
+else
+call (id, len) ← (read, k)
+at interface Bi of BCASTn
+if (id, len) 6= ⊥ then
+M [k] ← (id, Enc(mpk, id, 0len ))
+else
++
+E ← E read(k,i)
+return M [k]
+
+C→B`
+
+Emulating Int. Bi of SECP
+
+for i ∈ P
+
+Input: (read, k) ∈ N
+call I` ← (identities, `)
+at interface Bi of DCCID
+n,t,P
+if I` [k] = ⊥ then
+return ⊥
+else
+sk ← Ext(msk, I` [k])
+if ` = i then return sk
+else return |sk|
+
+Fig. 9: The simulator from Theorem 16.
+
+can simply query the game for the corresponding user key, and the challenge can
+be chosen as (mj , 0|mj | ). If b = 0, this corresponds to the real-world behavior,
+and if b = 1 to the ideal-world behavior.
+t
+u
+Remark 2 (On interpreting conjunction specifications). Observe that phrasing our
+statement for a bounded number of messages is without loss of generality in any
+actual application. We, however, have chosen to do so for good reasons. Assume
+for theTmoment that  is simply a constant in [0, 1]. If we have a specification of the
+form i∈J Si  , then this can be read as the guarantee given by Si holding with
+probability 1 − . In the end, we are however interested to know the probability
+such that all guarantees hold. In general, the best we can do is to apply the union
+bound, implying that the error is bounded by |J |. As a result, it is important
+that the number of conjunctions is small for the statement to be meaningful.
+Especially, while we could prove an analogous statement with intervals terminated
+by the leakage of each user key (rather than the messages), this would only make
+sense if the identity-space is small, in which case ind-sid-cpa security would suffice.
+
+7
+
+Conclusion and Future Work
+
+We have demonstrated that considering new types of resource specifications can
+lead to security notions that are composable, yet do not suffer the artificial
+impossibilities exhibited by the classical simulation-based definitions. We have
+introduced a type of specification that formalizes guarantees that hold in a certain
+time-interval (between two events), which has clean semantics, comes with a
+36
+
+natural syntactical composition theorem, and integrates well with the existing
+Constructive Cryptography framework. The usefulness of this type of security
+guarantees has been shown by revisiting several examples where a composable
+statement previously either needed additional trusted setup or less efficient
+protocols compared to the corresponding game-based notions.
+While our novel type of relaxation does not resolve every issue of composable
+security, we ultimately believe that all (meaningful) security statements can be
+expressed as an as assumed specification being contained in an ideal one. Further
+work is, hence, needed to identify additional types of specifications that allow to
+express more properties—while retaining strong syntactical composition rules
+and clear semantics.
+
+References
+1. Backes, M., Dürmuth, M., Hofheinz, D., Küsters, R.: Conditional reactive simulatability. In: Gollmann, D., Meier, J., Sabelfeld, A. (eds.) Computer Security –
+ESORICS 2006. pp. 424–443. Springer Berlin Heidelberg, Berlin, Heidelberg (2006)
+2. Blum, M.: Coin flipping by telephone a protocol for solving impossible problems.
+SIGACT News 15(1), 23–27 (Jan 1983). https://doi.org/10.1145/1008908.1008911
+3. Boneh, D., Franklin, M.: Identity-based encryption from the weil pairing. In: Kilian,
+J. (ed.) Advances in Cryptology — CRYPTO 2001. pp. 213–229. Springer Berlin
+Heidelberg, Berlin, Heidelberg (2001)
+4. Broadnax, B., Döttling, N., Hartung, G., Müller-Quade, J., Nagel, M.: Concurrently
+composable security with shielded super-polynomial simulators. In: Coron, J.S.,
+Nielsen, J.B. (eds.) Advances in Cryptology – EUROCRYPT 2017. pp. 351–381.
+Springer International Publishing, Cham (2017)
+5. Canetti, R.: Universally Composable Security: A New Paradigm for Cryptographic
+Protocols. In: 42nd IEEE Symposium on Foundations of Computer Science – FOCS
+2001. pp. 136–145. IEEE Computer Society (2001)
+6. Canetti, R., Fischlin, M.: Universally composable commitments. In: Kilian, J. (ed.)
+Advances in Cryptology — CRYPTO 2001. pp. 19–40. Springer Berlin Heidelberg,
+Berlin, Heidelberg (2001)
+7. Canetti, R., Halevi, S., Katz, J.: A forward-secure public-key encryption scheme.
+In: Biham, E. (ed.) Advances in Cryptology — EUROCRYPT 2003. pp. 255–271.
+Springer Berlin Heidelberg, Berlin, Heidelberg (2003)
+8. Canetti, R., Krawczyk, H.: Universally composable notions of key exchange and
+secure channels. In: Knudsen, L.R. (ed.) Advances in Cryptology – EUROCRYPT
+2002. pp. 337–351. Springer Berlin Heidelberg, Berlin, Heidelberg (2002)
+9. Demay, G., Gaži, P., Maurer, U., Tackmann, B.: Per-session security: Passwordbased cryptography revisited. In: Foley, S.N., Gollmann, D., Snekkenes, E. (eds.)
+Computer Security – ESORICS 2017. pp. 408–426. Springer International Publishing,
+Cham (2017)
+10. Hofheinz, D., Matt, C., Maurer, U.: Idealizing identity-based encryption. In: Iwata,
+T., Cheon, J.H. (eds.) Advances in Cryptology – ASIACRYPT 2015. Lecture Notes
+in Computer Science, vol. 9452, pp. 495–520. Springer Berlin Heidelberg (2015)
+11. Jost, D., Maurer, U., Mularczyk, M.: A unified and composable take on ratcheting.
+In: Hofheinz, D., Rosen, A. (eds.) Theory of Cryptography — TCC 2019. pp.
+180–210. Springer International Publishing, Cham (Dec 2019)
+
+37
+
+12. Kuesters, R., Tuengerthal, M., Rausch, D.: The iitm model: a simple and expressive
+model for universal composability. Cryptology ePrint Archive, Report 2013/025
+(2013), https://eprint.iacr.org/2013/025
+13. Lindell, Y.: General composition and universal composability in secure multiparty
+computation. Journal of Cryptology 22(3), 395–428 (Jul 2009)
+14. Maurer, U.: Constructive Cryptography–A New Paradigm for Security Definitions
+and Proofs. In: Theory of Security and Applications – TOSCA 2011, pp. 33–56.
+Springer Berlin Heidelberg (2011)
+15. Maurer, U.: Indistinguishability of random systems. In: Knudsen, L.R. (ed.) Advances in Cryptology – EUROCRYPT 2002. pp. 110–132. Springer Berlin Heidelberg,
+Berlin, Heidelberg (2002)
+16. Maurer, U., Pietrzak, K., Renner, R.: Indistinguishability amplification. In: Menezes,
+A. (ed.) Advances in Cryptology – CRYPTO 2007. pp. 130–149. Springer Berlin
+Heidelberg, Berlin, Heidelberg (2007)
+17. Maurer, U., Renner, R.: Abstract cryptography. In: In Innovations in Computer
+Science – ICS 2011, pp. 1–21. Tsinghua University (2011)
+18. Maurer, U., Renner, R.: From Indifferentiability to Constructive Cryptography
+(and Back). In: Theory of Cryptography – TCC 2016, pp. 3–24. Springer Berlin
+Heidelberg (2016)
+19. Maurer, U., Tackmann, B.: On the soundness of authenticate-then-encrypt: Formalizing the malleability of symmetric encryption. In: Keromytis, A.D., Shmatikov, V.
+(eds.) Proceedings of the 17th ACM Conference on Computer and Communication
+Security. pp. 505–515. ACM, ACM (Oct 2010)
+20. Nielsen, J.B.: Separating random oracle proofs from complexity theoretic proofs:
+The non-committing encryption case. In: Yung, M. (ed.) Advances in Cryptology —
+CRYPTO 2002. pp. 111–126. Springer Berlin Heidelberg, Berlin, Heidelberg (2002)
+21. Pass, R.: Simulation in quasi-polynomial time, and its application to protocol
+composition. In: Biham, E. (ed.) Advances in Cryptology — EUROCRYPT 2003.
+pp. 160–176. Springer Berlin Heidelberg, Berlin, Heidelberg (2003)
+22. Pfitzmann, B., Waidner, M.: A model for asynchronous reactive systems and
+its application to secure message transmission. In: Proceedings 2001 IEEE
+Symposium on Security and Privacy – S&P 2001. pp. 184–200 (May 2001).
+https://doi.org/10.1109/SECPRI.2001.924298
+23. Prabhakaran, M., Sahai, A.: New notions of security: Achieving universal composability without trusted setup. In: Proceedings of the Thirty-sixth Annual ACM
+Symposium on Theory of Computing. pp. 242–251. STOC ’04, ACM, New York,
+NY, USA (2004). https://doi.org/10.1145/1007352.1007394
+
+38
+
+A
+
+Details of Section 2
+
+A.1
+
+Proof of Theorem 2
+
+Theorem 2. Let R be an arbitrary
+and let 1 and 2 be arbitrary
+2 specification,
+-relaxations. Then we have R1
+⊆ R1 +2 .
+Proof. Let T ∈ (R1 )2 be arbitrary. By the definition of the -relaxation,
+(R1 )2 =
+
+[ 
+T ∀D : |∆D (S, T)| ≤ 2 (D) ,
+S∈R1
+
+there exists a S ∈ R1 , such that for all D, ∆D (S, T) ≤ 2 (D). Analogously,
+invoking the definition of the -relaxation once more, there moreover must exist a
+R ∈ R, such that that for all D, ∆D (R, S) ≤ 1 (D). Using the triangle inequality
+we, thus, obtain
+∆D (R, T) ≤ ∆D (R, S) + ∆D (S, T) ≤ 1 (D) + 1 (D),
+and, hence, T ∈ (R1 +2 ) ⊆ (R1 +2 ).
+
+A.2
+
+t
+u
+
+Proof of Theorem 3
+
+Theorem 3. The -relaxation is compatible with protocol application in the
+
+following sense that π (R ) ⊆ (πR) π , for π (D) := (Dπ(·)), where Dπ(·)
+denotes the distinguisher that first attaches π to the given resource and then
+
+executes D. Moreover, it is compatible with parallel composition, i.e., R , S ⊆
+[R, S]S , for S (D) := supS∈S (D[ · , S]), where D[ · , S] denotes the distinguisher
+that emulates S in parallel to the given resource and then lets D interact with
+them.
+Proof. Let S ∈ π (R ) be arbitrary. Then, by definition, there exists a T ∈ R
+such that S = πT. Observe that T ∈ R directly implies |∆D (R, S)| ≤ , and thus
+|∆D (πR, S)| = |∆D (πR, πT)| = |∆Dπ(·) (R, T)| ≤ (Dπ(·)) = π (D),
+
+
+π
+implying S ∈ (πR)
+ , i.e.,
+ compatibility with protocol application.
+Now, let U ∈ R , S be arbitrary. Then, by definition there exists V ∈ R
+and S ∈ S such that U = [V, S]. Moreover, by definition there exists R ∈ R such
+that |∆D (R, V)| ≤ . As a consequence we obtain
+
+|∆D ([R, S], U)| = |∆D ([R, S], [V, S]| = |∆D[ · ,V] (R, V)| ≤ (D[ · , V]) ≤ S (D),
+and thus U ∈ [R, S]S , concluding the proof.
+39
+
+t
+u
+
+A.3
+
+Proof of Corollary 1
+
+Corollary 1. For any specifications R, S, and T , any protocols π and π 0 , and
+any -relaxation  and 0 , we have
+π
+
+π0
+
+π 0 ◦π
+
+0
+
+0
+
+1. R −−→ S  ∧ S −−→ T  =⇒ R −−−→ T π0 + ,
+π
+π
+2. R −−→ S  =⇒ [R, T ] −−→ [S, T ]T ,
+where π and S are defined as in Theorem 3, respectively.
+Proof. First, observe that by Theorem 3 we have
+
+
+π (R ) ⊆ (πR) π ⊆ S π ,
+π
+
+where in the second step we used Definition 1, i.e., R −−→ S : ⇐⇒ πR ⊆ S, and
+Proposition 3. Now, observe that for the first property, by Theorem 2, we have
+0  0
+0
+0
+π0
+T  π ⊆ T π0 + . Hence, we obtain S  −−→ T π0 + and, thus, the property
+then follows by Theorem 1. The second property follows from Theorem 3:
+
+ 
+ 
+
+π R, T = πR, T ⊆ S  , T ⊆ [S, T ]S .
+
+B
+
+Details of Section 4
+
+B.1
+
+Example: The Behavior of a Resource After an Event
+
+Consider the following resource fromE leaked (SecCh), which only answers queries
+EncKey
+
+leaked
+once the environment triggered the event EEncKey
+. Thus, in contrast to SecCh, this
+resource always leaks the full message of the adversary, in line with our intuition
+that it describes the behavior after the key has been exposed.
+
+Resource fromE leaked (SecCh)
+EncKey
+
+Initialization
+MA [·] ← ⊥
+mB ← ⊥
+n←0
+
+Interface E
+Input: (leak, i)
+leaked
+require EEncKey
+output MA [i]
+
+Interface A
+Input: (send, m)
+leaked
+require EEncKey
+[rest as in SecCh]
+
+Input: (inject, m)
+leaked
+require EEncKey
+[rest as in SecCh]
+Interfaces {E, W}
+
+Interface B
+Input: receive
+leaked
+require EEncKey
+[rest as in SecCh]
+
+Input: (deliver, i)
+leaked
+require EEncKey
+[rest as in SecCh]
+
+40
+
+B.2
+
+Proof of Theorem 5
+
+Theorem 5. The until-relaxation is compatible with protocol attachment, i.e.,
+
+P ]
+
+ 
+P ]
+π RP ] ⊆ πR
+and with parallel composition, i.e., RP ] , S ⊆ R, S .
+
+Proof. For the first property, consider an arbitrary element of π RP ] , i.e.,
+πT for an arbitrary T ∈ RP ] . Hence, there must exist a R ∈ R such that
+untilP (R) = untilP (T). Using that untilP (π untilP (R)) = untilP (πR) for any
+resource R, implies
+untilP (πR) = untilP (π untilP (R)) = untilP (π untilP (T)) = untilP (πT)
+P ]
+P ]
+and, thus, πT ∈ πR
+⊆ πR . The second property follows analogously
+observing that untilP ([untilP (R), S]) = untilP ([R, S]) for all R and S.
+t
+u
+B.3
+
+Proof of Theorem 6
+
+Theorem 6. There exist specifications R and S, a monotone predicate P , and
+a function  mapping distinguishers to values in [0, 1] such that
+
+P ]
+P ]
+
+RP ] 6⊆ R
+and
+S
+6⊆ S P ] .
+Proof. In the following, let R denote the following resource that provides two
+interfaces: R initially chooses a seed s ∈ {0, 1}m uniformly at random. Upon a
+trigger input at the first interface it outputs PRG(s) (for some m-bits to n-bits
+PRG). Upon a trigger input at the second interface, it triggers a E leaked event
+and outputs s. Let the resource S work analogously except that it outputs a
+uniformly distributed an independent value t ∈ {0, 1}n instead of the PRG output.
+Furthermore, let P (E) := E leaked and let  denote the reduction to the security of
+the PRG.
+Using R := {R} it is now easy to see that S ∈ (RP ] ) : Consider a hybrid
+system T that outputs PRG(s0 ) and s for independent and s and s0 u.a.r. Then,
+we have T ∈ RP ] , since the first output is equally distributed and the second
+blinded. Moreover, distinguishing T from S boils down to breaking the PRGP ]
+security, and thus S ∈ T . On the other hand, one can show that S ∈
+/ R .
+To see this, observe that if the PRG is secure, then R ≈ R. Especially, leaking
+the seed prevents us from replacing the first output by a truly random string.
+Thus, applying the until-relaxation still does not contain S, concluding the first
+part of the proof. For the other direction consider S := {S}. Using an analogous
+P ]
+
+argument one can show that R ∈ S 
+but R ∈
+/ SP ] .
+t
+u
+B.4
+
+Proof of Theorem 9
+
+Theorem 9. There exist specifications R and S, a monotone predicate P (E),
+and a function  mapping distinguishers to values in [0, 1] such that
+
+[P
+[P
+
+R[P 6⊆ R
+and
+S
+6⊆ S [P .
+41
+
+Proof. The counter example works similarly to the one from Theorem 6. Consider
+a resource R with two interfaces that initially chooses a PRG-seed s uniformly
+at random. At the first interface it outputs PRG(s). At the second interface
+it outputs s, but only before some event E secure . The second resource S works
+analogously except that it outputs an independent uniform random string at
+the first interface instead of the PRG output. Let now R := {R}, S := {S}, and
+P := {E secure }. Analogous to the proof from Theorem 6, one can now show that
+
+[P
+[P
+
+S ∈ R[P but S ∈
+/ R , and furthermore that R ∈ S 
+but S ∈
+/ S [P . t
+u
+B.5
+
+Proof of Theorem 10
+
+Theorem 10. For any resource R and any monotone predicates P1 and P2 , we
+have
+
+[ [ 
+R[P1 ,P2 ] =
+Rφ1 ·φ2 ···φn | ∀i ≤ n : φi ∈ {P2 ], [P1 }
+n∈N
+
+=
+
+
+
+R[P1
+
+P2 ] [P1
+
+=
+
+
+
+RP2 ]
+
+[P1 P2 ]
+
+,
+
+where Rφ1 ·φ2 ···φn is a shorthand notation for first applying φ1 , then φ2 , until φn .
+Proof. We prove the theorem in three steps:
+
+P2 ] [P1
+Claim. R[P1 ,P2 ] = R[P1
+
+P2 ] [P1
+be arbitrary. This means that there
+Proof (of claim). Let S ∈ R[P1
+
+[P1 P2 ]
+[P1
+exist T ∈ R
+,U∈R
+and R ∈ R such that
+fromP1 (S) = fromP1 (T),
+
+(1)
+
+untilP2 (T) = untilP2 (U),
+
+(2)
+
+fromP1 (U) = fromP1 (R).
+
+(3)
+
+Combining these properties with the commutativity of from and until, we obtain
+untilP2 (fromP1 (R)) = untilP2 (fromP1 (U)) = fromP1 (untilP2 (U))
+= fromP1 (untilP2 (T)) = untilP2 (fromP1 (T))
+= untilP2 (fromP1 (S)),
+implying that S ∈ R[P1 ,P2 ] and thus R[P1 ,P2 ] ⊇
+[P1 ,P2 ]
+
+
+
+R[P1
+
+P2 ] [P1
+
+.
+
+Now, let S ∈ R
+be arbitrary. By definition, we thus know that there
+P 2 ]
+exists a R ∈ R such that fromP1 (S) ∈ fromP1 (R)
+. Combining this with the
+P 2 ]
+[P1
+basic fact that fromP1 (R) ∈ R , we obtain fromP1 (S) ∈ R[P1
+. Combining
+
+P2 ] [P1
+this in turn with the basic fact that S ∈ S[P1 then yields S ∈ R[P1
+and
+
+
+P2 ] [P1
+thus R[P1 ,P2 ] ⊆ R[P1
+.
+♦
+42
+
+Claim. R[P1 ,P2 ] =
+
+
+
+RP2 ]
+
+[P1 P2 ]
+
+Proof (of claim). Observing that
+
+R[P1 ,P2 ] = S untilP2 (fromP1 (R)) = untilP2 (fromP1 (S))
+(using the commutativity), it is easy to see that the proof follows analogously. ♦
+ S
+
+S
+Claim. R[P1 ,P2 ] = n∈N
+Rφ1 ·φ2 ···φn | ∀i ≤ n : φi ∈ {P2 ], [P1 }
+Proof (of claim). Using the previous claims, it is trivial to see that
+
+[ [
+R[P1 ,P2 ] ⊆
+Rφ1 ·φ2 ···φn | ∀i ≤ n : φi ∈ {P2 ], [P1 } .
+n∈N
+
+For the other direction, we proceed by induction over n. Note that without loss
+of generality (by Theorems 4 and 7), we can assume the order of the relaxations
+to strictly alternate. Furthermore, the previous claims already prove it for n = 3.
+Hence, the relation is also trivial for n < 3, as adding a further relaxation only
+enlarges the set. Assume now as the induction hypothesis that for some n ≥ 3
+[
+R[P1 ,P2 ] ⊇
+Rφ1 ·φ2 ···φn | ∀i ≤ n : φi ∈ {P2 ], [P1 } .
+We want to show that Rφ1 ·φ2 ···φn+1 ∈ R[P1 ,P2 ] as well. Assume w.l.o.g. that
+φn+1 = P2 ]. By the induction hypothesis, we have that Rφ1 ·φ2 ···φn ∈ R[P1 ,P2 ] and
+
+[P1 P2 ]
+thus by the second claim Rφ1 ·φ2 ···φn ∈ RP2 ]
+and thus
+Rφ1 ·φ2 ···φn ∈
+
+
+
+RP2 ]
+
+[P1 P2 ] P2 ]
+
+
+
+=
+
+RP2 ]
+
+[P1 P2 ] P2 ]
+
+,
+♦
+
+where the second step follows from Theorem 4.
+B.6
+
+Proof of Theorem 13
+
+Theorem 13. Let P1 and P2 be two monotone predicates, and let  be a function
+mapping distinguishers to values in [0, 1]. Then, for any specification R we have
+R[P1 ,P2 ]:
+
+[P10 ,P20 ]:0
+
+[P1 ∧P10 ,P2 ∨P20 ]:[P ∧P 0 ,P ∨P 0 ] +0[P ∧P 0 ,P ∨P 0 ]
+
+⊆R
+
+1
+
+1
+
+2
+
+1
+
+2
+
+1
+
+2
+
+2
+
+,
+
+where [P1 ∧P10 ,P2 ∨P20 ] (D) := (D ◦ untilP2 ∨P20 ◦ fromP1 ∧P10 ), i.e., the performance
+of the distinguisher interacting with the projected resource, and analogously for
+0[P1 ∧P 0 ,P2 ∨P 0 ] .
+1
+
+2
+
+Proof. Observe that it suffices to show
+
+
+0
+
+0
+
+R[P1 ∧P1 ,P2 ∨P2 ]
+
+ [P1 ∧P10 ,P2 ∨P20 ] 0
+⊆
+
+
+
+0
+
+0
+
+R[P1 ∧P1 ,P2 ∨P2 ]
+
+43
+
+[P1 ,P2 ] +0[P ,P ] [P1 ∧P10 ,P2 ∨P20 ]
+1
+
+2
+
+.
+
+The rest then follows trivially by Theorems 2 and 11. To this end, consider
+0
+0  0
+
+
+0
+0  [P1 ∧P1 ,P2 ∨P2 ] 
+an arbitrary S ∈
+R[P1 ∧P1 ,P2 ∨P2 ]
+. Hence, there must exist
+0
+0
+
+
+0
+0
+0
+0 
+ [P1 ∧P1 ,P2 ∨P2 ]
+a T ∈ R[P1 ∧P1 ,P2 ∨P2 ]
+, a U ∈ R[P1 ∧P1 ,P2 ∨P2 ] , and a V ∈
+0
+0
+R[P1 ∧P1 ,P2 ∨P2 ] such that
+∆D (S, T) ≤ 0 (D)
+
+(4)
+
+untilP2 ∨P20 (fromP1 ∧P10 (T)) = untilP2 ∨P20 (fromP1 ∧P10 (U))
+
+(5)
+
+D
+
+∆ (U, V) ≤ (D).
+
+(6)
+
+Using those properties, we obtain
+∆D untilP2 ∨P20 (fromP1 ∧P10 (V)), untilP2 ∨P20 (fromP1 ∧P10 (S))
+
+
+
+≤ ∆D (untilP2 ∨P20 (fromP1 ∧P10 (V)), untilP2 ∨P20 (fromP1 ∧P10 (U)))
++ ∆D (untilP2 ∨P20 (fromP1 ∧P10 (T)), untilP2 ∨P20 (fromP1 ∧P10 (S)))
+≤ ∆
+
+D◦untilP ∨P 0 (·)◦fromP ∧P 0 (·)
+2
+
+2
+
+1
+
+1
+
+(V, U) + ∆
+
+D◦untilP ∨P 0 (·)◦fromP ∧P 0 (·)
+2
+
+1
+
+2
+
+1
+
+(T, S)
+
+≤ [P1 ∧P10 ,P2 ∨P20 ] (D) + 0[P1 ∧P 0 ,P2 ∨P 0 ] (D).
+1
+2
+0
+
+0
+
+Now observe that V ∈ R[P1 ∧P1 ,P2 ∨P2 ] implies
+0
+
+0
+
+untilP2 ∨P20 (fromP1 ∧P10 (V)) ∈ R[P1 ∧P1 ,P2 ∨P2 ] ,
+and thus,
+0
+
+0
+
+untilP2 ∨P20 (fromP1 ∧P10 (S)) ∈ R[P1 ∧P1 ,P2 ∨P2 ]
+
+[P1 ∧P 0 ,P2 ∨P 0 ] +0[P ∧P 0 ,P ∨P 0 ]
+1
+
+2
+
+1
+
+1
+
+2
+
+2
+
+.
+
+As a result, we have
+[P1 ∧P10 ,P2 ∨P20 ]
+
+0
+0
+0 [P ∧P 0 ,P ∨P 0 ] +
+0
+0
+,
+S ∈ R[P1 ∧P1 ,P2 ∨P2 ] 1 1 2 2 [P1 ∧P1 ,P2 ∨P2 ]
+t
+u
+
+concluding the proof.
+B.7
+
+Proof of Proposition 6
+
+Proposition 6. Let πENC = (πenc , πdec ) denote the protocol securing communication using a symmetric encryption scheme. Then, for the resources in Figure 1,
+there exist (efficient) simulators σ1 , σ2 , and σ3 such that
+\
+
+ π
+EncKey, AuthCh −−ENC
+−→
+(σSecCh)[P1 ,P2 ]:
+(P1 ,P2 ,,σ)∈Ω
+
+for
+Ω :=
+
+
+
+
+
+leaked
+leaked
+leaked
+true, EEncKey
+∨ EAuthKey
+, CPA , σ1 , EEncKey
+, false, 0, σ2 ,
+leaked
+EAuthKey
+, false, 0, σ3
+
+
+
+,
+
+where CPA denotes a simple reduction from distinguishing the secure and authenticated channel (without key leakage) to the IND-CPA game.
+44
+
+Proof (Sketch). Let σ1 be the usual simulator that creates fake ciphertexts
+by encrypting 0|m| instead of m, when queried for the leakage of the channel.
+leaked
+leaked
+By definition, we have untilE leaked ∨E leaked (σ1 SecCh) ∈ (σ1 SecCh)[true,EEncKey ∨EAuthKey ] .
+EncKey
+AuthKey
+Thus, if the encryption scheme is IND-CPA secure, then it is easy to see that
+
+
+leaked
+leaked 
+untilE leaked ∨E leaked (πENC EncKey, AuthCh ) ∈ (σ1 SecCh)[EEncKey ∨EAuthKey CPA ,
+EncKey
+
+AuthKey
+
+which proves the construction inside the first interval. For the second interval,
+consider the simulator σ2 that encrypts the real messages. Using correctness of
+the encryption scheme, it is easy to see that
+
+
+fromE leaked (πENC EncKey, AuthCh ) = fromE leaked (σ2 SecCh),
+EncKey
+
+EncKey
+
+t
+u
+
+and analogous for the third interval using the same simulator σ3 = σ2 .
+B.8
+
+Proof of Theorem 15
+
+Theorem 15. Let R, S, and T be arbitrary specifications, let π and π 0 be
+arbitrary protocols, and let Ω and Ω 0 be arbitrary interval-wise guarantees. Then,
+we have
+π
+
+\
+
+R −−→
+
+(σS)[P1 ,P2 ]:
+
+π0
+
+∧
+
+S −−→
+
+\
+
+0
+
+0
+
+(σ 0 T )[P1 ,P2 ]:
+
+0
+
+(P10 ,P20 ,0 ,σ 0 )∈Ω 0
+
+(P1 ,P2 ,,σ)∈Ω
+
+=⇒
+
+π 0 ◦π
+
+R −−−→
+
+\
+
+0
+
+0
+
+(σσ 0 T )[P1 ∧P1 ,P2 ∨P2 ]:˜ ,
+
+(P1 ,P2 ,,σ)∈Ω
+(P10 ,P20 ,0 ,σ 0 )∈Ω 0
+
+where ˜ := (π0 )[P1 ∧P10 ,P2 ∨P20 ] + (0σ )[P1 ∧P10 ,P2 ∨P20 ] . Furthermore, we have
+π
+
+R −−→
+
+\
+
+
+ π
+(σS)[P1 ,P2 ]: =⇒ R, T −−→
+
+(P1 ,P2 ,,σ)∈Ω
+
+\
+
+
+[P1 ,P2 ]:T
+σ S, T
+.
+
+(P1 ,P2 ,,σ)∈Ω
+
+Proof. We first prove sequential composition. In the following, let (P1 , P2 , , σ) ∈
+Ω and (P10 , P20 , 0 , σ 0 ) ∈ Ω 0 . From the first part of the assumption, Theorem 14,
+and composition order invariance we obtain
+
+π 0 πR ⊆ π 0 (σS)[P1 ,P2 ]: ⊆ (π 0 σS)[P1 ,P2 ]:π0 ⊆ (σπ 0 S)[P1 ,P2 ]:π0 .
+Moreover, using the second part of the assumption and Theorem 14 yields
+0
+0
+0
+0
+0
+0
+σπ 0 S ⊆ σ (σ 0 T )[P1 ,P2 ]: ⊆ (σσ 0 T )[P1 ,P2 ]:σ .
+Combining the two statements, and using the monotonicity of relaxations, we get
+0
+
+0
+
+0
+
+π 0 πR ⊆ (σσ 0 T )[P1 ,P2 ]:σ
+
+[P1 ,P2 ]:π0
+
+45
+
+0
+
+0
+
+⊆ (σσ 0 T )[P1 ∧P1 ,P2 ∨P2 ]:˜ ,
+
+where in the last step we used Theorem 13, directly implying the sequential
+composition property.
+Now consider parallel composition. We directly obtain
+
+ 
+
+π R, T = πR, T
+
+
+⊆ (σS)[P1 ,P2 ]: , T
+
+[P1 ,P2 ]:T
+⊆ σS, T
+
+[P1 ,P2 ]:T
+= σ S, T
+,
+where in the first and the last step we used composition order invariance, in the
+second step the assumption, and in the third step Theorem 14.
+t
+u
+
+C
+
+Details of Section 5
+
+C.1
+
+ElGamal Commitments
+
+In this section, we provide some additional details to the ElGamal-commitment
+example. First, a formal definition of the corresponding converter implementing
+the protocol is presented in Figure 10. Second, a formal definition of the two
+simulators involved in the construction statements of is depicted in Figure 11.
+A
+The left simulator σElG-com
+is used to formalize security against a potentially
+B
+dishonest Alice (initiator), and the right σElG-com
+is used to formalize security
+against a potentially dishonest Bob (responder), respectively.
+C.2
+
+Coin-Tossing
+
+In this section, we provide some additional details on the coin-tossing example.
+First, in Figure 12 we prove the formal definition of the two converters of Blum’s
+protocol for constructing a single-bit coin-toss resource. Note that in the protocol
+Alice acts as the initiator, and Bob as the responder, respectively. The pseudo-code
+description is presented in Figure 12.
+Second, a formal description of the two simulators involved in the construction
+A
+statements of the coin-toss resource is depicted in Figure 13. The left σCT
+is
+used to formalize security against a potentially dishonest Alice (initiator), and
+B
+the right σCT
+is used to formalize security against a potentially dishonest Bob
+(responder), respectively.
+
+46
+
+A
+Converter πElG-com
+
+B
+Converter πElG-com
+
+Initialization
+a, b, v ← ⊥
+
+Initialization
+c, A, B, v ← ⊥
+
+Emulating Interface A of ComA→B
+G
+
+Emulating Interface B of ComA→B
+G
+
+Input: (commit, m)
+require only called once
+a, b  Z|G|
+v←m
+call (send, (g a , g b , m · g ab ))
+at interface A of ChA→B
+1
+
+Input: isCommitted
+if c = ⊥ then
+call (c, A, B) ← (receive)
+at interface B of ChA→B
+1
+return c 6= ⊥
+Input: read
+if c = ⊥ then
+call (c, A, B) ← (receive)
+at interface B of ChA→B
+1
+if v = ⊥ then
+call (a, b) ← (receive)
+at interface B of ChA→B
+2
+if (a, b) 6= ⊥ ∧ A = g a ∧ B = g b then
+v ← c · g −ab
+return v
+
++
+
+E ← E committed
+return ok
+Input: (open, m)
+require E committed and only called once
+if m = v then
+call (send, (a, b)) at int. A of ChA→B
+2
++
+
+E ← E opened
+return ok
+
+Fig. 10: A formal description of the ElGamal-commitment converters.
+
+B
+Converter σElG-com
+
+A
+Converter σElG-com
+
+Initialization
+u, v, w  G
+x←⊥
+
+Initialization
+A, B, V ← ⊥
+Emulating Interface A of ChA→B
+1
+
+Emulating Interface B of ChA→B
+1
+
+Input: (send, x)
+require only called once
+if x ∈ G3 then
+(A, B, V ) ← x
+call (commitRaw, x)
+A→B
+at interface A of ComG
+return ok
+
+Input: receive
+call succ ← (isCommitted)
+at interface B of ComA→B
+G
+if succ then
+return (u, v, w)
+else
+return ⊥
+
+Emulating Interface A of ChA→B
+2
+
+Emulating Interface B of ChA→B
+2
+
+Input: (send, x)
+require only called once
+if x = (a, b) ∈ Z|G| ∧ A = g a ∧ B = g b
+then
+call (open, V · g −ab )
+at interface A of ComA→B
+G
+return ok
+
+Input: receive
+return ⊥
+
+Fig. 11: A formal description of the simulators from the ElGamal-commitment
+construction.
+
+47
+
+A
+Converter πCT
+
+B
+Converter πCT
+
+Initialization
+X, Y ← ⊥
+
+Initialization
+X, Y ← ⊥
+
+A,B
+Emulating Interface A of CT{0,1}
+
+Emulating Interface B of CTA,B
+{0,1}
+
+Input: initiate
+require only called once
+X  {0, 1}
+call commit at int. A of ComA→B
+return ok
+
+Input: isInitiated
+call b ← isCommitted at int. B of ComA→B
+return b
+Input: respond
+require isInitiated and only called once
+Y  {0, 1}
+call (send, Y ) at int. B of ChB→A
+return ok
+
+Input: read
+require X 6= ⊥
+if Y = ⊥ then
+call Y ← read at int. A of ChB→A
+if Y 6= ⊥ then return X ⊕ Y
+else return ⊥
+
+Input: read
+require Y 6= ⊥
+if X = ⊥ then
+call X ← read at int. B of ComA→B
+if X 6= ⊥ then
+return X ⊕ Y
+else
+return ⊥
+
+Input: release
+require Y 6= ⊥ and only called once
+call (open, X) at int. A of ComA→B
+return ok
+
+Fig. 12: A formal description of the coin-tossing converters.
+
+A
+Simulator σCT
+
+B
+Simulator σCT
+Initialization
+Z, Y ← ⊥
+
+Emulating Interface A of ComA→B
+{0,1},f
+Input: (commit, x) ∈ {0, 1}
+require ¬E committed
+X ←x
+call init at int. A of CTA,B
+return ok
+
+Emulating Interface B of ComA→B
+{0,1}
+Input: isCommitted
+call b ← isInitiated at int. B of CTA,B
+return b
+
+Input: (commitRaw, c) ∈ {0, 1}∗
+require ¬E committed
+call init at int. A of CTA,B
+call X ← (getLeakage, c) at int. B of
+A,B
+CT{0,1},f
+return ok
+
+Input: read
+require Y 6= ⊥
+if Z = ⊥ then
+call Z ← read at int. B of CTA,B
+if Z 6= ⊥ then
+return Z ⊕ Y
+else
+return ⊥
+
+Input: (open, x) ∈ {0, 1}
+require E committed , only called once, and
+x=X
+call release at int. A of CTA,B
+return ok
+
+Emulating Interface B of ChB→A
+Input: (send, Y ) ∈ {0, 1}
+require isInitiated and only called once
+call respond at int. B of CTA,B
+{0,1}
+return ok
+
+Emulating Interface A of ChB→A
+Input: read
+require X 6= ⊥ ∨ C 6= ⊥
+call Z ← read at int. B of CTA,B
+{0,1},f
+if Z 6= ⊥ then return Z ⊕ X
+else return ⊥
+
+Fig. 13: A formal description of the respective coin-tossing simulators.
+
+48
+
+

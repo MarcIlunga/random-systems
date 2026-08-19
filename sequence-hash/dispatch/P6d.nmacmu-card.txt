@@ -1,0 +1,48 @@
+TASK P6d.nmacmu — R6 DEEP, REAL PROOF (not a hypothesis). PROVE `nmac_prf_bound_strong_mu`,
+which is currently only the named hypothesis `h_nmac_mu` in `SequenceMACTight.lean`. This
+converts R6 from structural to FULLY PROVEN. It is NOT research — it re-plumbs the EXISTING R2
+cascade proof by REMOVING one step.
+
+THE INSIGHT (Backendal vs Gaži, in the PDS model — verified against the code):
+- R2's `cascade_na_pf_fixedQuery_bound` (`SequenceMACPRF.lean:975`) =
+  `gazi_lemma5_depth_hybrid` (`:579`, the DEPTH telescoping, factor `ℓ+2`) composed with
+  `gazi_lemma6_row_hybrid` (`:297`, the ROW hybrid, factor `q`, which charges `q` rows to the
+  single-compression `CompNASecure` assumption).
+- Backendal's improvement = SKIP the row hybrid. Charge each depth level DIRECTLY to the
+  strong-multi-user compression distance `epsCompMU q q f := Δ(⌈q⌉ multiCompReal q f,
+  ⌈q⌉ multiCompIdeal q)` — the multi-user assumption absorbs the `q`-loss into ONE term instead
+  of `gazi_lemma6`'s `q·εna` decomposition. `multiCompReal`/`multiCompIdeal` ALREADY EXIST
+  (`SequenceMACPRF.lean:182/191`); `epsCompMU` is defined in `SequenceMACTight.lean:27`.
+
+DO:
+1. Move `epsCompMU` into `MACPRF` (it is generic; put it next to `multiCompReal`/`multiCompIdeal`
+   in `SequenceMACPRF.lean`) so R2 and R6 share it. (Update `SequenceMACTight.lean`'s reference.)
+2. PROVE, in `MACPRF`, reusing `gazi_lemma5_depth_hybrid` for the depth telescoping and the
+   SAME birthday leg R2 uses (do NOT re-derive the depth hybrid or the birthday):
+     `theorem nmac_prf_bound_strong_mu (q ℓ : ℕ) (f : CompressionFamily C B) (pad : C ↪ B) :
+        Δ(⌈q⌉ nmacReal ℓ f pad, ⌈q⌉ macIdeal ℓ)
+          ≤ (ℓ + 2 : ℝ) * epsCompMU q q f + (pairCollisionUnionBound C q : ℝ)`
+   Structure: mirror `cascade_na_pf_fixedQuery_bound`, but at each depth level charge the layer
+   swap to `epsCompMU` (= Δ of the existing multiComp worlds) INSTEAD of applying
+   `gazi_lemma6_row_hybrid`. If `gazi_lemma5_depth_hybrid` is stated only in composition with the
+   row hybrid, factor out the per-level step so the multi-user distance plugs in cleanly
+   (generalize `gazi_lemma5` IN PLACE if needed — keep the existing R2 users building).
+3. DISCHARGE `h_nmac_mu` in `SequenceMACTight.lean`: the headline
+   `sequenceFunction_prf_bound_strong_mu` should now obtain `h_nmac_mu` FROM
+   `nmac_prf_bound_strong_mu` (drop it as an external hypothesis, or provide a corollary that
+   supplies it) — so R6's cascade term is PROVEN, only `hSchedule` (the C2SP normalization)
+   remains named.
+
+REALLY ADAPT — do not merely restate. Show the argument change: the row hybrid is GONE, replaced
+by one strong-MU charge per depth level. Keep the bound honest (no weakening; birthday stays
+`pairCollisionUnionBound`).
+
+ACCEPTANCE: whole-repo `lake build` green; axiom-clean {propext, Classical.choice, Quot.sound};
+sorry-free / axiom-free — `nmac_prf_bound_strong_mu` is PROVEN (no `sorry`, no external
+compression hypothesis beyond `epsCompMU` itself); existing R2 theorems still build unchanged;
+reuse `gazi_lemma5_depth_hybrid` + `multiComp*` + birthday by name; no `private`. Report: the
+proof structure (which lemmas reused, whether `gazi_lemma5` was generalized), how the row hybrid
+was removed, the R6-headline discharge, and the axiom line.
+
+*** IF `gazi_lemma5_depth_hybrid` genuinely cannot be re-based without a substantial change,
+STOP and report exactly what per-level lemma is missing (do NOT leave a sorry). ***

@@ -1,0 +1,54 @@
+STEP 0 — KNOW THE TERRAIN BEFORE WRITING THE SKETCH (non-negotiable):
+1. KNOW THE FRAMEWORK. RandomSystems (this repo) is an algebraic random-systems
+   framework that instantiates AbstractCrypto (../abstract-crypto, a lakefile
+   dependency). It already contains high-level theorems: resource algebra,
+   distinguishing advantage, the H-technique layer (RandomSystems/HTechnique/*),
+   converters, DPI, PRF/URF machinery (RandomSystems/Complexity/PRF.lean,
+   PDS.lean, Dist.lean). Read the relevant surface. The sketch MUST map onto
+   these existing objects/theorems, not invent parallel ones.
+2. NEVER PLAN TO REPROVE. When your skeleton needs a lemma, first assume it
+   already exists in RandomSystems/AbstractCrypto/Mathlib and name it; only mark
+   a step "NEW" if you searched (grep + lean_local_search/loogle/leansearch) and
+   it genuinely is not there. If a needed fact is not SequenceHash-specific, the
+   plan is to GENERALIZE an existing lemma in place, never a specialized copy.
+
+TASK S2 — Pen-and-paper sketch for R2: SequenceMAC PRF security.
+This is a WRITING/RESEARCH task. Produce a pen-and-paper proof sketch. Do NOT
+write any Lean proof and do NOT create Lean files. Output is a markdown sketch.
+
+SUBJECT (settled design decisions — do not relitigate):
+- The PRF subject is SequenceMAC (the keyed sister of SequenceHash; key K, |K|>=32
+  bytes; the key rides in HeaderI/HeaderO). Construction is in
+  sequence-hash/SequenceHash/Spec.lean and summarized in
+  sequence-hash/PLAN.md §1.
+- The underlying hash H is MERKLE–DAMGARD: H = MD[f] for a compression function
+  f, with f modeled as KEYED (a PRF / uniform random function). This is the Gaži
+  setting.
+- Copy and adapt the proof of: Gaži, Pietrzak, Rybár, "The Exact PRF-Security of
+  NMAC and HMAC" (this directory: 2014-578.pdf). Read it.
+
+DELIVERABLE — a markdown sketch with these sections:
+  (a) OBJECTS: the MD model (compression f, IV, block iteration, byte<->block
+      padding), the keyed SequenceMAC over MD, the PRF advantage object — stated
+      as close as possible to existing RandomSystems types (cite the file/def you
+      would reuse: e.g. the PRF/URF defs, distinguishing advantage, the
+      H-technique endpoints).
+  (b) FINAL THEOREM: the precise statement of the SequenceMAC PRF bound
+      (hypotheses + the exact bound), in the shape the Lean guardrail will take.
+  (c) PROOF SKELETON: the game hops / reduction, each step tagged with the Gaži
+      section it copies, and each needed lemma tagged REUSE:<existing name> or
+      NEW:<why not already present>.
+  (d) SHORT vs LONG CUSTOMIZATION split: short (derive=pad(S) literal ⇒
+      domain-separated Hash-then-PRF) vs long (derive=H(S) raw query overlap ⇒
+      extra term) — how each is handled and where the bound differs.
+  (e) INFRA MAP: bullet list of the specific existing RandomSystems/AbstractCrypto
+      theorems the proof will reuse, and the (hopefully few) genuinely NEW lemmas,
+      each with one line on why it can't be an instance of something existing.
+
+CONSTRAINTS:
+- Faithful to Gaži: we copy an existing proof, we do not invent a new one.
+- Prefer reuse and generalization over new lemmas; the sketch should make the
+  reuse explicit (that is the main thing I will check).
+- Keep it tight and concrete; cite paper sections and repo file paths/def names.
+
+OUTPUT: write the full sketch as your final message. Do not edit any repo file.

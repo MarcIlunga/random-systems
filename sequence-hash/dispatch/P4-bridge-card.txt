@@ -1,0 +1,55 @@
+TASK P4-bridge — the filter→advantage bridge for `filterDom P`, landing on
+`filteredAdaptiveTranscriptAdvantage` (REUSING the proven R4 endpoint). Statement-first, valve-guarded.
+Sorry-free, additive, whole-repo green. NO `B_SEQ`, NO sequence headline, NO `h_badmass`.
+
+CONTEXT (corrected from your earlier valve — read carefully): there is NO fundamental obstruction. A
+`filterDom P` system is a well-defined Maurer restriction; `Δ(⌈P⌉ S, ⌈P⌉ T)` is well-defined. Your
+earlier worry was that `KStepTotal (⌈P⌉ S)` fails for a domain predicate P. That is SIDESTEPPED here:
+we land the bridge on `filteredAdaptiveTranscriptAdvantage` (`Derivation.lean:1692`), whose RHS uses
+the BASE system's transcripts `tr[q](S, E)` over `EnvRespects`-respecting environments — so it needs
+only `KStepTotal` of the BASE `S` (which holds), NOT of the filtered system. Key facts:
+  • On P-VIOLATING queries, `⌈P⌉ S` and `⌈P⌉ T` BOTH return `none` (identical) ⟹ 0 contribution to Δ.
+  • On P-respecting histories, `tr(⌈P⌉ S, E) = tr(S, E)` (filter invisible where defined).
+So the filtered advantage collapses onto P-respecting behaviour and is bounded by the sup over
+P-respecting environments = `filteredAdaptiveTranscriptAdvantage`.
+
+PROVE (state the general lemma; the sequence uses it at `P = TaggedBudgetRespects`):
+  `maxAdvantage_filterDom_le_filteredAdaptiveTranscriptAdvantage` :
+    `(Δ(⌈P⌉ S.val, ⌈P⌉ T.val) : ℝ)
+        ≤ filteredAdaptiveTranscriptAdvantage (liftHist P) S.val T.val`
+  where `liftHist P : TranscriptPrefix X Y q → Prop := fun t => P t.1.toList` (the visible input
+  history; confirm the exact projection against the `TranscriptPrefix` API). Hyps: `KStepTotal S q`,
+  `KStepTotal T q`, `PrefixClosed P`, and the filterDom finite-query normalization.
+
+REUSE (generalize from the count-filter proof — do NOT reprove; `filterQueries` is now the `P = length ≤ q`
+instance of `filterDom`, so these generalize by construction):
+  • `DeltaFilteredFiniteQueryNormalization` (`GameOf.lean:1175`) + `_of_totalOnNonempty` (:1203) via
+    `padDDDDist` — generalize to `filterDom P`: pad with P-VIOLATING queries, which get `none` in BOTH
+    `⌈P⌉ S` and `⌈P⌉ T`, preserving advantage exactly as the count-filter padding
+    (`advantage_padDDDDist_filterQueries_eq_of_totalOnNonempty`, :1209) does.
+  • `advantage_le_adaptiveTranscriptAdvantage_of_queriesExactly` (`AdaptiveLawBridge.lean:340`),
+    `deterministicTranscriptDist_filterQueries_eq` (:415), the `_filterQueries` mass reductions
+    (`CondEquiv.lean:152–190`) — generalize to `filterDom P` / P-respecting environments.
+  • Keep the count-filter bridge `maxAdvantage_filterQueries_le_adaptiveTranscriptAdvantage` (:547) and
+    `_le_filtered_adaptiveTranscriptAdvantage` (:513) as the `P = length ≤ q` instances, green.
+
+*** VALVE: if the base-transcript agreement `tr(⌈P⌉ S, E) = tr(S, E)` on P-respecting E, or the
+padDDD-with-P-violating-queries advantage preservation, genuinely resists, STOP after the pieces you
+DID close (green) and report the PRECISE remaining obligation + why. Never leave a `sorry`. ***
+
+READ FIRST: `Derivation.lean:1683–1730` (`EnvRespects`, `filteredAdaptiveTranscriptAdvantage`,
+`filteredAdaptiveTranscriptAdvantage_le_of_pointwise`, `deterministicTranscriptDist_eq_zero_of_not_filt`),
+`AdaptiveLawBridge.lean:340–557` (bridge + support), `GameOf.lean:1175–1260` (normalization + padDDD),
+`CondEquiv.lean:146–200` (`_filterQueries` reductions), `PFunDDS.lean:283–320` (the new `filterDom`),
+CHEATSHEET for `tr[q]`/transcript-law API.
+
+ADDITIVE (new bridge lemma + generalized support); do NOT touch R1–R6 / CBC / sequence proof bodies —
+they stay green via the definitional `filterQueries = filterDom (length ≤ q)` instance.
+
+ACCEPTANCE: whole-repo `lake build RandomSystems RandomSystemsCC SequenceHash` green; axiom-clean
+{propext, Classical.choice, Quot.sound}; sorry-free; NO `private`; the count-filter bridge preserved as
+the `length ≤ q` instance; NO `B_SEQ` / sequence headline / `h_badmass`. Report: the bridge statement,
+the `liftHist` projection used, the reuse/generalization map, valve status, axiom line. After this, the
+R4-structural headline `Δ(⌈budget⌉ real.val, ⌈budget⌉ ideal.val) ≤ B_SEQ` is a thin chain: this bridge +
+the PROVEN `sequenceFunctionIC_r4_equality_on_good` (which already yields
+`filteredAdaptiveTranscriptAdvantage (budget) ≤ deltaBad`).

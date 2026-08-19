@@ -1,0 +1,57 @@
+TASK P4n.spine2 — land the R4-STRUCTURAL headline on the CORRECTED filter-first surface. THIN chain:
+the proven filterDom bridge + the proven eq-on-good endpoint, carrying TWO NAMED R4-deep hypotheses
+(the domain normalization + the bad-mass count). Statement-first, sorry-free, additive, whole-repo green.
+
+CONTEXT: filter the budget in the RS DOMAIN first, then technique. The bridge
+`maxAdvantage_filterDom_le_filteredAdaptiveTranscriptAdvantage` (`Derivation.lean:1909`) is PROVEN:
+`Δ(PFunPDS.filterDom P hP S.val, PFunPDS.filterDom P hP T.val) ≤ filteredAdaptiveTranscriptAdvantage (liftHist P) S T`,
+given `KStepTotal S q`, `KStepTotal T q`, `PrefixClosed P`, `DeltaFilterDomFiniteQueryNormalization P hP q S T`
+(def `Derivation.lean:1711`; `liftHist P t := P t.1.toList`, `:1693`). The eq-on-good endpoint
+`sequenceFunctionIC_r4_equality_on_good` (`SequenceMACGenericFiberMass.lean:2201`) is PROVEN:
+`filteredAdaptiveTranscriptAdvantage (SequenceFunctionTaggedBudgetRespects model b S p q lambda users) real ideal ≤ deltaBad`,
+given its `hBad`. Compose them for the headline.
+
+DELIVER (new file `SequenceHash/RandomSystems/SequenceMACGeneric.lean`):
+1. `budgetHist model b S p q lambda : List (SequenceFunctionICQuery Block L users) → Prop` — the
+   history-level budget predicate mirroring `TaggedBudgetRespects` (`HTechnique/IdealCompression.lean:85`)
+   /`SequenceFunctionTaggedBudgetRespects` (`IdealCompression.lean:173`): `primCount l ≤ p ∧ evalCount l ≤ q
+   ∧ (∀ eval e in l, sequenceFunctionEvalCost model b S e ≤ lambda)` (use the SAME count/cost helpers as
+   `TaggedBudgetRespects`; grep them). Prove `PrefixClosed budgetHist` (counts monotone in the list, cost
+   local — reuse the mathlib prefix API + any `TaggedBudgetRespects` prefix lemmas).
+2. `liftHist_budgetHist_eq` : `liftHist (budgetHist model b S p q lambda) = SequenceFunctionTaggedBudgetRespects model b S p q lambda users`
+   (the budget factors through `t.1`; `liftHist P t = P t.1.toList`). Prove by `rfl`/`funext`+`simp` on the
+   count/cost helpers. This is the connector to the proven endpoint.
+3. `B_SEQ` DEFINED per A4 §5 (NOT `B_N`): `B_cascade(p,q,lambda;c) + B_key(p,u;κ*) + deriveCostGeneric(rK,rS,…)`,
+   `B_cascade = pqλ/2^c + C(q,2)((λ+2)/2^c + 64λ⁴/2^{2c})`, `B_key = (C(u,2)+2up)/2^{κ*}`, §5 `deriveCostGeneric`
+   (0 when rK=rS=0). Name it `deriveCostGeneric` (distinct from R5's `DeriveCost_SEQ`).
+4. TWO NAMED HYPOTHESES on the frozen theorem (each = an R4-deep obligation proven SEPARATELY; NEVER a `sorry`):
+   - `h_norm : DeltaFilterDomFiniteQueryNormalization (budgetHist model b S p q lambda) hP (p+q)
+       (sequenceFunctionICReal model b S users keysP).val (sequenceFunctionICIdeal users keysP).val`
+     (TRUE by budget extensibility; discharged next).
+   - `h_badmass` : the exact `hBad` premise of `sequenceFunctionIC_r4_equality_on_good` with `deltaBad := B_SEQ …`
+     (`∀ E, EnvRespects (SequenceFunctionTaggedBudgetRespects …) E → probBad (ideal extension … E.1) (Bad_SEQ …) ≤ (B_SEQ … : NNReal)`).
+5. FROZEN headline `sequenceMAC_generic_prf_tight` — the FILTER-FIRST form (the 5 §8 features; RHS = `B_SEQ`):
+     `(Δ(PFunPDS.filterDom (budgetHist model b S p q lambda) hP (sequenceFunctionICReal model b S users keysP).val,
+         PFunPDS.filterDom (budgetHist model b S p q lambda) hP (sequenceFunctionICIdeal users keysP).val) : ℝ)
+        ≤ (B_SEQ … : ℝ)`
+   PROVE: `maxAdvantage_filterDom_le_filteredAdaptiveTranscriptAdvantage` (with `h_norm`,
+   `sequenceFunctionICReal_KStepTotal`/`sequenceFunctionICIdeal_KStepTotal` (`IdealCompression.lean:157…`),
+   the `PrefixClosed` from (1)) → `rw [liftHist_budgetHist_eq]` (step 2) → `sequenceFunctionIC_r4_equality_on_good`
+   (with `h_badmass`, `deltaBad := B_SEQ`). NO triangle hop to NMAC.
+
+READ: the bridge (`Derivation.lean:1900–1960` + `DeltaFilterDomFiniteQueryNormalization` :1711, `liftHist` :1693),
+`sequenceFunctionIC_r4_equality_on_good` (`SequenceMACGenericFiberMass.lean:2201`, its exact conclusion + `hBad`),
+`SequenceFunctionTaggedBudgetRespects`/`TaggedBudgetRespects` + their count/cost helpers, the KStepTotal lemmas,
+A4 §5/§8. CHEATSHEET.md (repo root) for prefix/count API.
+
+*** VALVE: if step 2 (`liftHist_budgetHist_eq`) or the KStepTotal/PrefixClosed wiring resists, STOP with the
+PRECISE gap. `h_norm` and `h_badmass` stay NAMED — never `sorry` them, never prove them here. ***
+
+ADDITIVE: only the new file. Do NOT modify the bridge, the eq-on-good module, the facade, steps 1–3, R1–R6.
+
+ACCEPTANCE: whole-repo `lake build RandomSystems RandomSystemsCC SequenceHash` green; axiom-clean
+{propext, Classical.choice, Quot.sound}; sorry-free/axiom-free (only `h_norm`,`h_badmass` NAMED); NO `private`;
+`B_SEQ` = §5 (not `B_N`); the headline is the FILTER-FIRST `Δ(filterDom budget …, filterDom budget …)` form;
+reuse the bridge + proven eq-on-good + KStepTotal by name; closed via the composed chain. Report: `budgetHist`
++ `PrefixClosed`, the `liftHist` identity, `B_SEQ`, the two named hyps' exact statements, the headline proof
+chain, reuse map, axiom line. This lands R4-structural on the corrected surface.

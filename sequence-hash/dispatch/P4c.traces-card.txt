@@ -1,0 +1,38 @@
+TASK P4c.traces — R4 FOUNDATION (step 1 of Codex's own 4-step R4 split; the ideal-compression
+facade from dispatch 1 exists). Build ONLY the canonical MD compression-trace machinery that
+the later equality-on-good proof needs. NO `Bad_SEQ`, NO equality-on-good, NO `B_SEQ`, NO
+theorem, NO `h_badmass` here — those are steps 2–4. This step must be fully sorry-free.
+
+READ FIRST (you have no memory of them):
+- `RandomSystems/HTechnique/IdealCompression.lean` (generic facade: worlds, representatives,
+  reveal carrier, `adv_le_of_extFixedQueryRep_eq_on_good_filtered`).
+- `SequenceHash/RandomSystems/IdealCompression.lean` (scheme facade: `sequenceFunctionIC{Real,Ideal}`,
+  `SequenceFunctionCompressionModel`, `SequenceFunctionTraceBound`, reveal maps, KStepTotal).
+- `MDHash.lean` (`mdHash`, `MDCodec.blockify`, `mdIterate`), canonical `SequenceFunction`.
+
+ADDITIVE: new file `SequenceHash/RandomSystems/SequenceMACGenericTrace.lean` (or a clearly-named
+foundation module). Do NOT modify R1/R2/R3/R5/DomainSeparation or the facade. Start from
+canonical `sequenceFunction`/`mdHash` — never re-spell the construction.
+
+DELIVER (Codex split item 1, sorry-free):
+1. `mdCompressionTrace` — the `(chainingState, block)` call sequence produced by one `mdHash`
+   fold on a codec-blockified input (reuse `MDCodec.blockify`, `mdIterate`); its length =
+   `(codec.blockify input).length`; a reconstruction lemma (the fold's final chaining state is
+   the last trace entry's output) and a final-output lemma.
+2. `sequenceFunctionCompressionTrace` — the role-tagged concatenation of the per-hash-call
+   `mdCompressionTrace`s made by `sequenceFunctionICReal`/`Ideal` on an `Eval(i,M)` (derive/inner/
+   outer roles), with the length/padding theorems relating it to `SequenceFunctionTraceBound`.
+3. The OUTPUT-BACKED fact as a clean lemma or a reusable hypothesis form (per your escalation):
+   `SequenceFunctionOutputCompressionBacked model b S := ∀ K M derivedK derivedS inner,
+      (model.codec.blockify (sequenceFunctionOuterInput b fSeqMac K.1 S M derivedK derivedS inner)).Nonempty`
+   — DEFINE it (as a `Prop`), and prove it holds under the natural codec condition (the outer input
+   is non-empty because it begins with `headerO`, so any reasonable `blockify` yields ≥1 block);
+   if it needs a codec-level premise, state that premise precisely. Do NOT fold it into
+   CrossRoleSeparated or Bad_SEQ.
+
+ACCEPTANCE: whole-repo `lake build` green; every new theorem axiom-clean {propext,
+Classical.choice, Quot.sound}; sorry-free / axiom-free / no `private`; additive (new file only,
+existing mtimes unchanged); reuses `mdHash`/`blockify`/`mdIterate` + the facade + canonical
+`sequenceFunction` by name (no re-spelled construction, no reproved MD facts). Report: the new
+module, the trace defs + reconstruction/length/final-output lemmas, the output-backed lemma (and
+any codec premise), the reuse map, the axiom line, and confirm steps 2–4 remain untouched.

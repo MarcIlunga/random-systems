@@ -1,0 +1,45 @@
+TASK P4l.closeeqgood — CLOSE the R4 equality-on-good END-TO-END. The combinatorial crux is DONE
+(`sequenceFunction_fiber_card` / `_of_not_Bad_SEQ` proven). All that remains is H-technique
+representative plumbing. Do the WHOLE remaining chain in this dispatch — do NOT stop at another
+sub-step. Sorry-free. NO `B_SEQ`/`h_badmass`/final theorem (step 4).
+
+ALL PROVEN, REUSE BY NAME (do not reprove any of these):
+- `sequenceFunction_fiber_card`, `sequenceFunction_fiber_card_of_not_Bad_SEQ` (the factorization).
+- `sequenceFunctionTerminalShift` + `_state`/`_compose`/`_zero` (the shift group action).
+- `not_Bad_SEQ_iff_compressionFresh`, `sequenceFunctionConstructionCall_fresh_of_not_Bad_SEQ`,
+  `sequenceFunctionFreshCompressionValues_uniform` (3a freshness).
+- `sequenceFunctionICReal/IdealReveal`, `sequenceFunctionProgrammedTrace_call_reduction`,
+  `..._final_output`, the honest-prefix agreement, `sequenceFunctionCompressionTrace_length_le_evalCost`
+  (3b + prior).
+- `adv_le_of_extFixedQueryRep_eq_on_good_filtered_of_filter` (`IdealCompression.lean:378`, the endpoint).
+
+DO ALL OF (sorry-free, in ONE dispatch):
+1. Skeleton shift-invariance: the terminal shift fixes every honest non-terminal representative
+   coordinate (from global construction `Nodup` = `Bad_SEQ` freshness) and only translates the
+   terminal one.
+2. Representative mass normalization: apply `sequenceFunction_fiber_card_of_not_Bad_SEQ` to
+   `extFixedQueryTranscriptDistRep` to get the terminal factor is UNIFORM among `Bad_SEQ`-free coins.
+3. Direct real/ideal representative-mass equality:
+     `SequenceFunctionTaggedBudgetRespects … tz.1 → ¬ Bad_SEQ tz →
+        extFixedQueryTranscriptDistRep realP realF realReveal xs tz
+          = extFixedQueryTranscriptDistRep idealP idealF idealReveal xs tz`
+   (terminal factor uniform ⇒ equal; honest prefix agrees). No game / `condEquiv` / `|≡`.
+4. Package via `adv_le_of_extFixedQueryRep_eq_on_good_filtered_of_filter` ⇒ the FINAL named R4
+   equality-on-good lemma (the exact hypothesis step 4's `sequenceMAC_generic_prf_tight` feeds it).
+
+READ: `SequenceMACGenericFiberMass.lean` (all the above), `IdealCompression.lean:378` (endpoint +
+its `extFixedQueryTranscriptDistRep` premise shape).
+
+ADDITIVE: extend `SequenceMACGenericFiberMass.lean`. Do NOT modify 3a, the facade, steps 1–2, R1–R6.
+
+ACCEPTANCE: whole-repo `lake build` green; axiom-clean {propext, Classical.choice, Quot.sound};
+sorry-free / axiom-free / no `private` / no games / no `condEquiv`; additive; reuse ALL the proven
+pieces above by name; the FINAL R4 equality-on-good lemma is PROVEN and packaged through the
+endpoint. NO `B_SEQ`/`h_badmass`/final theorem. Report: the closed eq-on-good lemma name, reuse map,
+axiom line, confirm step 4 is now the ONLY remaining R4-spine work.
+
+*** DO NOT valve-split into more representative plumbing. If — and only if — a genuine FRAMEWORK-level
+lemma is missing (a general fact about `extFixedQueryTranscriptDistRep` / the representative that
+should live in `HTechnique/IdealCompression.lean` or the H-technique core, not a scheme-specific
+step), STOP and name it PRECISELY (statement + where it belongs) so the manager can add it. Never
+leave a `sorry`. ***

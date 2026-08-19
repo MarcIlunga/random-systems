@@ -1,0 +1,40 @@
+TASK P4e2.fiber — R4 step 3 of 4, REAL proof (steps 1–2 DONE). Prove the EQUALITY-ON-GOOD:
+OFF `Bad_SEQ`, the real and ideal extended fixed-query masses are EQUAL — the exact hypothesis
+`adv_le_of_extFixedQueryRep_eq_on_good_filtered` consumes. Sorry-free. NO `B_SEQ`/`h_badmass`/
+final theorem (step 4).
+
+*** REUSE THE PROVEN TEMPLATE. *** This is the same "fresh ⇒ real = ideal" argument already
+PROVEN for CBC-MAC in `RandomSystems/CBCStructureGraph.lean`:
+  - `cbcGraphGame_condEquiv` (PROVEN): on histories with no bad event, CBC IS the URF.
+  - `cbcFresh_of_not_cbcGraphBad`: ¬bad ⇒ every call is fresh.
+  - `condEquiv_of_transcript_mass_reductions`: the per-transcript mass-identity engine.
+Study that file's structure and ADAPT the technique to the SequenceMAC ideal-compression setting.
+The core idea transfers verbatim: OFF `Bad_SEQ` (step 2), every construction compression call is
+fresh ⇒ on the ideal side each returns an independent uniform value ⇒ the two extended masses
+coincide. Domain separation (proven, step 2 `sequenceFunctionCrossRoleSeparated`) does the
+role-disambiguation FOR FREE — you do NOT re-derive input separation. Prefix-freeness of the
+framed inputs means no length-extension aliasing.
+
+READ FIRST: `CBCStructureGraph.lean` (the template); `SequenceMACGenericTrace.lean` (step 1:
+`mdCompressionTrace`, `sequenceFunctionCompressionTrace`); `SequenceMACGenericBad.lean` (step 2:
+`Bad_SEQ`, `KeyPointMassBound`, `sequenceFunctionCrossRoleSeparated`); both `IdealCompression.lean`
+facades (worlds, reveal carrier, and EXACTLY the eq-on-good hypothesis
+`adv_le_of_extFixedQueryRep_eq_on_good_filtered` needs).
+
+ADDITIVE: new file `SequenceHash/RandomSystems/SequenceMACGenericFiber.lean`. Do NOT modify
+R1/R2/R3/R5/R6/DomainSeparation, the facade, or steps 1–2.
+
+DELIVER (sorry-free):
+1. Per-call freshness ⇒ independence, OFF `Bad_SEQ` (adapt `cbcFresh_of_not_cbcGraphBad`).
+2. The partial-assignment fiber / mass equality OFF `Bad_SEQ` (adapt the
+   `condEquiv_of_transcript_mass_reductions` engine) ⇒ equality of the extended fixed-query masses.
+3. Package it as the exact eq-on-good lemma `adv_le_of_extFixedQueryRep_eq_on_good_filtered` accepts
+   (ε_ratio = 0 side).
+
+ACCEPTANCE: whole-repo green; axiom-clean; sorry-free/no `private`; additive (steps 1–2 + facade +
+CBC file unchanged); reuse the CBC structure-graph condEquiv technique + steps 1–2 + facade +
+DomainSeparation by name; NO `B_SEQ`/`h_badmass`/final theorem. Report: the freshness + fiber-mass
+lemmas, which CBC lemmas were the template, the packaged eq-on-good lemma, reuse map, axiom line.
+
+*** SPLIT VALVE: if the fiber mass-equality is large, STOP after the per-call freshness lemmas
+(item 1) sorry-free and report the remaining plan. Never leave a `sorry`. ***

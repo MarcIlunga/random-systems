@@ -1,0 +1,38 @@
+TASK P4f.fibermass — R4 step 3b of 4 (step 3a freshness DONE). Prove the fiber MASS-EQUALITY +
+the real/ideal reveal maps, and PACKAGE the exact equality-on-good hypothesis that
+`adv_le_of_extFixedQueryRep_eq_on_good_filtered` consumes. Sorry-free. NO `B_SEQ`/`h_badmass`/
+final theorem (step 4).
+
+REUSE THE PROVEN TEMPLATE: CBC's `condEquiv_of_transcript_mass_reductions` (in
+`RandomSystems/CBCStructureGraph.lean`) is the per-transcript mass-identity engine — it turns
+"every call fresh on the good event" into "the two worlds have identical per-transcript mass."
+Adapt it here: step 3a already gives `sequenceFunctionFreshCompressionValues_uniform` (fresh
+compression outputs jointly uniform + independent off `Bad_SEQ`), so the real and ideal extended
+masses coincide off `Bad_SEQ`.
+
+READ FIRST: `SequenceMACGenericFiber.lean` (step 3a: `not_Bad_SEQ_iff_compressionFresh`,
+`sequenceFunctionConstructionCall_fresh_of_not_Bad_SEQ`, `sequenceFunctionFreshCompressionValues_uniform`);
+`CBCStructureGraph.lean` (`condEquiv_of_transcript_mass_reductions` + how it consumes freshness);
+both `IdealCompression.lean` facades (representatives, reveal carrier, and the EXACT form of the
+eq-on-good hypothesis in `adv_le_of_extFixedQueryRep_eq_on_good_filtered`).
+
+ADDITIVE: extend `SequenceMACGenericFiber.lean` (or a new `SequenceMACGenericFiberMass.lean`). Do
+NOT modify R1/R2/R3/R5/R6/DomainSeparation, the facade, steps 1–2, or step 3a.
+
+DELIVER (sorry-free):
+1. The real/ideal reveal maps over the facade's reveal carrier (dummy-key reveal, per the facade).
+2. The partial-assignment fiber MASS equality off `Bad_SEQ`: adapt
+   `condEquiv_of_transcript_mass_reductions` so the fiber of coin assignments consistent with a
+   good (¬`Bad_SEQ`) transcript has EQUAL measure in real vs ideal ⇒ equality of the extended
+   fixed-query masses.
+3. Package (2) as the exact eq-on-good lemma `adv_le_of_extFixedQueryRep_eq_on_good_filtered`
+   accepts (the ε_ratio = 0 side). After this, step 4 is just `B_SEQ` + named `h_badmass` + closing.
+
+ACCEPTANCE: whole-repo `lake build` green; axiom-clean {propext, Classical.choice, Quot.sound};
+sorry-free / axiom-free / no `private`; additive (steps 1–2/3a + facade + CBC unchanged); reuse
+step 3a + the CBC `condEquiv_of_transcript_mass_reductions` engine + facade by name; NO `B_SEQ`/
+`h_badmass`/final theorem. Report: reveal maps, the mass-equality lemma, the packaged eq-on-good
+lemma, which CBC lemma was the template, reuse map, axiom line.
+
+*** VALVE: if the mass equality is too large, STOP after the reveal maps + a precise per-call
+reduction lemma, and report the remaining plan. Never leave a `sorry`. ***

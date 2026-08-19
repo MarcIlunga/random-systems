@@ -1,0 +1,56 @@
+TASK P4-normC — FINISH h_norm: Step 2 of the `DeltaFilterDomFiniteQueryNormalization` construction
+(respecting padding + advantage domination + the corrected generic lemma), then DISCHARGE R4's `h_norm`.
+Part A + Step 1 (suppression) are DONE and green. Sorry-free, additive, whole-repo green.
+
+DONE + REUSE BY NAME: `QExtensible` (`PFunDDS.lean:28`), `budgetHist_qExtensible` (needs `0<users`),
+`sequenceFunctionICReal/Ideal_totalOnNonempty`; and the SUPPRESSION layer in
+`RandomSystems/FilterDomNormalization.lean`: `suppressViolating`, `verdict_suppressViolating_iff_filterDom`,
+`verdictProb_suppressViolating_eq_filterDom`, `advantage_suppressViolating_eq_filterDom` (so
+`advantage D (filterDom P S) (filterDom P T) = advantage (fTransform (suppressViolating P) D) S T`).
+
+DELIVER (sorry-free):
+1. `QBounded (P : List X → Prop) (q : ℕ) : Prop := ∀ l, P l → l.length ≤ q` — PUBLIC, beside
+   `QExtensible`/`PrefixClosed`. Prove `budgetHist_qBounded : QBounded (budgetHist … p q lambda) (p+q)`
+   (budget ⟹ primCount+evalCount ≤ p+q ⟹ length ≤ p+q; reuse the Part-A `primCount_add_evalCount`).
+   (Correction 1 from Step 1: the generic lemma is FALSE without q-boundedness — `P:=True,q:=0`.)
+2. History-dependent RESPECTING padding: a transform `padRespecting P q` that, from a P-respecting run of
+   length `< q`, appends a `QExtensible`-witness query and repeats to EXACTLY `q`. Reuse the `padDDD`
+   exact-query + verdict-tail structure (`GameOf.lean:1186–1260`) + the `absorbGo` replay discipline, but
+   the pad query is HISTORY-DEPENDENT (not the fixed dummy). Prove: the padded distinguisher makes exactly
+   `q` queries and satisfies `DistinguisherRespects P` (`Derivation.lean:1700`).
+3. ADVANTAGE PRESERVATION: respecting (real-answered) padding does not DECREASE the signed advantage:
+   `advantage (fTransform (suppressViolating P) D) S T
+      ≤ advantage (fTransform (padRespecting P q ∘ suppressViolating P) D) S T`
+   — verdict equalities via `TotalOnNonempty`, mirroring
+   `advantage_padDDDDist_filterQueries_eq_of_totalOnNonempty` (`GameOf.lean:1209`); reuse
+   `winProb_fTransform_left/right`, `winProb_congr_support`, mass preservation of `fTransform`.
+4. THE CORRECTED GENERIC LEMMA (near `deltaFilteredFiniteQueryNormalization_of_totalOnNonempty`,
+   `GameOf.lean:1203`):
+     `deltaFilterDomFiniteQueryNormalization_of_extensible` :
+       `PrefixClosed P → QExtensible P q → QBounded P q → TotalOnNonempty S → TotalOnNonempty T →
+           DeltaFilterDomFiniteQueryNormalization P hP q S T`
+   Proof: `D ↦ (padRespecting ∘ suppressViolating) D` is exactly-q (2) ∧ `DistinguisherRespects P` (2),
+   with `advantage D (filterDom P S) (filterDom P T) = advantage (suppress D) S T` (Step 1) `≤ advantage
+   (pad∘suppress D) S T` (3). Keep `deltaFilteredFiniteQueryNormalization_of_totalOnNonempty` (:1203) green.
+5. DISCHARGE `h_norm`: add `sequenceMAC_generic_prf_tight_norm` — the headline with `h_norm` REPLACED by
+   `deltaFilterDomFiniteQueryNormalization_of_extensible` instantiated with `budgetHist_prefixClosed`,
+   `budgetHist_qExtensible` (needs the NEW hypothesis `0 < users`), `budgetHist_qBounded`, and the two
+   `..._totalOnNonempty`. Only `h_badmass` remains a hypothesis. Do NOT modify the existing
+   `sequenceMAC_generic_prf_tight`.
+
+*** VALVE: if Step 2's advantage domination (3) is large, STOP after (1),(2) green + the precise (3)/(4)
+plan. NEVER sorry. ***
+
+READ: `RandomSystems/FilterDomNormalization.lean` (Step 1), `GameOf.lean:1175–1260` (`padDDD`, count-filter
+normalization, `advantage_padDDDDist_*`), `Derivation.lean:1700–1722` (`DistinguisherRespects`,
+`DeltaFilterDomFiniteQueryNormalization`), Part A decls, `SequenceMACGeneric.lean` (the headline),
+CHEATSHEET.md (repo root, distinguisher/advantage/winProb facts).
+
+ADDITIVE: extend `FilterDomNormalization.lean` / the framework + `SequenceMACGeneric.lean`. Do NOT modify
+the bridge, eq-on-good, facade, R1–R6, the existing headline, or the Step-1 suppression lemmas.
+
+ACCEPTANCE: whole-repo `lake build RandomSystems RandomSystemsCC SequenceHash` green; axiom-clean
+{propext, Classical.choice, Quot.sound}; sorry-free; NO `private`; count-filter normalization preserved;
+`sequenceMAC_generic_prf_tight_norm` proven with only `h_badmass` remaining (unless valved). Report:
+`QBounded` + budget proof, `padRespecting` + its properties, the domination, the generic lemma, the
+discharged `_norm` headline (or valve + plan), reuse map, axiom line. This closes R4's `h_norm`.

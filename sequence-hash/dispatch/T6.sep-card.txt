@@ -1,0 +1,74 @@
+STEP 0 — non-negotiable:
+1. PURE CR18/PDS idiom (PFunPDS / Δ=maxAdvantage / ⌈q⌉=filterQueries). No
+   advPRF/advNPRF/Adv, no game/adversary/oracle objects, no abstract-crypto
+   (MetricResourceAlgebra/ProtocolIndifferentiable) / RandomSystemsCC. NO `private`.
+2. Consult /Users/marcilunga/Documents/tob/research/random-systems/CHEATSHEET.md.
+   NEVER RE-DERIVE; reuse. AUTOMATION FIRST (grind/cr18_*); no simp/have/calc sprawl.
+
+TASK T6.sep — REWRITE R3 in
+  sequence-hash/SequenceHash/RandomSystems/SequenceMACIndiff.lean
+to the role-separated ideal. THIS RESOLVES YOUR OWN PRIOR ESCALATION.
+
+MANAGER DECISION (FROZEN, non-negotiable — do NOT re-litigate or re-escalate this):
+Your escalation was CORRECT: pure-birthday `Δ(SM_RO, URF) ≤ birthday` is UNSOUND for
+the SHARED-table `SM_RO` (raw-derivation / inner / outer calls share one flat URF, so
+cross-role collisions are possible; the residual `sequenceMACScheduleError` patched it).
+The fix is to make R3's ideal the ROLE-SEPARATED `SM_RO_separated` — the faithful ideal
+that "H indifferentiable from RO" delivers (indiff gives independent random answers per
+distinct query-role; cross-role domain separation is R5's simulator's job, folded into
+`ε_ind`). Over `SM_RO_separated`, pure-birthday is ALREADY PROVEN in this file: it is
+exactly the `hsep` inside `sequenceMAC_encoding_bound` (the
+`maxAdvantage_filterQueries_seededHashThenURF_le` +
+`sequenceMACSeparatedSeed_collision_mass_le` construction, currently ~lines 444–454).
+
+DO THIS:
+
+(A) Add the FROZEN pure-birthday encoding leg (extract the existing `hsep`, no ε_sched):
+    theorem sequenceMAC_separated_encoding_bound {L : U128} (b : BlockSize)
+        (S : ByteString) (DK : RandomSystems.Dist SequenceMACKey)
+        (hDK : DK.isProbDist) (q : ℕ) :
+        Δ(⌈q⌉ SM_RO_separated b S DK,
+            ⌈q⌉ PFunPDS.URF (X := InputSequence) (Y := HashOutput L))
+          ≤ (pairCollisionUnionBound (HashOutput L) q : ℝ)
+    -- proof = the existing `maxAdvantage_filterQueries_seededHashThenURF_le` call fed by
+    -- `sequenceMACSeparatedSeedDist_isProbDist` + `sequenceMACSeparatedSeed_collision_mass_le`
+    -- (the `change … at hsep` pattern you already wrote). REUSE verbatim; do not reprove.
+
+(B) REPLACE the R3 theorem with this FROZEN statement (BYTE-IDENTICAL — this is the
+    guardrail; do not alter its signature or conclusion):
+    theorem sequenceMAC_prf_bound_indiff {L : U128} (q : ℕ) (b : BlockSize)
+        (S : ByteString) (DK : RandomSystems.Dist SequenceMACKey)
+        (D_H : RandomSystems.Dist (FixedHash L)) (ε_ind : ℕ → NNReal)
+        (hDK : DK.isProbDist)
+        (h_indiff : Δ(⌈q⌉ SM_H b S DK D_H, ⌈q⌉ SM_RO_separated b S DK)
+          ≤ (ε_ind (4 * q) : ℝ)) :
+        Δ(⌈q⌉ SM_H b S DK D_H,
+            ⌈q⌉ PFunPDS.URF (X := InputSequence) (Y := HashOutput L))
+          ≤ (ε_ind (4 * q) : ℝ) + (pairCollisionUnionBound (HashOutput L) q : ℝ)
+    -- proof = ONE `maxAdvantage_triangle` through `SM_RO_separated`, then
+    -- `add_le_add h_indiff (sequenceMAC_separated_encoding_bound b S DK hDK q)`.
+
+(C) DELETE (all local to this file — grep-confirmed no external users):
+    - CC apparatus: `SequenceMACProtocolIndifferentiable`,
+      `sequenceMACProtocolIndifferentiable_constructs`,
+      `ProtocolIndifferentiableSequenceMACBridge`, the `universe u v w w'` line,
+      and any remaining `MetricResourceAlgebra`/`ProtocolIndifferentiable` import use.
+    - Shared-table model: `SM_RO`, `sequenceMACRODist`, `sequenceMACActiveRO`,
+      `extendSequenceMACActiveHash` (+ its `_apply` simp lemma), `sequenceMACScheduleError`,
+      `ε_enc`, `SequenceMACEncodingBound`, `sequenceMAC_encoding_bound`.
+    KEEP: `SM_H`; ALL `SM_RO_separated` machinery (SequenceMACSeparatedSeed*,
+    sequenceMACSeparated*, sequenceMACSeparatedSeed_collision_mass_le, etc.); the
+    active-call DOMAIN (`SequenceMACActiveCall`, `sequenceMACActiveCallSet`,
+    `sequenceMACScheduledCall`, `sequenceMACScheduledCall_mem`) — used by
+    `sequenceMACSeparatedOuterCall`. If a KEEP item stops building after deletion, STOP+report.
+
+GUARDRAIL: R1/R2 statements FROZEN. The (B) statement is FROZEN byte-for-byte. No
+`private`, no abstract-crypto/CC, no advPRF/game, no local generic helpers, no ε_sched.
+If a genuinely-missing framework lemma blocks a step, STOP+report — do NOT re-add the
+shared-table model or CC bridge.
+
+ACCEPTANCE: `lake build SequenceHash` green; the R3 file is sorry-free and axiom-clean
+(fresh check {propext, Classical.choice, Quot.sound}); `grep -E
+'MetricResourceAlgebra|ProtocolIndifferentiable|SM_RO\b|sequenceMACScheduleError'` on the
+file returns NOTHING (all removed); the R3 theorem is the frozen (B) statement proven by a
+short triangle; no sprawl. Report: final statement, the encoding-leg reuse, the axiom line.

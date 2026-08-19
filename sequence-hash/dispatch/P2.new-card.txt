@@ -1,0 +1,47 @@
+STEP 0 — non-negotiable:
+1. KNOW THE FRAMEWORK. RandomSystems instantiates AbstractCrypto. PDS, NOT games:
+   systems are `PFunPDS`/`ProbPDS`; security is distinguishing advantage
+   (`Adv`/`advPRF`/`advNPRF`); reductions are advantage inequalities via framework
+   lemmas. NEVER introduce game/experiment/adversary/oracle objects.
+2. NEVER REPROVE. Search first; reuse; generalize non-scheme facts in place.
+3. AUTOMATION FIRST (cr18_*/grind/etc.).
+
+TASK P2.new — the generic Gaži Proposition 1: nonadaptive prefix-free security of
+the MD cascade. This is a NEW, PUBLIC, GENERIC lemma (generic over block type `B`,
+chaining type `C`, and compression `f : C → B → C`) — NOT SequenceMAC-specific.
+Put it in a new file `sequence-hash/SequenceHash/RandomSystems/CascadeNAPF.lean`.
+
+SOURCE: Gaži–Pietrzak–Rybár 2014 Appendix A (Lemmas 5 & 6) and Proposition 1;
+sketch `sequence-hash/sketches/A2-sequencemac-prf.md` Hop 7 and §(e). COPY that
+proof; do not invent a new one.
+
+STATEMENT (you state it, PDS-level, faithful to Prop 1): the nonadaptive
+prefix-free distinguishing advantage between the cascade `Casc_f` (= `mdIterate f`
+from a uniform initial chaining key) and a uniform random function, for query
+block-lists of length ≤ `ℓ`, is bounded by `(ℓ · q) · advNPRF (compSystem f)`
+(Gaži's `(ℓ+1)q·ε_na` shape after the fresh-block step; keep the paper's shape).
+Reuse `mdIterate`/`mdIterate_append` from MDHash.lean and `compSystem`-style
+uniform-key function evaluators; express the cascade as a `ProbPDS`.
+
+PROOF (copy Appendix A): Lemma 5 = hybrid over block depth (loss `ℓ`), reducing
+cascade security to `q` independently-keyed compression oracles; Lemma 6 = hybrid
+over those `q` rows (loss `q`), reducing to nonadaptive PRF security of `f`.
+
+REUSE (search + confirm before using): `SecurityDefs.advNPRF`,
+`AdvantageSeq.advantage_telescope`, `AdvantageSeq.maxAdvantage_le_adjacent_sum`,
+`Dist.prodProbDist`, `Dist.fTransform_comp`, `CBCMAC.PrefixFree`,
+`List.foldl_append`. Generalize, don't duplicate.
+
+GUARDRAIL: the R2 goal `SequenceMACPRF.sequenceMAC_prf_bound` is frozen — do NOT
+touch it or its file. This task is self-contained in the new file.
+
+ACCEPTANCE:
+  - `lake build SequenceHash.RandomSystems.CascadeNAPF` green.
+  - The lemma is PDS-level (systems `ProbPDS`, advantage `Adv`/`advNPRF`), generic
+    over `B,C,f`, and faithful to Gaži Prop 1. No game/adversary objects.
+  - Reused the framework hybrid/telescoping infra rather than reproving.
+  - Prefer a fully proven lemma. This is a hard two-hybrid proof: if you cannot
+    close it in one pass, leave `sorry` ONLY at the deepest hybrid step(s), state
+    every intermediate lemma correctly, and REPORT precisely what remains.
+
+Report: the lemma statement, what you reused, and any residual `sorry` with why.

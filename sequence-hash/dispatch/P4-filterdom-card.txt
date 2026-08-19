@@ -1,0 +1,68 @@
+TASK P4-filterdom — GENERALIZE `filterQueries` to a prefix-closed-predicate RS-domain filter
+`filterDom`, IN PLACE, and generalize its filter→Adv bridge. Owner-approved core generalization
+(blast radius: R1–R6 + CBC + the whole framework). STATEMENT-FIRST; keep the WHOLE repo green at
+every step. Sorry-free. NO R4 spine, NO `B_SEQ`, NO sequence/`TaggedBudgetRespects` instantiation.
+
+WHY (adapt, don't transcribe — the modeling reason): security headlines must filter the query
+budget in the RS DOMAIN FIRST — `Δ(⌈budget⌉ real, ⌈budget⌉ ideal)` — and only then apply a transcript
+technique (H-technique or condEquiv). The R4 budget `TaggedBudgetRespects` (≤p prim ∧ ≤q eval ∧ each
+eval-cost ≤ λ) is a PREFIX-CLOSED predicate on the input/query history (counts are monotone in the
+history, per-eval cost is local), so it DEFINES a valid domain filter — a new RS equal to the
+original on budget-respecting histories, rejecting once the budget is exceeded. But `filterQueries`
+only filters by `length ≤ q`. Generalize its predicate from `length ≤ q` to an arbitrary
+prefix-closed `P : List X → Prop`. (Total-count `⌈q⌉` is provably UNSOUND for R4: the plain endpoint
+quantifies over all p+q-query envs, and an all-eval adversary breaks the C(q,2)-shaped bad-mass — the
+split-restriction MUST live in the domain filter. That's why this generalization is load-bearing.)
+
+DELIVER (in order; each step keeps the FULL repo green):
+
+1. DEFINITION generalization (the green checkpoint):
+   - Reuse mathlib prefix API (`List.IsPrefix`, `<+:`, `List.IsPrefix.length_le`). Grep first for an
+     existing prefix-closed-predicate abbrev; if none, add PUBLIC
+     `PrefixClosed (P : List X → Prop) : Prop := ∀ ⦃l₁ l₂⦄, l₁ <+: l₂ → P l₂ → P l₁`.
+   - `PFunDDS.filterDom (P : List X → Prop) (hP : PrefixClosed P) (S : DDS X Y) : DDS X Y` —
+     generalize `PFunDDS.filterQueries` (`PFunDDS.lean:279`); the well-definedness reuses `hP` exactly
+     where the current proof uses `le_trans hpre.length_le hdom.2` (domain `= (S.1 l).Dom ∧ P l`).
+   - `PFunPDS.filterDom (P) (hP) (G) := Dist.fTransform (PFunDDS.filterDom P hP) G` — generalize
+     `PFunPDS.filterQueries` (`PDS.lean:100`); keep the `isProbDist_filterDom_iff` @[simp] analog.
+   - REDEFINE `filterQueries q := filterDom (fun l => l.length ≤ q) (hlen)` DEFINITIONALLY at BOTH the
+     DDS and PDS level (prove the `length ≤ q` `PrefixClosed` lemma `hlen`), so `⌈q⌉` and EVERY
+     downstream theorem stays green with ZERO edits. If any downstream unfolds `filterQueries`'s old
+     body, adapt minimally (prefer a `@[simp]` unfold lemma reproducing the old defeq).
+   - **CHECKPOINT: whole-repo `lake build` green here BEFORE step 2.**
+
+2. BRIDGE generalization: generalize the filter→Adv bridge and its support lemmas to `filterDom P hP`:
+   - `maxAdvantage_filterQueries_le_adaptiveTranscriptAdvantage` (`AdaptiveLawBridge.lean:547`) and the
+     support it calls: `deterministicTranscriptDist_filterQueries_eq` (:415),
+     `KStepTotal_filterQueries_of_KStepTotal` (:392), the `DeltaFilteredFiniteQueryNormalization` shell
+     (:513/:517), `massAfalse/massY/... _filterQueries` reductions in `CondEquiv.lean:152–190` if they
+     block the build.
+   - State the general form HONESTLY: `Δ(⌈P⌉ S.val, ⌈P⌉ T.val) ≤ [the transcript-advantage over
+     P-respecting environments]`. The current bridge's `Adv[q]` is a sup over exactly-q-query
+     environments; the generalization is a sup over environments whose histories all satisfy `P`
+     (`EnvRespects`-style). Do NOT force it into `Adv[q]` if that is unsound — adapt the Adv notion to
+     "P-respecting environments" and keep `maxAdvantage_filterQueries_le_adaptiveTranscriptAdvantage`
+     as the `P = length ≤ q` instance, green.
+
+*** VALVE (high-blast-radius safety): if step 2 (bridge) is large, or the generalized Adv notion is
+non-obvious, STOP after step 1 (definition generalization, whole-repo green, `filterQueries` =
+`length ≤ q` instance) and REPORT: the precise general bridge statement you would prove (the exact
+Adv-over-P-respecting-envs notion), which support lemmas need generalizing, and any that resist.
+NEVER leave a `sorry`. A clean step-1-only return is an ACCEPTED partial. ***
+
+READ FIRST: `PFunDDS.lean:273–295` (`filterQueries` + `mem_dom`/`dom_subset`/`output`),
+`PDS.lean:94–107` (`filterQueries` + `isProbDist_filterQueries_iff`), `AdaptiveLawBridge.lean:375–557`
+(the bridge + support), `CondEquiv.lean:146–200` (`_filterQueries` reductions), CHEATSHEET for the
+prefix/`IsPrefix` and `fTransform` lemmas. Grep mathlib for `List.IsPrefix` API before proving.
+
+ADDITIVE where possible, but this is an IN-PLACE generalization of `filterQueries`, so editing its two
+defs + adding the `filterDom` generalization + the definitional `filterQueries` instance is expected.
+Do NOT touch R1–R6 proof bodies, CBC proof bodies, or any sequence file — they must stay green via the
+definitional-instance redefinition, not edits.
+
+ACCEPTANCE: whole-repo `lake build` green; axiom-clean {propext, Classical.choice, Quot.sound};
+sorry-free; NO `private`; `filterQueries` is DEFINITIONALLY the `length ≤ q` instance of `filterDom`
+(all downstream green, zero proof-body edits); mathlib prefix API reused; NO R4 spine / `B_SEQ` /
+`TaggedBudgetRespects` instantiation. Report: the `PrefixClosed` abbrev, the `filterDom` defs (DDS +
+PDS), the definitional `filterQueries` redefinition + any @[simp] unfold shim, the bridge status
+(done with the general statement, or valve-stopped + the precise plan), reuse map, axiom line.

@@ -1,0 +1,47 @@
+TASK T-domsep — state & prove the CROSS-ROLE input domain-separation lemmas for
+SequenceMAC (the enabler flagged for R4/R5, and the honest resolution of R3's
+deferred `ε_sched`). ADDITIVE ONLY: do NOT modify any existing proof or statement;
+add NEW public lemmas in the natural R1 home (`SequenceHash/SoundEncoding.lean`, or a
+new `SequenceHash/DomainSeparation.lean` imported there). Start from the canonical
+construction (`Spec.sequenceHashInnerInput`/`sequenceHashOuterInput` and the F=1
+SequenceMAC forms `sequenceMACInnerInput`/`sequenceMACOuterInput` in
+`SequenceMACRealization.lean`). Reuse R1 (`encodeItems_injective`,
+`encodeMSBF_injective`, `sequenceMACInnerInput_injective`,
+`sequenceMACSeparatedOuterCall_collision`).
+
+THE ROLES' H/RO INPUT BYTE-STRINGS (verified from the defs):
+- Derive(K) H-input = raw `K.val` (Spec.derive: when |K|>b it computes `H K.val`).
+- Derive(S) H-input = raw `S.val` (likewise).
+- Inner input = `headerI ++ pad(...) ++ encodeItems M` — STARTS WITH
+  `headerI = pad(headerIIndicator ++ encodeMSBF F ++ encodeMSBF |K|)`,
+  `headerIIndicator = [83,69,81,72,83,72,95,73]` ("SEQHSH_I").
+- Outer input = `headerO ++ derivedS ++ pad(...) ++ |M| ++ L ++ inner` — STARTS WITH
+  `headerO = pad(headerOIndicator ++ encodeMSBF F ++ encodeMSBF |S| ++ encodeMSBF |K|)`,
+  `headerOIndicator = [83,69,81,72,83,72,95,79]` ("SEQHSH_O").
+
+PROVE (public, additive; SequenceMAC F=1 forms — and the SequenceHash F=2 forms if
+cheap by the same lemma):
+1. INNER ≠ OUTER, UNCONDITIONAL: `sequenceMACInnerInput … ≠ sequenceMACOuterInput …`
+   for ALL arguments — the first blocks differ because `headerIIndicator ≠
+   headerOIndicator` (they differ at index 7: 73 vs 79), and `pad` preserves the
+   leading content. This is the structural inner/outer domain separation that makes
+   the inner cascade and the outer slice independent.
+2. WITHIN-ROLE injectivity as reusable public lemmas: inner injective in M (reuse
+   `sequenceMACInnerInput_injective`); outer injective in M (hoist the core of
+   `sequenceMACSeparatedOuterCall_collision` into a clean public
+   `sequenceMACOuterInput_injective`-style lemma — REUSE, do not re-derive).
+3. DERIVE vs FRAMED — CHARACTERIZE HONESTLY, do NOT hand-wave. The Derive H-input is
+   RAW `K.val` / `S.val` (no header) while inner/outer START with a padded header
+   block. State the EXACT honest fact: is `Derive-input ≠ every framed input`
+   (a) unconditional, (b) conditional on a precise side-condition (e.g. `K.val`/`S.val`
+   does not begin with the header block), or (c) contributing an explicit
+   key-guessing / fixed-parameter term? Give the precise Lean statement of whichever
+   holds, and PROVE the unconditional/conditional core. If it is a probabilistic
+   term, state it exactly (do not prove a probability here — just name it precisely);
+   if a side-condition, state it as a hypothesis of a clean lemma.
+
+ACCEPTANCE: `lake build` green over the WHOLE repo (additive R1-level), axiom-clean
+{propext, Classical.choice, Quot.sound}; NO existing proof/statement modified (purely
+additive — verify by `git diff --stat`); NO `private`; R1 lemmas reused not re-derived.
+Report: the exact new lemma statements, the DERIVE-role verdict (a/b/c + the precise
+statement), and the reuse map.

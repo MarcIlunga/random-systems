@@ -1,0 +1,53 @@
+TASK S5.sketch — write the R5 pen-and-paper sketch to
+  sequence-hash/sketches/A5-indiff.md
+(math in `$$…$$` / `$…$`, GitHub-renderable — NEVER `\[…\]` / `\(…\)`).
+This is a SKETCH task (pen-and-paper only) — NO Lean, NO defs committed, NO build touch.
+Output = one markdown sketch file.
+
+SOURCE: `sequence-hash/2013-382.pdf` — Dodis et al. 2013, indifferentiability of the
+MD/HMAC construction from a random oracle (copy the DRST HMAC simulator approach).
+
+R5 GOAL — TWO parts; lay out BOTH, and (crucially) resolve part (b) at the PDS/Δ level.
+The earlier R3 "bridge" OVER-MODELED this with abstract `MetricResourceAlgebra`/
+`ProtocolIndifferentiable` + a CC carrier and had to be DELETED — do not repeat that.
+
+  (a) INDIFFERENTIABILITY. The MD hash `H = MD[f]` used by C2SP SequenceHash (with `f`
+      the ideal compression / fixed-output hash) is indifferentiable from a random
+      oracle: exhibit the DRST simulator `σ`, state the concrete indiff advantage
+      `ε_ind(Q)` vs the query budget `Q`. Cite the paper's theorem/§.
+  (b) COMPOSITION → DISCHARGE R3's HYPOTHESIS. Show (a) yields R3's EXACT frozen
+      hypothesis
+        `h_indiff : Δ(⌈q⌉ SM_H b S DK D_H, ⌈q⌉ SM_RO_separated b S DK) ≤ ε_ind (4*q)`
+      (SequenceMACIndiff.lean:324). Adversary has NO direct `H` access (secret key,
+      `H` internal) ⇒ indiff composes; ≤ 4 internal `H`-calls per construction query
+      (2 derivation + inner + outer) ⇒ the `4*q` expansion; `SM_RO_separated` = "SequenceMAC
+      over independent role-separated ROs". Do the composition on the PDS Δ-surface
+      (DPI / converter monotonicity + `edistD↔maxAdvantage` transport, cheatsheet §8),
+      NOT via a CC carrier.
+
+*** USE THE NOW-PROVEN DOMAIN-SEPARATION LEMMAS (this is the key new input). ***
+`SequenceHash/DomainSeparation.lean` already proves, axiom-clean:
+  - inner ≠ outer UNCONDITIONALLY (`sequenceMACInnerInput_ne_outerInput`,
+    `headerI_ne_headerO`) — so distinct roles hit distinct RO inputs and the RO's
+    answers on inner vs outer are independent BY DEFINITION. This is what makes
+    `SM over one RO = SM_RO_separated` for the inner/outer roles — NO probabilistic loss.
+  - within-role injectivity (inner unconditional; outer conditional on inner-tag injective).
+  - Derive-vs-framed is CONDITIONAL, verdict (b): `¬ IsPrefix (headerI/O …) deriveInput`
+    for raw `K.val`/`S.val`. So the composition's ONLY residual beyond `ε_ind` is the
+    Derive term: for the SECRET key it is a key-guessing / prefix-hit probability; for the
+    fixed customization `S` it is a stated side-condition. NAME this term precisely
+    (it is the honest remnant of the old `ε_sched`, and matches S4's `DeriveCost_SEQ`).
+The sketch must SHOW the composition using these lemmas: inner/outer independence is
+FREE (proven); the only cost is `ε_ind(4q)` + the explicit Derive term. Do NOT re-derive
+domain separation — reuse the DomainSeparation.lean lemmas by name.
+
+DELIVER: (1) paper indiff theorem (simulator + bound), cite §; (2) DRST simulator
+adapted to the C2SP header/`Derive`/`F` schedule; (3) map onto canonical
+`SequenceFunction`; (4) infra-map REUSE vs NEW (RandomSystemsCC `Sponge.lean`,
+`probMetricAlgebra`, the metric↔Δ transports, CR18 DPI/switching, the DomainSeparation
+lemmas); (5) proposed R5 Lean statements — the indiff theorem AND the `h_indiff`-discharge
+corollary that plugs into `sequenceMAC_prf_bound_indiff` (the G5 guardrail), with the
+explicit Derive term; (6) the exact `ε_ind` and `4*q` justification.
+
+Report: sketch path + 6-line summary (paper thm, simulator, PDS-level composition route,
+how DomainSeparation.lean is used, the Derive term, proposed statements).

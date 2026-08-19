@@ -1,0 +1,32 @@
+STEP 0 — non-negotiable:
+1. PURE CR18 idiom: `PFunPDS`, `Δ`=`maxAdvantage`, `⌈q⌉`=`filterQueries`. No
+   `advPRF`/`advNPRF`/`Adv`, no game/adversary/oracle objects.
+2. NO `private` DECLARATIONS, EVER; NEVER RE-DERIVE — reuse existing lemmas.
+3. AUTOMATION FIRST.
+
+TASK P2.final — close the last R2 `sorry`: `sequenceMAC_prf_bound` at
+  sequence-hash/SequenceHash/RandomSystems/SequenceMACPRF.lean:1545.
+This completes Gaži R2 (the MD-based SequenceMAC PRF bound).
+
+It is a triangle assembly (NOT new mathematics):
+  Δ(⌈q⌉ sequenceMACReal, ⌈q⌉ macIdeal)
+    ≤ Δ(⌈q⌉ sequenceMACReal, ⌈q⌉ nmacReal)   -- this is `epsKS` BY DEFINITION
+      + Δ(⌈q⌉ nmacReal, ⌈q⌉ macIdeal)          -- this is exactly `nmac_prf_bound`
+So: apply `maxAdvantage_triangle` (AbsorbDPI/Distinguishing), unfold/rewrite
+`epsKS` to its definitional `Δ(⌈q⌉ sequenceMACReal, ⌈q⌉ nmacReal)`, and apply the
+already-proven `nmac_prf_bound` (which gives `epsComp + (ℓ+1)q·εna + q²/|C|`).
+The `CompNASecure`/compression hypotheses are already parameters of
+`sequenceMAC_prf_bound` — thread them into `nmac_prf_bound`.
+
+REUSE: `nmac_prf_bound` (already proven, axiom-clean), `maxAdvantage_triangle`,
+the `epsKS` definition. Do NOT re-prove anything.
+
+GUARDRAIL: the `sequenceMAC_prf_bound` STATEMENT is frozen — fill only its `sorry`.
+Change no other statement, add no `private`. If the triangle needs a term shape
+the statement doesn't match, STOP + report (do not edit the statement).
+
+ACCEPTANCE: `lake build SequenceHash.RandomSystems.SequenceMACPRF` green;
+`sequenceMAC_prf_bound` axiom-clean (`propext`/`Classical.choice`/`Quot.sound`,
+no `sorryAx`); the R2 file has ZERO `sorry`; no `private`, no advPRF/game.
+
+Report: the triangle proof, reused lemmas, and confirm the file is sorry-free.

@@ -1,0 +1,34 @@
+TASK P4d.badseq — R4 step 2 of 4 (step 1 trace foundation is DONE). Define the bad event and
+the key/role hypotheses. NO fiber equality / equality-on-good (step 3), NO theorem / `h_badmass`
+(step 4). Fully sorry-free.
+
+READ FIRST: `SequenceHash/RandomSystems/SequenceMACGenericTrace.lean` (step 1:
+`mdCompressionTrace`, `sequenceFunctionCompressionTrace`, `SequenceFunctionOutputCompressionBacked`
++ `MDCodecBlockifyNonemptyInput`); the two `IdealCompression.lean` facades
+(`sequenceFunctionIC{Real,Ideal}`, `SequenceFunctionTaggedBudgetRespects`, reveal maps);
+`SequenceHash/DomainSeparation.lean`; `SequenceMACIndiffMD.lean` (R5 Derive bridges).
+
+ADDITIVE: extend `SequenceMACGenericTrace.lean` OR a new `SequenceMACGenericBad.lean`. Do NOT
+modify R1/R2/R3/R5/DomainSeparation, the facade, or the step-1 defs.
+
+DELIVER (Codex split item 2, sorry-free):
+1. `Bad_SEQ` — the COMPRESSION-CALL FRESHNESS-FAILURE event over the ideal extension: some
+   construction compression call `(chainingState, block)` (from `sequenceFunctionCompressionTrace`)
+   coincides with a PRIOR compression call — a `Prim` query OR an earlier construction call, ANY
+   role (same-role and cross-role internal). CONVENTION (per the escalation): all `Prim` inputs
+   ordered before construction calls. State it precisely against the actual facade
+   extension/reveal types so step 3 can prove equality OFF `Bad_SEQ`.
+2. `KeyPointMassBound DK kappaStar` — CONDITIONAL per-user min-entropy (or an independent product
+   key law); marginal point-mass alone must NOT be accepted (it has to support a `KeyRepeat`
+   term later). State the exact conditional-min-entropy predicate.
+3. `SequenceFunctionCrossRoleSeparated b S` (+ its discharge lemma) — the INPUT-level cross-role
+   facts, proven by REUSING `sequenceMACInnerInput_ne_outerInput`,
+   `sequenceMAC_keyDerive_separated_of_not_prefixHit`, `sequenceMAC_customizationDerive_separated_of_safe`
+   (do NOT re-derive). This covers the input-level part only; compression-level internal
+   collisions stay inside `Bad_SEQ` (step 3 uses that).
+
+ACCEPTANCE: whole-repo `lake build` green; axiom-clean {propext, Classical.choice, Quot.sound};
+sorry-free / axiom-free / no `private`; additive (existing mtimes + step-1 defs unchanged); reuse
+step-1 trace + DomainSeparation + R5 + facade by name; NO equality-on-good/fiber/`B_SEQ`/theorem/
+`h_badmass` (steps 3–4 untouched). Report: `Bad_SEQ` + `KeyPointMassBound` + `CrossRoleSeparated`
+exact statements, the reuse map, the axiom line, and confirm steps 3–4 remain untouched.

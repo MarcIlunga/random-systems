@@ -1,0 +1,56 @@
+TASK P4b.theorem — R4 STRUCTURAL THEOREM (dispatch 2 of the R4 split; the facade
+infra from dispatch 1 is DONE). Prove the tight generic (ideal-compression) PRF bound
+for C2SP SequenceMAC, closing the equality-on-good spine, with the deep Shen bad-event
+mass held as an EXPLICIT NAMED HYPOTHESIS `h_badmass` (= R4.deep). R4 is the H-technique
+route. ADDITIVE: new file `SequenceHash/RandomSystems/SequenceMACGeneric.lean`; do NOT
+modify R1/R2/R3/R5/DomainSeparation or the dispatch-1 facade files.
+
+THE FACADE (dispatch 1) ALREADY EXISTS — READ BOTH FIRST (you have no memory of building them):
+- `RandomSystems/HTechnique/IdealCompression.lean` — generic: `TaggedBudgetRespects`, the
+  shared-`Prim` real/ideal worlds + representatives + reveal carrier, and the endpoint
+  `adv_le_of_extFixedQueryRep_eq_on_good_filtered` (CLOSE the theorem with THIS).
+- `SequenceHash/RandomSystems/IdealCompression.lean` — scheme-specific:
+  `SequenceFunctionCompressionModel`, `SequenceFunctionTraceBound` (+ `.evalCost_apply_le`),
+  `sequenceFunctionICReal` / `sequenceFunctionICIdeal`, `SequenceFunctionTaggedBudgetRespects`,
+  `SequenceFunctionICReveal*` reveal maps, `sequenceFunctionIC{Real,Ideal}_KStepTotal`.
+Use these names; do NOT redefine the worlds or a duplicate NMAC construction.
+
+Follow ACCEPTED sketch `sequence-hash/sketches/A4-tight-generic-prf.md` §5 (the bound) and §8
+(the 5 non-negotiable statement features). Reuse `DomainSeparation` lemmas + the R5
+`DeriveSafeS`/separation bridges (`SequenceMACIndiffMD.lean`) by name.
+
+DELIVER (Codex's own split plan, item 2):
+1. Concrete `KeyPointMassBound DK kappaStar`, `SequenceFunctionCrossRoleSeparated b S`
+   (DISCHARGE via the proven `DomainSeparation` cross-role lemmas — do not re-derive),
+   the compression-call traces, and the five-event `Bad_SEQ` (per §3/§4 partition).
+2. `B_SEQ` DEFINED per §5 (NOT Shen's `B_N`):
+   `B_cascade = pqλ/2^c + C(q,2)((λ+2)/2^c + 64λ⁴/2^{2c})`, `B_key = (C(u,2)+2up)/2^{κ*}`,
+   `deriveCostGeneric` = the §5 DeriveCost (1_{rK>0}·up/2^{κ*} + rSqλ/2^c + ((p+rS)D_K+C(D_K,2))/2^c,
+   D_K=u·rK; zero when rK=rS=0). `B_SEQ = B_cascade + B_key + deriveCostGeneric`. (Name it
+   `deriveCostGeneric` to avoid collision with R5's indiff-residual `DeriveCost_SEQ`.)
+3. FROZEN theorem `sequenceMAC_generic_prf_tight` — conclusion and the 5 features are the
+   guardrail (§8): (i) real world = canonical `SequenceFunction` via `sequenceFunctionICReal`,
+   never a duplicate; (ii) shared `Prim` in BOTH worlds; (iii) p,q,λ budgets enforced by
+   `SequenceFunctionTaggedBudgetRespects`; (iv) `KeyPointMassBound` + `SequenceFunctionCrossRoleSeparated`
+   explicit; (v) RHS = `B_SEQ` (incl. `deriveCostGeneric`), NOT `B_N`, NOT an unspecified ε.
+   Conclusion:
+     `filteredAdaptiveTranscriptAdvantage (SequenceFunctionTaggedBudgetRespects …)
+         (sequenceFunctionICReal …) (sequenceFunctionICIdeal …) ≤ (B_SEQ … : ℝ)`
+4. `h_badmass` NAMED HYPOTHESIS (= R4.deep, NOT proven here):
+   `∀ E, SequenceFunctionTaggedBudgetRespects … E →
+       Pr[Bad_SEQ ∣ sequenceFunctionICIdeal-extension … E] ≤ (B_SEQ … : ℝ)` (state it precisely
+   against the actual facade extension/reveal types).
+5. PROVE the theorem: equality of extended fixed-query masses OFF `Bad_SEQ` (the
+   construction-specific good-transcript equality, using the reveal carrier + DomainSeparation +
+   R5 bridges), then close with `adv_le_of_extFixedQueryRep_eq_on_good_filtered` (ε_ratio = 0),
+   the bad leg = `h_badmass`. No triangle hop to literal NMAC.
+
+ACCEPTANCE: whole-repo `lake build` green; axiom-clean {propext, Classical.choice, Quot.sound};
+sorry-free / axiom-free (Shen bad-mass is the explicit `h_badmass`, not a `sorry`); additive
+(new file only — existing mtimes unchanged); NO `private`; `B_SEQ` is §5 (not `B_N`);
+DomainSeparation + R5 + the facade reused by name; closed via the eq-on-good endpoint (grep to
+confirm). Report: the defs, the frozen theorem, what `h_badmass` states precisely, the reuse
+map, the axiom line.
+
+*** IF the good-transcript equality proof is genuinely too large for one dispatch, STOP and
+report a finer split (e.g. prove the reveal/equality lemmas first) rather than leaving a sorry. ***

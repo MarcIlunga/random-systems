@@ -1,0 +1,59 @@
+TASK P4-badmass (skeleton) — reduce R4's `h_badmass` (`∀ E respecting, Pr_ideal[Bad_SEQ] ≤ B_SEQ`) to
+NAMED sub-bounds via the probability DECOMPOSITION, and discharge the R4 headline modulo them. The ONE
+combinatorial corner (equal-top merge) is a NAMED lemma/hypothesis — NEVER a `sorry`. Structure-first,
+sorry-free, additive, whole-repo green.
+
+§3c ADAPTATION (MANDATORY — do the term-by-term table): `Bad_SEQ` (`SequenceMACGenericBad.lean:67`) =
+(a construction call `(chainingState,block)` hits a prior `Prim` input) ∨ (two construction call inputs
+collide). `B_SEQ = B_cascade + B_key + deriveCostGeneric` (`SequenceMACGeneric.lean:214–240`). Adapt the
+CBC structure-graph counting (`CBCStructureGraph.lean` — CBC-specific `ChargedEvent`/`cbcGraphBad`, so
+reuse its STRUCTURE + the GENERIC counting primitives, NOT the CBC-specific defs). Sequence specifics:
+domain separation kills INPUT-level aliasing but NOT compression-CALL internal collisions (they REMAIN);
+prefix-freeness simplifies the graph; secret key in input limits offline steering; derive cost accountable.
+
+DECOMPOSITION — cover `Bad_SEQ` and bound `Pr_ideal` by three parts, each a NAMED sub-lemma:
+1. `h_cascade` : the cascade-inherent part (conditioned on distinct good keys) ≤ `B_cascade p q lambda c`
+   = `pqλ/2^c + C(q,2)((λ+2)/2^c + 64λ⁴/2^{2c})`. Reduce FURTHER to:
+     • `h_primHit` : PrimHit ≤ `pqλ/2^c` (≤p prim × ≤q eval × ≤λ calls, each a fresh-uniform chaining
+       state hitting a fixed prim input w.p. ≤ 1/2^c) — single-charge leaf.
+     • `h_singleColl` : the linear `C(q,2)(λ+2)/2^c` single-collision term — single-charge leaf.
+     • `sequenceGraphBad_equalTop` : the quartic `C(q,2)·64λ⁴/2^{2c}` double-collision / EQUAL-TOP MERGE
+       term — THE NAMED CORNER (corrected-BPR05-Lemma-10, open in CBC's `mass_cbcGraphBad_le:1021` too).
+       State it precisely; it is the single honest residual. NEVER sorry it — leave it a NAMED hypothesis.
+2. `h_key` : the key-related part ≤ `B_key p users kappaStar` = `(C(users,2)+2·users·p)/2^{κ*}` via
+   `KeyPointMassBound` (`hkey`): raw-key repeat (`C(users,2)/2^{κ*}`) + secret-bearing input guessing
+   (`2·users·p/2^{κ*}`).
+3. `h_derive` : the long key/customization derivation part ≤ `deriveCostGeneric …` via
+   `SequenceFunctionTraceBound` (`htrace`); 0 when rK=rS=0.
+
+DELIVER (statement-first):
+- Define the three sub-events + the cover `Bad_SEQ ⊆ cascade ∪ key ∪ derive` (or the mass union bound
+  `Pr[Bad_SEQ] ≤ Pr[cascade]+Pr[key]+Pr[derive]`), reusing generic mass/union facts
+  (`probBad_add_mass_not`, `mass_mono`, `pairCollisionUnionBound`, `Counting.card_filter_shift_univ`,
+  uniform-mass 1/2^c leaves — grep CHEATSHEET).
+- PROVE the tractable sub-bounds you can (`h_primHit`, `h_singleColl`, `h_key`, `h_derive`) reusing the
+  generic counting + `KeyPointMassBound`/`TraceBound`. Leave `sequenceGraphBad_equalTop` NAMED.
+- Assemble ⟹ `h_badmass` GIVEN `sequenceGraphBad_equalTop`. Then add `sequenceMAC_generic_prf_tight_final`
+  = `sequenceMAC_generic_prf_tight_norm` with `h_badmass` REPLACED by the assembled bound, carrying
+  `sequenceGraphBad_equalTop` as its SINGLE named residual. Do NOT modify `_norm`/`_tight`.
+
+*** VALVE (this is large): STOP after the COVER + the decomposition skeleton (`Pr[Bad_SEQ] ≤ B_cascade +
+B_key + deriveCostGeneric` reduced to the named sub-lemmas, green) if the sub-bound proofs are large, and
+report which sub-bounds remain + the precise plan. NAME the corner; NEVER `sorry` anything. A clean
+skeleton-only return is ACCEPTED. ***
+
+READ: `SequenceMACGenericBad.lean` (`Bad_SEQ`, `KeyPointMassBound`, the visible/revealed input defs),
+`SequenceMACGeneric.lean` (`B_cascade`/`B_key`/`deriveCostGeneric`/`B_SEQ`, the headline),
+`CBCStructureGraph.lean:1007–1026` (the counting-leg doc + the named corner it leaves open) +
+:359–965 (the charged-event STRUCTURE to mirror), `Counting.lean`, `Distinguishing.lean`
+(`pairCollisionUnionBound`), CHEATSHEET.md (repo root, mass/union/birthday facts).
+
+ADDITIVE: new file `SequenceHash/RandomSystems/SequenceMACGenericCount.lean` (+ extend
+`SequenceMACGeneric.lean` for the `_final` headline). Do NOT modify the bridge, normalization, eq-on-good,
+facade, R1–R6, or the existing headlines.
+
+ACCEPTANCE: whole-repo `lake build RandomSystems RandomSystemsCC SequenceHash` green; axiom-clean
+{propext, Classical.choice, Quot.sound} (NO `sorryAx` — the corner is a NAMED hypothesis, not a sorry);
+sorry-free; NO `private`; the decomposition + tractable sub-bounds proven, `sequenceGraphBad_equalTop`
+NAMED. Report: the §3c adaptation table, the cover, each sub-bound's status (proven / named), the assembled
+`h_badmass`, the `_final` headline + its single residual, reuse map, axiom line.

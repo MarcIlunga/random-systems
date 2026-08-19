@@ -1,0 +1,69 @@
+STEP 0 — non-negotiable:
+1. KNOW THE FRAMEWORK. RandomSystems instantiates AbstractCrypto. PDS, NOT games:
+   systems are `PFunPDS`/`ProbPDS`; security is distinguishing advantage
+   (`Adv`/`advPRF`/`advNPRF`); NEVER introduce game/experiment/adversary/oracle
+   objects; advantage terms are `Adv` between PDS systems.
+2. NEVER REPROVE. Search first; reuse; generalize non-scheme facts in place.
+3. AUTOMATION FIRST (cr18_* / grind / etc.).
+
+TASK P2.sys — R2 objects, part 2: the SequenceMAC + framed-NMAC PDS systems + ε_KS.
+Result R2. Depends: P2.obj (done: MD model + compSystem).
+
+GOAL: replace three stubs in
+  sequence-hash/SequenceHash/RandomSystems/SequenceMACPRF.lean
+with real PDS definitions: `sequenceMACSystem`, `framedNMACSystem`, `epsKS`.
+Leave `omegaS` a stub (P2.long) and leave the goal proof `sorry`.
+
+SOURCE:
+  - sketch sequence-hash/sketches/A2-sequencemac-prf.md §(a) (SequenceMAC over MD)
+    and Hop 1 (framed NMAC with independent inner/outer keys);
+  - spec sequence-hash/sequencehash.md `SequenceFunction` (lines 245-260),
+    F = F_SEQMAC = 1.
+
+REUSE (do not reprove / rebuild):
+  - Spec.lean: `headerI`, `headerO`, `derive`, `emptyByteString`, `fSeqHsh`
+    (use the MAC indicator = 1), `pad`.
+  - Encoding.lean: `encodeItems`, `encodeMSBF`.
+  - MDHash.lean: `mdHash`, `MDCodec`, `mdIterate`.
+  - Converter.lean: the `sequenceHashStep` / `sequenceHashSystem` realization
+    pattern (the two/three-call schedule).
+  - RectHashThenPRF.lean: the `realP`/`realF` pattern — sample a key distribution
+    and expose `PFunPDS.Prob.functionEvaluator` to get a `ProbPDS`. Mirror it.
+
+GUARDRAIL — FROZEN: the theorem `sequenceMAC_prf_bound` and its signature are
+frozen; do not edit. Per your last report the signature NOW includes
+`digestBytes : C ↪ HashOutput L` and `hκU128 : κ < u128Modulus` — USE them:
+`digestBytes` for the digest→`HashOutput L` readout in `derive`/outer framing;
+`hκU128` for the nonempty length-`κ` key space. You MAY extend `MDCodec` in
+MDHash.lean with additional fields/laws (e.g. the block-boundary / run-up
+decomposition the framed system needs) — that is a MODEL refinement, NOT a goal
+edit; keep `mdIterate_append` and the existing laws intact. If you STILL need a
+goal parameter the theorem lacks, STOP and report it (don't edit the goal).
+
+DELIVERABLE (all PDS, no games):
+  - `sequenceMACSystem codec iv L b κ S f : ProbPDS InputSequence C`
+    = sample key `K` uniformly over length-`κ` byte strings; evaluate
+    `M ↦ SequenceMAC_{f,S}(K,M)` where, with `K' = derive K …`, `S' = derive S …`:
+      inner  = mdHash codec f iv (headerI b 1 K ‖ K' ‖ encodeItems M)
+      output = mdHash codec f iv (headerO b 1 S K ‖ S' ‖ K' ‖ EncodeMSBF|M| ‖ EncodeMSBF L ‖ inner)
+    lifted to `ProbPDS` via `functionEvaluator` over the uniform key distribution
+    (mirror `RectHashThenPRF.realF`/`realP`).
+  - `framedNMACSystem codec iv L b S f : ProbPDS InputSequence C`
+    = sample INDEPENDENT `k_I, k_O : C` uniformly; evaluate the framed NMAC
+    (inner cascade from `k_I` over the inner blocks; outer from `k_O` over the
+    framed outer tag), per sketch Hop 1.
+  - `epsKS codec iv L b κ S f : ℝ` — define CONCRETELY (not `sorry`) as the PDS
+    distinguishing advantage `Adv (q := q)` between `sequenceMACSystem …` and
+    `framedNMACSystem …`. This is a distinguishing advantage between two PDS
+    systems, never a game probability.
+
+ACCEPTANCE (I will check all):
+  - `lake build SequenceHash.RandomSystems.SequenceMACPRF` green.
+  - The three filled defs are axiom-clean; `sorry` remains only on `omegaS` and
+    the goal theorem.
+  - The goal theorem statement is byte-identical.
+  - Systems are `ProbPDS` via `functionEvaluator`; `epsKS` is `Adv` between them;
+    NO game/adversary/oracle objects anywhere.
+  - You reused Spec/Encoding/MDHash/RectHashThenPRF rather than reproving; no fluff.
+
+Report: what you reused, and any goal-signature parameter you had to request.

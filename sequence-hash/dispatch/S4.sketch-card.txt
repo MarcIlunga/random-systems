@@ -1,0 +1,48 @@
+STEP 0 — non-negotiable:
+1. This is the SKETCH task (pen-and-paper only) — NO Lean proofs, NO definitions
+   committed to the build. Output is a markdown sketch file ONLY.
+2. Consult /Users/marcilunga/Documents/tob/research/random-systems/CHEATSHEET.md for
+   the existing H-technique surface. NEVER plan to re-derive; map onto what exists.
+3. NO GUESSWORK — model EXACTLY as the source paper (2025-2260.pdf) defines. Read it.
+
+TASK S4.sketch — write the R4 pen-and-paper sketch to
+  sequence-hash/sketches/A4-tight-generic-prf.md
+(math in `$$…$$` / `$…$`, GitHub-renderable — NEVER `\[…\]` / `\(…\)`).
+
+SOURCE: `sequence-hash/2025-2260.pdf` — Shen–Zhang–Wang–Gu 2025, "Tight Generic PRF
+Security of HMAC and NMAC". R4 is the **H-technique** route (unlike R2/R3, `advPRF`
+and the `HTechnique/*` surface ARE allowed and expected here).
+
+R4 GOAL: the TIGHT generic PRF bound for the C2SP SequenceMAC in the GENERIC model
+(compression function is an ideal/black-box object the adversary queries), improving
+on R2's Gaži standard-model bound. Deliver in the sketch:
+
+1. THE PAPER'S THEOREM. State the main tight generic-PRF theorem for NMAC (and HMAC),
+   VERBATIM in bound: the exact bound as a function of construction queries `q`,
+   compression queries `p`, max block length `ℓ`, output/chaining size, and the
+   multi-user count `u`. Cite the paper's theorem/section numbers. Note the matching
+   attack (why it is tight) at a high level.
+2. THE MODEL. Spell out the generic/ideal-compression model precisely: what the
+   adversary queries (construction oracle + compression oracle), what "generic" means
+   here, how it differs from R2's model (f keyed as PRF/URF, no compression queries).
+3. MAP ONTO SequenceMAC. SequenceMAC = MD cascade (hash) + outer compression (PRF).
+   Identify its "hash-then-PRF" structure and the ε-universal-hash role of the cascade.
+   Start from the canonical `SequenceFunction` (see PLAN §0.5) — do NOT re-spell the
+   inner/outer/step.
+4. INFRA-MAP — REUSE vs NEW. Map the proof onto the existing H-technique endpoints:
+   `RandomSystems/HTechnique/Derivation.lean` — `hashThenPRF_adaptive_tight` (:5421),
+   `advPRF_hashThenPRF_le_tight` (:5438), `EpsUniversalHash`, the fundamental
+   theorem/coupling/filtered layers, `StrongPRP` directions. State EXPLICITLY: does
+   the existing tight `hashThenPRF` endpoint SUFFICE for the 2025 bound, or does R4
+   need new infra (an ideal-compression / compression-query resource, a multi-user
+   layer, a block-length-indexed universality)? If new infra is needed, name the
+   SMALLEST addition and where it belongs (generalize in place — never a local copy).
+5. PROPOSED R4 LEAN STATEMENT. The theorem shape (H-technique surface): the tight
+   `advPRF`/`Δ` bound for SequenceMAC over ideal compression, with the exact epsilon.
+   This becomes the manager's G4 guardrail.
+6. TIGHTNESS vs R2/R6. Quantify how R4's bound improves on R2/Gaži (the
+   `(ℓ+1)q·ε_na + q²/2^c` loss) and flag what remains for R6 (Backendal tightness).
+
+DO NOT: write Lean, commit definitions, or touch the build. Sketch file only.
+Report: the sketch path + a 5-line executive summary (paper theorem, model, reuse
+verdict, proposed statement, tightness delta).

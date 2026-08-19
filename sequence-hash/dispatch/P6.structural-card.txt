@@ -1,0 +1,53 @@
+TASK P6.structural — R6 STRUCTURAL: the standard-model tight (Backendal strong-multi-user)
+SequenceMAC PRF bound, with the deep Backendal strong-MU cascade reduction AND the safe-
+schedule normalization held as EXPLICIT NAMED HYPOTHESES (the deep follow-up R6.deep).
+Everything else sorry-free, axiom-clean. PURE PDS/CR18 idiom (NOT H-technique — R6 is the
+standard-model route). ADDITIVE: new file `SequenceHash/RandomSystems/SequenceMACTight.lean`;
+do NOT modify R1/R2/R3/R5/DomainSeparation or the facade.
+
+Follow ACCEPTED sketch `sequence-hash/sketches/A6-tightness.md` §5–§7. Start from canonical
+`SequenceFunction`. REUSE by name: R2's `nmacReal`, `macIdeal`, `CompressionFamily`,
+`compReal`/`compIdeal` (`SequenceMACPRF.lean`); R5's `DeriveCost_SEQ`, `DeriveSafeS_SEQ`
+(`SequenceMACIndiffMD.lean`); `pairCollisionUnionBound`; the DPI/`maxAdvantage_triangle` spine.
+
+DELIVER (sketch §7 shapes; names may adjust but the math shape + the 4 "must not" rules are FROZEN):
+1. `epsCompMU q u f := Δ(⌈q⌉ (multiCompReal u f), ⌈q⌉ (multiCompIdeal u))` — the scheme-agnostic
+   strong multi-user compression distance (define `multiCompReal`/`multiCompIdeal` as the
+   u-fold independent-key products over the existing `compReal`/`compIdeal`).
+2. NAMED HYPOTHESIS = R6.deep (NOT proven here): the Backendal Lemma 2 / Theorem 5 core
+   `h_nmac_mu : Δ(⌈q⌉ nmacReal ell f pad, ⌈q⌉ macIdeal ell) ≤
+       (ell + 2 : ℝ) * epsCompMU q q f + (pairCollisionUnionBound C q : ℝ)`.
+3. NAMED HYPOTHESIS = the safe-schedule normalization: `hSchedule :
+   SequenceFunctionSafeScheduleBound codec iv f b S DK epsSchedule` (a trace/property facade
+   over canonical `sequenceFunction`/`sequenceFunctionStep` — do NOT re-spell the construction;
+   epsSchedule = the filtered Δ from `sequenceFunctionReal` to the normalized NMAC core).
+4. FROZEN R6 headline (the G6 guardrail, §7) — prove it by ONE triangle through the normalized
+   NMAC core, using `hSchedule` (+ `DeriveCost_SEQ` via the R5 bridges) for the first leg and
+   `h_nmac_mu` for the second:
+     theorem sequenceFunction_prf_bound_strong_mu
+       (q ell dBody : ℕ) (codec : MDCodec B) (iv : HashOutput L)
+       (f : CompressionFamily (HashOutput L) B) (S : ByteString)
+       (DK : Dist SequenceMACKey) (hDK : DK.isProbDist)
+       (hSafeS : DeriveSafeS_SEQ b S DK)
+       (hTrace : SequenceFunctionBodyDepth codec b S ell dBody)
+       (epsSchedule : ℝ) (hSchedule : SequenceFunctionSafeScheduleBound codec iv f b S DK epsSchedule)
+       (h_nmac_mu : Δ(⌈q⌉ nmacReal ell f pad, ⌈q⌉ macIdeal ell)
+           ≤ (ell + 2 : ℝ) * epsCompMU q q f + (pairCollisionUnionBound C q : ℝ)) :
+       Δ(⌈q⌉ sequenceFunctionReal codec iv f b S DK, ⌈q⌉ PFunPDS.URF) ≤
+         epsSchedule + (if q = 0 then 0 else (DeriveCost_SEQ b S DK : ℝ))
+           + (dBody : ℝ) * epsCompMU q q f + (pairCollisionUnionBound (HashOutput L) q : ℝ)
+   (`sequenceFunctionReal` = canonical `sequenceFunction`/`sequenceFunctionStep` as a PDS — reuse,
+   do not re-spell. `SequenceFunctionBodyDepth` = a trace facade over those.)
+
+MUST-NOT (§7): do NOT replace `epsCompMU` by `CompNASecure`; do NOT weaken the birthday to
+`q²/N`; do NOT hide `DeriveCost_SEQ` inside an opaque `epsC2SP`; do NOT state an H-technique
+advantage. NO `advPRF`/`advNPRF`/`Adv`, no games.
+
+ACCEPTANCE: whole-repo `lake build` green; axiom-clean {propext, Classical.choice, Quot.sound};
+sorry-free / axiom-free (the deep core + schedule are explicit HYPOTHESES, not sorries); additive
+(new file only — existing mtimes unchanged); NO `private`; R2/R5 objects + birthday reused by name;
+the headline proven by the §7 triangle. Report: defs, the two named hypotheses, the frozen headline,
+the reuse map, axiom line.
+
+*** IF the normalization triangle needs a genuinely-missing lemma, STOP + report (do not leave a
+sorry, do not weaken the bound). ***

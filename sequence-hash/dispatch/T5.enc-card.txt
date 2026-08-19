@@ -1,0 +1,43 @@
+STEP 0 — non-negotiable:
+1. PURE CR18/PDS idiom (PFunPDS / Δ=maxAdvantage / ⌈q⌉=filterQueries). No
+   advPRF/advNPRF/Adv, no game/adversary/oracle objects. NO `private`, EVER.
+2. NEVER RE-DERIVE; reuse. **Consult the REUSE INDEX first:**
+   `/Users/marcilunga/Documents/tob/research/random-systems/CHEATSHEET.md`
+   (see "By goal" + "REUSE THIS — do NOT re-derive"). AUTOMATION FIRST — prefer
+   `grind`/`cr18_*` (match CBC's density); do NOT hand-write `simp`/`have`/`calc`
+   sprawl a tactic handles. Do NOT mint a local generic helper (uniform-restriction,
+   adjacent-sum, prod-map, etc.) — it's in the cheatsheet / Dist/Distinguishing/
+   AdvantageSeq; reuse by name.
+3. NO GUESSWORK — follow R1 + the accepted sketch A4.
+
+TASK T5.enc — discharge the R3 encoding obligation in
+  sequence-hash/SequenceHash/RandomSystems/SequenceMACIndiff.lean:
+prove a public theorem establishing `SequenceMACEncodingBound b S DK ε_sched`
+for a concrete `ε_sched` (SM_RO is Δ-close to the URF).
+
+KEY REUSE — this is the SAME condition-C/collision argument as R2's
+`gazi_outer_random_collision_bound`. REUSE the SAME public endpoint
+`RandomSystems.CR18.maxAdvantage_filterQueries_seededHashThenURF_le` (the blind-game
+/ condEquiv → blindMaxWinProb route) — do NOT reprove condition C. The plan:
+  - `SM_RO = sequenceMACSystem … (sequenceMACRODist …)` = the SequenceMAC converter
+    over a URF on the finite active-call domain;
+  - distinct `(S,M)` queries reach DISTINCT outer RO inputs — from R1 unambiguity
+    (`encodeItems_injective` + header/`F` domain separation, i.e.
+    `sequenceHash_collision_of_distinct_inputs` / its SequenceMAC form);
+  - on no-collision the outer URF values are independent uniform ⇒ `SM_RO = URF`;
+    the collision term is `pairCollisionUnionBound` (birthday), `ε_sched` the
+    residual scheduling term.
+Feed the seed = the outer RO input map; the rest is the shared machinery.
+
+REUSE: `maxAdvantage_filterQueries_seededHashThenURF_le`, `pairCollisionUnionBound`,
+`encodeItems_injective`, `sequenceHash_collision_of_distinct_inputs`, the RO
+active-domain plumbing already in the file. Grep before adding anything.
+
+GUARDRAIL: `SequenceMACEncodingBound`, `sequenceMAC_prf_bound_indiff`, and R1/R2
+statements are FROZEN. No `private`. No local generic helpers. If a parameter is
+missing, STOP + report.
+
+ACCEPTANCE: `lake build SequenceHash` green; the encoding-bound theorem axiom-clean
+(fresh check); you REUSED `seededHashThenURF` (grep the file to confirm — no
+re-proof of condition C); no `simp`/`have` sprawl where `grind`/`cr18_*` fits; no
+`private`/advPRF/game. Report reuse map + residuals.

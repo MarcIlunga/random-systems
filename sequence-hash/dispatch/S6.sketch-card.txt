@@ -1,0 +1,36 @@
+TASK S6.sketch — write the R6 pen-and-paper sketch to
+  sequence-hash/sketches/A6-tightness.md
+(math in `$$…$$` / `$…$`, GitHub-renderable). SKETCH ONLY — NO Lean, NO build touch.
+
+SOURCE: `sequence-hash/2023-861.pdf` — Backendal et al. 2023. R6 is the LAST rung:
+"close Gaži's tightness loss." Backendal observed that Gaži's NMAC/HMAC PRF bound
+(our R2, `2014-578`) has a tightness loss; R6 studies it and figures out how to improve.
+
+R6 GOAL — deliver in the sketch:
+1. IDENTIFY GAŽI'S LOSS. Pinpoint EXACTLY where R2's Gaži bound
+   (`ε_C2SP + Δ(f_K,r) + (ℓ+1)q·ε_na + q²/|C|`, in `SequenceMACPRF.lean`) is loose —
+   which term/step loses tightness, and why (the `(ℓ+1)q·ε_na` cascade hybrid factor is
+   the prime suspect). Compare against R4's tight generic bound `B_SEQ`
+   (`B_cascade + B_key + DeriveCost_SEQ`, sketch A4) — Shen 2025 already removes
+   `(ℓ+1)q·ε_na`; state precisely what Backendal adds ON TOP (a STANDARD-model
+   refinement vs Shen's generic/ideal-compression model).
+2. BACKENDAL'S IMPROVEMENT. State Backendal's main theorem/technique VERBATIM in the
+   bound, cite §; explain the tightening mechanism (what assumption/analysis buys back
+   the lost factor).
+3. RELATION TO R2/R4. A table: R2 (Gaži) vs R4 (Shen generic) vs R6 (Backendal) — model,
+   bound, tightness, what each fixes.
+4. WHAT R6 CAN ACTUALLY PROVE for C2SP SequenceMAC, honestly (like R5's §0): is
+   Backendal's result directly adaptable, or does it need SequenceHash-specific work?
+
+*** THE STANDING SKETCH-ADAPTATION DISCIPLINE (STEP 0 §3c) APPLIES: really ADAPT to
+SequenceHash, do NOT blunt-transcribe Backendal. For every Backendal bound term / bad
+event, the kill/shrink/remains table vs the KNOWN SequenceHash specificities (FIELD /
+INNER-OUTER / CROSS-ROLE domain separation — now PROVEN in `DomainSeparation.lean`;
+single-key clean derivation; the `DeriveCost_SEQ` residual already defined in
+`SequenceMACIndiffMD.lean`). Reuse those by name. ***
+
+5. PROPOSED R6 statement shape (the eventual G6 guardrail) + reuse-vs-new infra map
+   onto RandomSystems / the H-technique surface / the existing R2/R4/R5 objects.
+
+Report: sketch path + 6-line summary (Gaži's exact loss, Backendal's fix, the R2/R4/R6
+table verdict, what R6 can prove for SequenceHash, proposed statement).

@@ -1,0 +1,37 @@
+TASK P4e.fiber — R4 step 3 of 4 (steps 1–2 DONE). Prove the EQUALITY-ON-GOOD: OFF `Bad_SEQ`,
+the real and ideal extended fixed-query masses are EQUAL — in the exact form the endpoint
+`adv_le_of_extFixedQueryRep_eq_on_good_filtered` consumes. NO `B_SEQ`, NO `h_badmass`, NO final
+theorem (step 4). Fully sorry-free. This is the H-coefficient crux.
+
+READ FIRST (no memory of them):
+- `SequenceHash/RandomSystems/SequenceMACGenericTrace.lean` (step 1: `mdCompressionTrace`,
+  `sequenceFunctionCompressionTrace`, reconstruction/length/final-output, `OutputCompressionBacked`).
+- `SequenceHash/RandomSystems/SequenceMACGenericBad.lean` (step 2: `Bad_SEQ` = compression-call
+  freshness-failure, `KeyPointMassBound`, `sequenceFunctionCrossRoleSeparated`).
+- `RandomSystems/HTechnique/IdealCompression.lean` + `SequenceHash/RandomSystems/IdealCompression.lean`
+  (facade: worlds, representatives, reveal carrier, and EXACTLY what
+  `adv_le_of_extFixedQueryRep_eq_on_good_filtered` needs as its equality-on-good hypothesis).
+- `SequenceHash/DomainSeparation.lean`, `SequenceMACIndiffMD.lean` (R5 bridges).
+
+ADDITIVE: new file `SequenceHash/RandomSystems/SequenceMACGenericFiber.lean` (or extend the Bad
+module). Do NOT modify R1/R2/R3/R5/DomainSeparation, the facade, or the step-1/2 defs.
+
+DELIVER (Codex split item 3, sorry-free):
+1. Per-call freshness ⇒ independence: OFF `Bad_SEQ`, each construction compression call is fresh,
+   so on the ideal side it returns an independent uniform value (use the reveal carrier + the
+   `Bad_SEQ` complement + the step-2 input-level cross-role separation for the framing).
+2. The uniform partial-assignment FIBER equality: the set of coin assignments consistent with a
+   fixed good (¬`Bad_SEQ`) transcript has EQUAL measure in the real world and the ideal
+   world ⇒ equality of the extended fixed-query masses off `Bad_SEQ`.
+3. Package (2) as the exact equality-on-good lemma that
+   `adv_le_of_extFixedQueryRep_eq_on_good_filtered` accepts (ε_ratio = 0 side).
+
+ACCEPTANCE: whole-repo `lake build` green; axiom-clean {propext, Classical.choice, Quot.sound};
+sorry-free / axiom-free / no `private`; additive (existing + step-1/2 defs unchanged); reuse
+steps 1–2 + facade + DomainSeparation + R5 by name; NO `B_SEQ`/`h_badmass`/final theorem (step 4
+untouched). Report: the freshness + fiber-equality lemmas, the packaged eq-on-good lemma, the
+reuse map, the axiom line, confirm step 4 untouched.
+
+*** SPLIT VALVE: if the fiber measure equality is too large, STOP and deliver ONLY the per-call
+freshness lemmas (item 1) sorry-free, and report the exact remaining fiber-equality plan. Never
+leave a `sorry`. ***

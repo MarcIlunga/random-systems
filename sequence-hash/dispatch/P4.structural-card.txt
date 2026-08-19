@@ -1,0 +1,54 @@
+TASK P4.structural — R4 STRUCTURAL: the tight generic (ideal-compression) PRF bound
+for C2SP SequenceMAC, with the deep Shen bad-event mass `≤ B_SEQ` held as an EXPLICIT
+NAMED HYPOTHESIS (the deep follow-up R4.deep). The facade + the equality-on-good spine
+are PROVEN. R4 is the H-TECHNIQUE route — `advPRF`/`HTechnique/*` ARE allowed here.
+ADDITIVE: new files only (e.g. `SequenceHash/RandomSystems/SequenceMACGeneric.lean`; any
+generic facade piece GENERALIZED IN PLACE in `RandomSystems/HTechnique/*`, never a local
+copy). Do NOT modify R1/R2/R3/R5/DomainSeparation.
+
+Follow the ACCEPTED strict sketch `sequence-hash/sketches/A4-tight-generic-prf.md`
+(§5 the bound, §6 proof skeleton, §7 infra map, §8 the guardrail). Start from canonical
+`SequenceFunction`. Reuse `DomainSeparation` lemmas + the R5 `DeriveSafeS`/separation
+bridges by name.
+
+DELIVER:
+1. FACADE (reuse the H-technique spine; GENERALIZE, do not duplicate):
+   - `TaggedBudgetRespects p q lambda` — a tagged `Prim`/`Eval` budget+cost predicate,
+     a GENERALIZATION IN PLACE of `EnvRespects` (add to `HTechnique/*`, reusable — NOT a
+     `SequenceMACEnvRespects` local copy).
+   - `sequenceFunctionICReal b S u DK` / `sequenceFunctionICIdeal b S u` — the joint
+     ideal-compression worlds (shared `Prim` interface in BOTH; `Eval(i,M)` answered by
+     the canonical `SequenceFunction` realization / an independent per-user RF). Multi-user
+     via `Fin u`; `u ≤ q` collapses `u`. Do NOT define a duplicate NMAC-shaped construction.
+2. `B_SEQ` — DEFINE concretely per sketch §5 (do NOT stub, do NOT use Shen's `B_N`):
+     `B_SEQ = B_cascade(p,q,λ;c) + B_key(p,u;κ*) + DeriveCost_SEQ(r_K,r_S,…)`
+     with `B_cascade = pqλ/2^c + C(q,2)((λ+2)/2^c + 64λ⁴/2^{2c})`,
+     `B_key = (C(u,2)+2up)/2^{κ*}`, and the §5 `DeriveCost_SEQ` (zero when r_K=r_S=0).
+     (This R4 `DeriveCost` is the generic-model derivation cost — distinct from R5's
+     indiff-residual `DeriveCost_SEQ`; name it to avoid collision, e.g. `deriveCostGeneric`.)
+3. FROZEN R4 theorem (the G4 guardrail — sketch §8; the 5 non-negotiable features there):
+     theorem sequenceMAC_generic_prf_tight
+       (p q u lambda rK rS kappaStar : ℕ) (huq : u ≤ q)
+       (hkey : KeyPointMassBound DK kappaStar)
+       (htrace : SequenceFunctionTraceBound b S lambda rK rS)
+       (hroles : SequenceFunctionCrossRoleSeparated b S)   -- discharge via DomainSeparation
+       (h_badmass : <the bad-event mass on the ideal extension> ≤ (B_SEQ … : ℝ)) :  -- R4.deep, NAMED
+       filteredAdaptiveTranscriptAdvantage (TaggedBudgetRespects p q lambda)
+           (sequenceFunctionICReal b S u DK) (sequenceFunctionICIdeal b S u)
+         ≤ (B_SEQ … : ℝ)
+   PROVE the SPINE with `adv_le_of_extFixedQueryRep_eq_on_good` (equality on good ⇒
+   ε_ratio = 0), reusing the DomainSeparation cross-role lemmas to discharge `hroles`
+   /the good-transcript equality; the bad-mass leg is exactly `h_badmass`. No triangle
+   hop to literal NMAC.
+
+ACCEPTANCE: whole-repo `lake build` green; axiom-clean {propext, Classical.choice,
+Quot.sound}; sorry-free and axiom-free (the Shen bad-mass is an explicit HYPOTHESIS, not a
+sorry); additive (new files only — verify existing mtimes unchanged); NO `private`; the
+facade is a REUSABLE generalization (grep confirms no local `EnvRespects` copy); `B_SEQ`
+is the §5 SequenceHash-specific bound (NOT `B_N`); DomainSeparation + R5 objects reused by
+name. Report: facade defs, `B_SEQ` def, the frozen theorem, what `h_badmass` states
+precisely (= R4.deep), the reuse map, the axiom line.
+
+*** IF the facade + spine genuinely cannot be built and proven in one dispatch, STOP and
+report a concrete SPLIT PLAN (facade infra dispatch, then the theorem dispatch) rather than
+producing a partial/broken result. ***

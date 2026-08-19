@@ -1,0 +1,71 @@
+STEP 0 — non-negotiable:
+1. SKETCH task (pen-and-paper only) — NO Lean, NO defs committed, NO build touch.
+   Output = one markdown sketch file. Overwrite sketches/A4-tight-generic-prf.md.
+2. Consult CHEATSHEET.md. NEVER re-derive; reuse R1/R2/R3 lemmas BY NAME.
+3. NO GUESSWORK — read 2025-2260.pdf; model exactly.
+
+============================================================================
+SKETCH ADAPTATION DISCIPLINE — THE CORE OF THIS TASK. READ TWICE.
+============================================================================
+This sketch was REJECTED once for blunt transcription of the paper. The paper
+(Shen 2025, NMAC/HMAC) is a TEMPLATE, NOT the answer. The deliverable is the
+SEQUENCEHASH-SPECIFIC result. RULES:
+
+(R-A) NO BLUNT COPY-PASTE. You may state the paper's theorem ONCE for reference,
+   but every bound term, every bad event, every proof step must be RE-DERIVED for
+   the C2SP SequenceHash construction. A bound copied verbatim from the paper is a
+   FAILED sketch.
+(R-B) EXPLOIT WHAT WE ALREADY KNOW. SequenceHash differs from NMAC/HMAC in ways we
+   have ALREADY ESTABLISHED and that SIMPLIFY the proof. For EVERY bad event and
+   EVERY term of the paper's bound you MUST state, in a table: does a known
+   SequenceHash specificity KILL it / SHRINK it / leave it REMAINING (inherent)? and
+   WHY. Known specificities to use (cite/reuse — do NOT re-derive):
+   • FIELD domain separation (R1): F-value (F=1 for MAC) + item-count + output-length
+     framing + length-prefixed encoding ⇒ (S,M)↦bytes is unambiguous & injective
+     (`encodeItems_injective`, `sequenceHash_collision_of_distinct_inputs`). ⇒ NO
+     ambiguity/prefix-free bad events at all.
+   • INNER/OUTER domain separation (R2 / sketch A2): distinct run-up headers
+     `HeaderI ≠ HeaderO` (distinct leading bytes) ⇒ inner and outer compression calls
+     sit at DISTINCT domain-separated inputs ⇒ effective inner/outer keys are
+     INDEPENDENT under ordinary data-input PRF security. SequenceHash is
+     **NMAC-LIKE (independent effective keys), NOT HMAC-LIKE** ⇒ HMAC's related-
+     ipad/opad-key bad events DO NOT APPLY (use the NMAC template B_N, not B_H; and
+     B_N's own key-relatedness bookkeeping simplifies).
+   • CROSS-ROLE domain separation (the enabler): `Derive(K)`, `Derive(S)`, inner,
+     outer inputs are pairwise DISJOINT (header/F/length framing + secret key in the
+     input). ⇒ internal collisions BETWEEN different call-roles CANNOT occur ⇒ the
+     paper's bad-event partition (E_A/E_B/E_C etc.) COLLAPSES and cross-role union
+     terms DROP. (This lemma is easy & about to be formalized; assume it.)
+   • SINGLE-KEY CLEAN DERIVATION: single key, two domain-separated run-ups ("better
+     than HMAC"). The ONE extra cost vs NMAC: `Derive(K)`/`Derive(S)` on long
+     key/customization add shared-h evaluations absent from NMAC ⇒ a small
+     ACCOUNTABLE term you must name (do not hide it).
+   • SECRET KEY IN THE INPUT: adversary cannot steer internal cascade states to KNOWN
+     values without the key ⇒ offline-chain-control attacks are limited by key guessing.
+(R-C) Produce a SEQUENCEHASH-SPECIFIC bound `B_SEQ`, NOT the paper's constant, as a
+   term-by-term table: [paper term] → [verdict killed/shrunk/remains + why] → [B_SEQ term].
+   Be HONEST: the DOMINANT cascade-inherent terms (functional-graph `pqℓ/2^c`,
+   internal-collision `q²ℓ/2^c`) are MD-cascade properties SequenceHash SHARES and
+   likely REMAIN — say so; domain separation kills bookkeeping/aliasing/related-key
+   terms, not the cascade's inherent generic loss. Do NOT over-claim vanishing.
+(R-D) Start from canonical `SequenceFunction` (PLAN §0.5). Reuse, never re-spell.
+============================================================================
+
+TASK S4.sketch (STRICT REDO) — rewrite sequence-hash/sketches/A4-tight-generic-prf.md
+(math in `$$…$$`/`$…$`, GitHub-renderable). SOURCE: 2025-2260.pdf. R4 = the H-technique
+route (advPRF / HTechnique/* allowed here). GOAL: the TIGHT generic PRF bound for C2SP
+SequenceMAC in the ideal-compression model, RE-DERIVED for SequenceHash per the discipline.
+
+DELIVER:
+1. Paper's NMAC Thm 2 bound + model — for REFERENCE only (mark it clearly as the template).
+2. THE TERM-BY-TERM ADAPTATION TABLE (R-C) — the centerpiece. Every B_N term + every
+   §4 bad event, with the killed/shrunk/remains verdict tied to a named specificity (R-B).
+3. The resulting SequenceHash-specific bound `B_SEQ` (with the extra Derive term).
+4. Infra-map REUSE vs NEW (the ideal-compression joint-oracle + tagged p/q/ℓ budget
+   facade; generalize `EnvRespects` in place — not a local copy). Reuse
+   `hashThenPRF_adaptive_tight` spine where it applies; state where it doesn't.
+5. Proposed R4 Lean statement (H-technique surface) with `B_SEQ` — the G4 guardrail.
+6. Tightness vs R2/Gaži and what remains for R6.
+
+Report: sketch path + 6-line summary INCLUDING which paper terms are killed/shrunk vs
+remain (name them) and the final `B_SEQ` shape.

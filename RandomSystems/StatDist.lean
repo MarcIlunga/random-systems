@@ -3,6 +3,7 @@ Copyright (c) 2024-2026 Trail of Bits. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 -/
 import RandomSystems.Dist
+import RandomSystems.DistExpect
 import Mathlib.Algebra.Order.Sub.Basic
 
 /-!
@@ -14,15 +15,32 @@ Lanzenberger-Maurer (TCC 2020).
 ## Main Definitions
 
 * `statDist X Y` — statistical distance `δ(X, Y)`
+* `avgSuccessProb X Y g` — success probability of the binary hypothesis test
+  `g` at telling `X` from `Y` under equal prior ½.  Deciding *which of two
+  distributions* produced a sample; the different task of guessing an unknown
+  *value* from correlated side information is `Dist.condGuessProb`
+  (`RandomSystems/Entropy.lean`)
 
 ## Main Results
 
 * `statDist_self` — `δ(X, X) = 0` (proved)
 * `statDist_symm_of_eq_weight` — `δ(X, Y) = δ(Y, X)` when `|X| = |Y|`
+* `statDist_eq_weight_sub_sum_min` — min form `δ(X, Y) = |X| - ∑ a, min (X a) (Y a)`
+* `statDist_eq_half_sum_abs_of_weight_eq` — half-`L1` form for equal weight
+* `sSup_avgSuccessProb_eq_half_add_half_statDist` — optimal-test identity
+  (mathlib decision theory: `1 - bayesRisk` at 0-1 loss and uniform prior)
 * `statDist_triangle` — triangle inequality
 * `statDist_partition` — Lemma 2: partition of statistical distance
 * `statDist_fTransform_le` — Lemma 3: data processing inequality
 * `statDist_eq_mass_on_zero_support` — when Y=0 on S and X≤Y on Sᶜ, statDist = ∑_S X
+
+## Design note (ℝ carrier)
+
+Over the `NNReal` carrier the paper's `max(0, X(a) − Y(a))` was expressed by
+truncating subtraction.  Over the signed carrier the truncation is spelled out:
+every summand is `max (X a - Y a) 0`, which denotes exactly what the truncated
+`X a - Y a` denoted before.  Inequalities that silently used the structural
+non-negativity of `NNReal` now take explicit `Dist.NonNeg` hypotheses.
 -/
 
 noncomputable section
@@ -106,17 +124,44 @@ theorem coe_finset_sup_le {ι : Type*} (s : Finset ι) (f : ι → NNReal) {a : 
 Paper Definition 3:
   `δ(X, Y) := ∑_{a} max(0, X(a) - Y(a))`
 
-Since `NNReal` subtraction truncates negative values to 0, this is simply:
-  `δ(X, Y) = ∑_{a} (X(a) - Y(a))`
+Over the `NNReal` carrier the truncating subtraction spelled the `max`; over
+the signed carrier it is written out.  The value is the same one-sided excess
+the paper defines.
 
-where the NNReal subtraction `a - b = max(0, a - b)`. -/
-def statDist {A : Type*} [Fintype A] (X Y : Dist A) : NNReal :=
-  ∑ a : A, (X a - Y a)
+**No `Fintype` is needed, and requiring one was a spurious restriction.**
+`Dist A = A →₀ ℝ` already carries finite support, and a summand `max (X a - Y a) 0` can
+only be nonzero where `X a ≠ Y a`, i.e. on `(X - Y).support`.  So the sum below has the
+same value as the sum over `Finset.univ` *unconditionally* — `statDist_eq_sum_univ` —
+while also being defined on infinite carriers such as a transcript space.  Indexing by
+`(X - Y).support` rather than `X.support ∪ Y.support` additionally avoids a `DecidableEq`
+hypothesis, which would have been the same mistake one level down.
 
-/-- `δ(X, X) = 0`. Immediate because `a - a = 0` for `NNReal`. -/
+This is the difference from `δ` (`RandomSystem.lean`), which sums over `μ.support` alone
+and therefore agrees with this only when `ν ≥ 0`; the two are one metric at two
+generalities, both one-sided. -/
+noncomputable def statDist {A : Type*} (X Y : Dist A) : ℝ :=
+  ∑ a ∈ (X - Y).support, max (X a - Y a) 0
+
+/-- On a `Fintype` carrier, `statDist` is the sum over everything — the old definition,
+kept as the unfolding lemma for proofs that reason over `Finset.univ`. -/
+theorem statDist_eq_sum_univ {A : Type*} [Fintype A] (X Y : Dist A) :
+    statDist X Y = ∑ a : A, max (X a - Y a) 0 := by
+  classical
+  rw [statDist]
+  refine Finset.sum_subset (Finset.subset_univ _) fun a _ ha => ?_
+  rw [Finsupp.notMem_support_iff] at ha
+  have h : X a - Y a = 0 := by simpa using ha
+  rw [h, max_self]
+
+/-- Each summand of `statDist` is nonnegative, so the whole sum is. -/
+theorem statDist_nonneg {A : Type*} [Fintype A] (X Y : Dist A) :
+    0 ≤ statDist X Y :=
+  Finset.sum_nonneg fun a _ => le_max_right _ _
+
+/-- `δ(X, X) = 0`. -/
 theorem statDist_self {A : Type*} [Fintype A] (X : Dist A) :
     statDist X X = 0 := by
-  simp [statDist, tsub_self]
+  simp [statDist_eq_sum_univ]
 
 /-- `δ(X, Y) = δ(Y, X)` when `|X| = |Y|`.
 
@@ -125,19 +170,78 @@ Paper: For distributions of equal weight,
 theorem statDist_symm_of_eq_weight {A : Type*} [Fintype A]
     (X Y : Dist A) (h : X.weight = Y.weight) :
     statDist X Y = statDist Y X := by
-  simp only [statDist]
-  have hL : ∀ a : A, X a - Y a = X a - min (X a) (Y a) :=
-    fun a => tsub_eq_tsub_min (X a) (Y a)
-  have hR : ∀ a : A, Y a - X a = Y a - min (Y a) (X a) :=
-    fun a => tsub_eq_tsub_min (Y a) (X a)
-  simp_rw [hL, hR]
-  rw [Finset.sum_tsub_distrib _ (fun a _ => min_le_left (X a) (Y a))]
-  rw [Finset.sum_tsub_distrib _ (fun a _ => min_le_left (Y a) (X a))]
-  have hw : ∑ x : A, X x = ∑ x : A, Y x := by
-    rw [← Dist.weight_eq_sum X, ← Dist.weight_eq_sum Y]; exact h
-  rw [hw]
-  congr 1
-  exact Finset.sum_congr rfl (fun a _ => min_comm (X a) (Y a))
+  simp only [statDist_eq_sum_univ]
+  have key : ∀ a : A, max (X a - Y a) 0 = max (Y a - X a) 0 + (X a - Y a) := by
+    intro a
+    rcases le_total (X a) (Y a) with hle | hle
+    · rw [max_eq_right (sub_nonpos.mpr hle), max_eq_left (sub_nonneg.mpr hle)]
+      ring
+    · rw [max_eq_left (sub_nonneg.mpr hle), max_eq_right (sub_nonpos.mpr hle)]
+      ring
+  rw [Finset.sum_congr rfl (fun a _ => key a), Finset.sum_add_distrib,
+    Finset.sum_sub_distrib, ← Dist.weight_eq_sum X, ← Dist.weight_eq_sum Y, h,
+    sub_self, add_zero]
+
+/-! ### Alternative forms of statistical distance
+
+LanMau20 Definition 3 (= FOUNDATIONS.md Definition 2.4) presents `δ` in two
+forms, `δ(X, Y) = ∑_a max(0, X(a) - Y(a)) = |X| - ∑_a min(X(a), Y(a))`, and
+notes the half-`L1` form `δ(X, Y) = ½ ∑_a |X(a) - Y(a)|` for equal weight.
+`statDist` is the max form; the other two are derived here. -/
+
+/-- **Min form of statistical distance** (LanMau20 Definition 3, second form):
+`δ(X, Y) = |X| - ∑_a min(X(a), Y(a))`.
+
+The identity is the pointwise lattice identity `max (x - y) 0 = x - min x y`
+summed over the carrier, so it holds for *arbitrary* signed distributions:
+neither `Dist.NonNeg` nor equal weight is needed.  The asymmetry the paper
+notes for unequal weight is visible here — the right-hand side carries `|X|`,
+not `|Y|`. -/
+theorem statDist_eq_weight_sub_sum_min {A : Type*} [Fintype A] (X Y : Dist A) :
+    statDist X Y = X.weight - ∑ a : A, min (X a) (Y a) := by
+  simp only [statDist_eq_sum_univ]
+  have key : ∀ a : A, max (X a - Y a) 0 = X a - min (X a) (Y a) := by
+    intro a
+    rcases le_total (X a) (Y a) with h | h
+    · rw [max_eq_right (sub_nonpos.mpr h), min_eq_left h, sub_self]
+    · rw [max_eq_left (sub_nonneg.mpr h), min_eq_right h]
+  rw [Finset.sum_congr rfl (fun a _ => key a), Finset.sum_sub_distrib,
+    ← Dist.weight_eq_sum]
+
+/-- Weight-one specialization of the min form (MaPiRe07 equation (3), used in
+the proof of their Lemma 5): `δ(X, Y) = 1 - ∑_a min(X(a), Y(a))`.
+
+Only the *first* argument needs weight one — the min form charges `|X|`, so
+`Y` may be an arbitrary signed distribution. -/
+theorem statDist_eq_one_sub_sum_min {A : Type*} [Fintype A]
+    (X Y : Dist A) (hX : X.weight = 1) :
+    statDist X Y = 1 - ∑ a : A, min (X a) (Y a) := by
+  rw [statDist_eq_weight_sub_sum_min, hX]
+
+/-- **Half-`L1` form of statistical distance** (LanMau20 Definition 3 remark;
+PorRen22 Definition 4): for distributions of equal weight,
+`δ(X, Y) = ½ ∑_a |X(a) - Y(a)|`.
+
+Equal weight is exactly what is needed: pointwise
+`max (x - y) 0 = ((x - y) + |x - y|) / 2`, and summing makes the linear term
+contribute `(|X| - |Y|) / 2`, which vanishes precisely under the equal-weight
+hypothesis (the library's idiom for symmetry, cf.
+`statDist_symm_of_eq_weight`). -/
+theorem statDist_eq_half_sum_abs_of_weight_eq {A : Type*} [Fintype A]
+    (X Y : Dist A) (h : X.weight = Y.weight) :
+    statDist X Y = (∑ a : A, |X a - Y a|) / 2 := by
+  simp only [statDist_eq_sum_univ]
+  have key : ∀ a : A, max (X a - Y a) 0 = ((X a - Y a) + |X a - Y a|) / 2 := by
+    intro a
+    rcases le_total (X a) (Y a) with hle | hle
+    · rw [max_eq_right (sub_nonpos.mpr hle), abs_of_nonpos (sub_nonpos.mpr hle)]
+      ring
+    · rw [max_eq_left (sub_nonneg.mpr hle), abs_of_nonneg (sub_nonneg.mpr hle)]
+      ring
+  rw [Finset.sum_congr rfl (fun a _ => key a)]
+  simp_rw [div_eq_mul_inv]
+  rw [← Finset.sum_mul, Finset.sum_add_distrib, Finset.sum_sub_distrib,
+    ← Dist.weight_eq_sum X, ← Dist.weight_eq_sum Y, h, sub_self, zero_add]
 
 /-- Triangle inequality for statistical distance.
 
@@ -145,22 +249,26 @@ theorem statDist_symm_of_eq_weight {A : Type*} [Fintype A]
 theorem statDist_triangle {A : Type*} [Fintype A]
     (X Y Z : Dist A) :
     statDist X Z ≤ statDist X Y + statDist Y Z := by
-  simp only [statDist]
+  simp only [statDist_eq_sum_univ]
   rw [← Finset.sum_add_distrib]
   apply Finset.sum_le_sum
   intro a _
-  exact tsub_le_tsub_add_tsub
+  apply max_le
+  · calc X a - Z a = (X a - Y a) + (Y a - Z a) := by ring
+      _ ≤ max (X a - Y a) 0 + max (Y a - Z a) 0 :=
+          add_le_add (le_max_left _ _) (le_max_left _ _)
+  · exact add_nonneg (le_max_right _ _) (le_max_right _ _)
 
-/-- Statistical distance is bounded by total weight.
+/-- Statistical distance is bounded by total weight (for non-negative laws).
 
 `δ(X, Y) ≤ |X|`. -/
 theorem statDist_le_weight {A : Type*} [Fintype A]
-    (X Y : Dist A) :
+    {X Y : Dist A} (hX : X.NonNeg) (hY : Y.NonNeg) :
     statDist X Y ≤ X.weight := by
-  rw [statDist, Dist.weight_eq_sum]
+  rw [statDist_eq_sum_univ, Dist.weight_eq_sum]
   apply Finset.sum_le_sum
   intro a _
-  exact tsub_le_self
+  exact max_le (sub_le_self _ (hY a)) (hX a)
 
 /-- **Support lemma forced by the CR18/thesis advantage bridge; candidate for upstream.**
 For any event, the one-sided gap between its masses is bounded by statistical distance. -/
@@ -168,67 +276,255 @@ theorem mass_tsub_mass_le_statDist {A : Type*} [Fintype A]
     (X Y : Dist A) (P : A → Prop) :
     X.mass P - Y.mass P ≤ statDist X Y := by
   classical
-  rw [tsub_le_iff_right]
-  rw [Dist.mass_eq_sum, Dist.mass_eq_sum, statDist]
-  calc
-    (∑ a : A, if P a then X a else 0)
-        ≤ (∑ a : A, if P a then Y a else 0) + ∑ a : A, (X a - Y a) := by
-          rw [← Finset.sum_add_distrib]
-          apply Finset.sum_le_sum
-          intro a _
-          by_cases hp : P a
-          · simpa [hp] using (le_add_tsub : X a ≤ Y a + (X a - Y a))
-          · simp [hp]
-    _ = ∑ a : A, (X a - Y a) + ∑ a : A, if P a then Y a else 0 := by
-          rw [add_comm]
+  rw [Dist.mass_eq_sum, Dist.mass_eq_sum, statDist_eq_sum_univ, ← Finset.sum_sub_distrib]
+  apply Finset.sum_le_sum
+  intro a _
+  by_cases hp : P a
+  · simpa [hp] using le_max_left (X a - Y a) 0
+  · simpa [hp] using le_max_right (X a - Y a) 0
 
 /-- **Support lemma forced by the CR18/thesis advantage bridge; candidate for upstream.**
-Real-valued form of `mass_tsub_mass_le_statDist`, convenient for signed CR18 advantages. -/
+Real-valued form of `mass_tsub_mass_le_statDist`, convenient for signed CR18 advantages.
+(Over the `ℝ` carrier the two coincide; kept for call-site compatibility.) -/
 theorem mass_sub_mass_le_statDist {A : Type*} [Fintype A]
     (X Y : Dist A) (P : A → Prop) :
-    ((X.mass P : ℝ) - (Y.mass P : ℝ)) ≤ (statDist X Y : ℝ) := by
-  calc
-    ((X.mass P : ℝ) - (Y.mass P : ℝ))
-        ≤ ((X.mass P - Y.mass P : NNReal) : ℝ) := by
-          rw [NNReal.coe_sub_def]
-          exact le_max_left _ _
-    _ ≤ (statDist X Y : ℝ) := by
-          exact_mod_cast mass_tsub_mass_le_statDist X Y P
+    ((X.mass P : ℝ) - (Y.mass P : ℝ)) ≤ (statDist X Y : ℝ) :=
+  mass_tsub_mass_le_statDist X Y P
 
-/-- If every pointwise deficit `X a - Y a` is bounded by a charge function,
-then statistical distance is bounded by the total charge. -/
+/-! ### The distance/expectation bridge
+
+CR18_LN Exercise 4.4 (p. 83): perturbing the instance distribution by `d` in
+statistical distance changes a solver's performance by at most `2d`, "and the
+same statement holds for games, without the factor 2" (their footnote 12).  The
+two constants are one lemma: a game's performance is an indicator, taking values
+in `[0, 1]`, while a bit-guessing performance is calibrated to `[-1, 1]`, and the
+bound is `(sup f − inf f) · d` in both cases.  So the sharp constant is the
+*range* of `f`, not `2 · sup |f|` — which would give `2` for a game — and the
+tree's existing indicator case (`mass_sub_mass_le_statDist`) is the `[0, 1]`
+instance.
+
+**Layer.**  All three statements below hold on the bare **signed** layer: no
+`Dist.NonNeg`, no `Dist.isProbDist`.  What the two-sided range form does need is
+`|X| = |Y|`, and that hypothesis is not cosmetic — at `X = single a 1`, `Y = 0`
+and `f ≡ 5` the left side is `5` while `(sup f − inf f) · δ(X, Y) = 0`.  Equal
+weight is exactly the hypothesis under which the constant term `m · (|X| − |Y|)`
+of the general estimate vanishes, and it is the same hypothesis that makes `δ`
+symmetric (`statDist_symm_of_eq_weight`).  The one-sided `[0, 1]` form needs no
+weight hypothesis at all, matching `mass_sub_mass_le_statDist`. -/
+
+/-- **The `[0, 1]` case of CR18_LN Exercise 4.4** (their footnote 12, the "games,
+without the factor 2" form): a functional with values in `[0, 1]` moves by at
+most `δ(X, Y)`.  This is `mass_sub_mass_le_statDist` with the indicator of an
+event replaced by an arbitrary `[0, 1]`-valued observable, and like it, it needs
+no weight hypothesis — the one-sided distance already charges the excess of `X`
+over `Y`.  Signed layer, and no `Fintype`.
+
+UPSTREAM-CANDIDATE: the duality between the half-`L¹` distance of two finitely
+supported signed measures and `[0, 1]`-valued test functions. -/
+theorem expect_sub_expect_le_statDist {A : Type*} (X Y : Dist A) (f : A → ℝ)
+    (h0 : ∀ a, 0 ≤ f a) (h1 : ∀ a, f a ≤ 1) :
+    X.expect f - Y.expect f ≤ statDist X Y := by
+  rw [← Dist.expect_sub_left]
+  refine Finset.sum_le_sum fun a _ => ?_
+  have hd : (X - Y) a = X a - Y a := by simp
+  rw [hd]
+  rcases le_total 0 (X a - Y a) with h | h
+  · rw [max_eq_left h]
+    nlinarith [h0 a, h1 a]
+  · rw [max_eq_right h]
+    nlinarith [h0 a]
+
+/-- **CR18_LN Exercise 4.4**, one-sided: a functional taking values in `[m, M]`
+moves by at most `(M − m) · δ(X, Y)`.
+
+The proof is the exercise's: recentre `f` by the constant `m`, which is free
+because equal weight makes `𝔼_X[m] − 𝔼_Y[m] = 0`, and then bound the recentred
+functional pointwise by the one-sided excess.  Signed layer plus `|X| = |Y|`;
+no `Fintype`. -/
+theorem expect_sub_expect_le_mul_statDist {A : Type*} (X Y : Dist A) (f : A → ℝ)
+    {m M : ℝ} (hw : X.weight = Y.weight) (hm : ∀ a, m ≤ f a) (hM : ∀ a, f a ≤ M) :
+    X.expect f - Y.expect f ≤ (M - m) * statDist X Y := by
+  have hconst : (X - Y).expect (fun _ => m) = 0 := by
+    rw [Dist.expect_sub_left, Dist.expect_const, Dist.expect_const, hw, sub_self]
+  rw [← Dist.expect_sub_left, ← sub_zero ((X - Y).expect f), ← hconst, statDist,
+    Finset.mul_sum, Dist.expect, Dist.expect, Finsupp.sum, Finsupp.sum,
+    ← Finset.sum_sub_distrib]
+  refine Finset.sum_le_sum fun a _ => ?_
+  have hd : (X - Y) a = X a - Y a := by simp
+  have hmM : m ≤ M := (hm a).trans (hM a)
+  rw [hd]
+  rcases le_total 0 (X a - Y a) with h | h
+  · rw [max_eq_left h]
+    nlinarith [hM a]
+  · rw [max_eq_right h]
+    nlinarith [hm a]
+
+/-- **CR18_LN Exercise 4.4**, the two-sided form the exercise asks to "state
+formally": for distributions of equal weight, a functional taking values in
+`[m, M]` satisfies `|𝔼_X[f] − 𝔼_Y[f]| ≤ (M − m) · δ(X, Y)`.
+
+At `[m, M] = [-1, 1]` — the calibration CR18_LN Definition 2.9 puts on a
+bit-guessing advantage — this is the printed constant `2d`; at `[m, M] = [0, 1]`
+it is footnote 12's `d`.  Signed layer plus `|X| = |Y|`.  `Fintype` enters only
+through `statDist_symm_of_eq_weight`, which is how the tree states symmetry of
+`δ`; the one-sided forms above are free of it. -/
+theorem abs_expect_sub_expect_le_mul_statDist {A : Type*} [Fintype A]
+    (X Y : Dist A) (f : A → ℝ) {m M : ℝ} (hw : X.weight = Y.weight)
+    (hm : ∀ a, m ≤ f a) (hM : ∀ a, f a ≤ M) :
+    |X.expect f - Y.expect f| ≤ (M - m) * statDist X Y := by
+  refine abs_sub_le_iff.mpr ⟨expect_sub_expect_le_mul_statDist X Y f hw hm hM, ?_⟩
+  rw [statDist_symm_of_eq_weight X Y hw]
+  exact expect_sub_expect_le_mul_statDist Y X f hw.symm hm hM
+
+/-- Statistical distance is exactly the one-sided mass gap on the points where
+the first distribution is heavier.  This is the canonical statistical test
+used to turn a transcript distance into a signed CR18 distinguisher advantage. -/
+theorem statDist_eq_mass_sub_mass_pos {A : Type*} [Fintype A]
+    (X Y : Dist A) :
+    (statDist X Y : ℝ) =
+      (X.mass (fun a => Y a < X a) : ℝ) -
+        (Y.mass (fun a => Y a < X a) : ℝ) := by
+  classical
+  rw [statDist_eq_sum_univ, Dist.mass_eq_sum, Dist.mass_eq_sum, ← Finset.sum_sub_distrib]
+  apply Finset.sum_congr rfl
+  intro a _
+  by_cases h : Y a < X a
+  · rw [if_pos h, if_pos h, max_eq_left (sub_nonneg.mpr h.le)]
+  · rw [if_neg h, if_neg h, max_eq_right (sub_nonpos.mpr (not_lt.mp h))]
+    simp
+
+/-! ### The optimal-test identity
+
+PorRen22 Theorem 8 (classical case, sketched on their p. 50; also the
+`½(1-p) + p = ½ + ½p` step in the proof of MaPiRe07 Lemma 4): a sample is
+drawn from `X` or from `Y`, each with prior ½, and a decision rule
+`g : A → Bool` guesses the source (`true` = "the sample came from `X`").
+The best achievable success probability is `½ + ½ δ(X, Y)`, attained by the
+Bayes rule "guess `X` iff `X(a) > Y(a)`".  This is the distribution-level
+statement only; the random-system version (the mixed system `⟨S/T⟩_Z` of
+MaPiRe07) is separate work. -/
+
+/-- Success probability of the **binary hypothesis test** `g` at identifying
+the source of a sample drawn from `X` or `Y` with equal prior ½: with
+probability ½ the sample is drawn from `X` and the answer is correct iff `g`
+answers `true`, with probability ½ it is drawn from `Y` and the answer is
+correct iff `g` answers `false`.  Meaningful as a probability when `X` and `Y`
+are probability distributions; defined for arbitrary signed distributions.
+
+**Named for the task, not for "guessing" — and `avg`, not `bayes`.**  This
+decides *which of two hypotheses* produced the sample; the different task of
+recovering an unknown *value* from correlated side information is
+`Dist.guessProb` / `Dist.condGuessProb` (`RandomSystems/Entropy.lean`), the
+quantities paired with min-entropy.  In mathlib's decision-theory vocabulary
+(`Mathlib/Probability/Decision/Risk/Defs.lean`) the quantity here is
+`1 - avgRisk` at 0-1 loss under the uniform prior — prior-averaged over a
+**given** rule `g`, which is what `avgRisk` names.  `bayesRisk` there is the
+*optimum* over rules, so the Bayes-flavoured statement is the supremum
+`sSup_avgSuccessProb_eq_half_add_half_statDist` below, which is `1 - bayesRisk`
+and hence the classical Bayes-error identity `bayesRisk = ½ − ½·δ(X, Y)`. -/
+noncomputable def avgSuccessProb {A : Type*} (X Y : Dist A) (g : A → Bool) : ℝ :=
+  (X.mass (fun a => g a = true) + Y.mass (fun a => g a = false)) / 2
+
+/-- Structural form of `avgSuccessProb`: eliminating the complement event turns the
+success probability into the signed mass gap of the acceptance set of `g`,
+shifted by the total weight of `Y`.  Unconditional. -/
+theorem avgSuccessProb_eq_mass_sub_mass_add_weight_div_two {A : Type*}
+    (X Y : Dist A) (g : A → Bool) :
+    avgSuccessProb X Y g =
+      (X.mass (fun a => g a = true) - Y.mass (fun a => g a = true) +
+        Y.weight) / 2 := by
+  have hcompl := Dist.mass_add_compl Y (fun a => g a = true)
+  have hfalse : Y.mass (fun a => ¬ (g a = true)) =
+      Y.mass (fun a => g a = false) :=
+    Dist.mass_congr Y (fun a => by simp)
+  unfold avgSuccessProb
+  rw [← hfalse]
+  linarith
+
+/-- **No decision rule beats `½ + ½ δ(X, Y)`** (optimality half of PorRen22
+Theorem 8).  Only `|Y| = 1` is needed: the acceptance-set mass gap is bounded
+by `δ(X, Y)` for arbitrary signed `X`, `Y` (`mass_tsub_mass_le_statDist`),
+and the weight of `Y` is the only normalization the bound consumes. -/
+theorem avgSuccessProb_le_half_add_half_statDist {A : Type*} [Fintype A]
+    (X Y : Dist A) (hY : Y.weight = 1) (g : A → Bool) :
+    avgSuccessProb X Y g ≤ 1 / 2 + statDist X Y / 2 := by
+  rw [avgSuccessProb_eq_mass_sub_mass_add_weight_div_two, hY]
+  have := mass_tsub_mass_le_statDist X Y (fun a => g a = true)
+  linarith
+
+/-- **The Bayes rule attains `½ + ½ δ(X, Y)`** (attainment half of PorRen22
+Theorem 8): any rule that guesses `X` exactly on `{a | Y(a) < X(a)}` — the
+Bayes-optimal rule for equal prior ½ — succeeds with probability exactly
+`½ + ½ δ(X, Y)`.  The rule is taken as an abstract `g` with a specification
+hypothesis so the statement does not fix a `Decidable` instance. -/
+theorem avgSuccessProb_eq_half_add_half_statDist_of_forall_eq_true_iff_lt
+    {A : Type*} [Fintype A] (X Y : Dist A) (hY : Y.weight = 1) (g : A → Bool)
+    (hg : ∀ a, g a = true ↔ Y a < X a) :
+    avgSuccessProb X Y g = 1 / 2 + statDist X Y / 2 := by
+  rw [avgSuccessProb_eq_mass_sub_mass_add_weight_div_two, hY,
+    Dist.mass_congr X hg, Dist.mass_congr Y hg,
+    ← statDist_eq_mass_sub_mass_pos]
+  ring
+
+/-- **Optimal-test identity** (PorRen22 Theorem 8, classical case; the
+`½ + ½p` computation of MaPiRe07 Lemma 4): the best success probability over
+all decision rules `A → Bool` of deciding which of `X`, `Y` (equal prior ½) a
+sample came from is exactly `½ + ½ δ(X, Y)`.  In mathlib's decision-theory
+vocabulary this is `1 - bayesRisk` at 0-1 loss and uniform prior.
+
+Stated as a genuine supremum over all decision rules, in the library's
+`sSup`-over-image idiom; `avgSuccessProb_le_half_add_half_statDist` gives the upper
+bound for every rule and the Bayes rule attains it.  Only `|Y| = 1` is
+required, matching the min-form asymmetry of `δ`; for the intended reading
+both `X` and `Y` are probability distributions. -/
+theorem sSup_avgSuccessProb_eq_half_add_half_statDist {A : Type*} [Fintype A]
+    (X Y : Dist A) (hY : Y.weight = 1) :
+    sSup ((fun g : A → Bool => avgSuccessProb X Y g) '' Set.univ) =
+      1 / 2 + statDist X Y / 2 := by
+  have hbound : ∀ g : A → Bool, avgSuccessProb X Y g ≤ 1 / 2 + statDist X Y / 2 :=
+    avgSuccessProb_le_half_add_half_statDist X Y hY
+  have hbdd : BddAbove ((fun g : A → Bool => avgSuccessProb X Y g) '' Set.univ) := by
+    refine ⟨1 / 2 + statDist X Y / 2, ?_⟩
+    rintro x ⟨g, -, rfl⟩
+    exact hbound g
+  have hnonneg : (0 : ℝ) ≤ 1 / 2 + statDist X Y / 2 := by
+    have := statDist_nonneg X Y
+    linarith
+  refine le_antisymm (sSup_image_univ_le_of_forall _ hnonneg hbound) ?_
+  classical
+  calc 1 / 2 + statDist X Y / 2
+      = avgSuccessProb X Y (fun a => decide (Y a < X a)) :=
+        (avgSuccessProb_eq_half_add_half_statDist_of_forall_eq_true_iff_lt X Y hY _
+          (fun a => by simp)).symm
+    _ ≤ sSup ((fun g : A → Bool => avgSuccessProb X Y g) '' Set.univ) :=
+        le_csSup hbdd ⟨_, Set.mem_univ _, rfl⟩
+
+/-- If every pointwise deficit `X a - Y a` is bounded by a non-negative charge
+function, then statistical distance is bounded by the total charge. -/
 theorem statDist_le_sum_of_forall_tsub_le {A : Type*} [Fintype A]
-    (X Y : Dist A) (charge : A → NNReal)
+    (X Y : Dist A) (charge : A → ℝ)
+    (h0 : ∀ a, 0 ≤ charge a)
     (h : ∀ a, X a - Y a ≤ charge a) :
     statDist X Y ≤ ∑ a, charge a := by
-  rw [statDist]
-  exact Finset.sum_le_sum (fun a _ => h a)
+  rw [statDist_eq_sum_univ]
+  exact Finset.sum_le_sum (fun a _ => max_le (h a) (h0 a))
 
-/-- A one-sided ratio lower bound controls the truncated pointwise deficit. -/
-theorem tsub_le_mul_of_one_sub_mul_le {a b eps : NNReal}
+/-- A one-sided ratio lower bound controls the pointwise deficit. -/
+theorem sub_le_mul_of_one_sub_mul_le {a b eps : ℝ}
     (h_lower : (1 - eps) * b ≤ a) :
     b - a ≤ eps * b := by
-  by_cases h_eps : eps ≤ 1
-  · suffices h : b - (1 - eps) * b = eps * b by
-      calc b - a ≤ b - (1 - eps) * b := tsub_le_tsub_left h_lower _
-        _ = eps * b := h
-    apply tsub_eq_of_eq_add
-    rw [← add_mul, add_comm, tsub_add_cancel_of_le h_eps, one_mul]
-  · have h_one_lt_eps : (1 : NNReal) < eps := lt_of_not_ge h_eps
-    calc b - a ≤ b := tsub_le_self
-      _ = b * 1 := (mul_one b).symm
-      _ ≤ b * eps := mul_le_mul_of_nonneg_left (le_of_lt h_one_lt_eps) (zero_le b)
-      _ = eps * b := mul_comm b eps
+  nlinarith [h_lower]
 
 /-- One-sided density lower bound for statistical distance.
 
-If `real` and `ideal` have equal total weight, `ideal` is a subdistribution,
-and `(1 - eps) * ideal a <= real a` pointwise, then
+If `real` and `ideal` have equal total weight, `ideal` is a non-negative
+subdistribution, and `(1 - eps) * ideal a <= real a` pointwise, then
 `statDist real ideal <= eps`.  This is the distribution-level core of the
 one-sided H-technique. -/
 theorem statDist_le_of_one_sub_mul_le {A : Type*} [Fintype A]
     (real ideal : Dist A)
     (eps : NNReal)
+    (h_ideal_nonneg : ideal.NonNeg)
     (h_weight : real.weight = ideal.weight)
     (h_ideal_le : ideal.weight ≤ 1)
     (h_lower : ∀ a, (1 - eps) * ideal a ≤ real a) :
@@ -236,19 +532,20 @@ theorem statDist_le_of_one_sub_mul_le {A : Type*} [Fintype A]
   rw [statDist_symm_of_eq_weight real ideal h_weight]
   refine le_trans
     (statDist_le_sum_of_forall_tsub_le ideal real (fun a => eps * ideal a)
-      (fun a => tsub_le_mul_of_one_sub_mul_le (h_lower a))) ?_
-  calc ∑ a, eps * ideal a
-    _ = eps * ∑ a, ideal a := by rw [← Finset.mul_sum]
-    _ = eps * ideal.weight := by rw [← Dist.weight_eq_sum ideal]
-    _ ≤ eps * 1 := mul_le_mul_of_nonneg_left h_ideal_le (zero_le eps)
-    _ = eps := mul_one eps
+      (fun a => mul_nonneg eps.coe_nonneg (h_ideal_nonneg a))
+      (fun a => sub_le_mul_of_one_sub_mul_le (h_lower a))) ?_
+  calc ∑ a, (eps : ℝ) * ideal a
+    _ = (eps : ℝ) * ∑ a, ideal a := by rw [← Finset.mul_sum]
+    _ = (eps : ℝ) * ideal.weight := by rw [← Dist.weight_eq_sum ideal]
+    _ ≤ (eps : ℝ) * 1 := mul_le_mul_of_nonneg_left h_ideal_le eps.coe_nonneg
+    _ = eps := mul_one _
 
 /-! ### Distribution-level H-technique bounds -/
 
 /-- The mass of the bad event `B` under distribution `D`. -/
 noncomputable def probBad {A : Type*}
     (D : Dist A) (B : A → Prop) :
-    NNReal :=
+    ℝ :=
   D.mass B
 
 /-- UPSTREAM-CANDIDATE: adding deterministic terminal side information does
@@ -271,15 +568,18 @@ theorem probBad_eq_evalPred {A : Type*} [Fintype A] (D : Dist A) (B : A → Prop
 /-- UPSTREAM-CANDIDATE: finite union bound for `probBad` events decomposed into
 per-index predicates. -/
 theorem probBad_iUnion_le {A ι : Type*} [Fintype A] [Fintype ι]
-    (D : Dist A) (B : A → Prop) (P : ι → A → Prop) [∀ p, DecidablePred (P p)]
+    {D : Dist A} (hD : D.NonNeg) (B : A → Prop) (P : ι → A → Prop)
+    [∀ p, DecidablePred (P p)]
     (hB : ∀ a, B a → ∃ p, P p a) :
     probBad D B ≤ ∑ p, D.evalPred (P p) := by
   rw [probBad_eq_evalPred]
-  refine le_trans ?_ (Dist.evalPred_iUnion_le D P)
-  apply Finset.sum_le_sum_of_subset
-  intro a ha
-  simp only [Finset.mem_filter, Finset.mem_univ, true_and] at ha ⊢
-  exact hB a ha
+  refine le_trans ?_ (Dist.evalPred_iUnion_le hD P)
+  refine Finset.sum_le_sum_of_subset_of_nonneg ?_ ?_
+  · intro a ha
+    simp only [Finset.mem_filter, Finset.mem_univ, true_and] at ha ⊢
+    exact hB a ha
+  · intro a _ _
+    exact hD a
 
 /-- Extended H-technique: if the real/ideal density ratio is at least
 `1 - eps` on good points, then statistical distance is bounded by bad mass plus
@@ -288,64 +588,85 @@ theorem hTechnique_ratio {A : Type*} [Fintype A]
     (real ideal : Dist A)
     (B : A → Prop)
     (eps : NNReal)
+    (h_real_nonneg : real.NonNeg)
+    (h_ideal_nonneg : ideal.NonNeg)
     (h_weight : real.weight = ideal.weight)
     (h_ideal_le : ideal.weight ≤ 1)
     (h_ratio : ∀ a, ¬ B a → (1 - eps) * ideal a ≤ real a) :
     statDist real ideal ≤ probBad ideal B + eps := by
   classical
   rw [statDist_symm_of_eq_weight real ideal h_weight]
-  let charge : A → NNReal := fun a => (if B a then ideal a else 0) + eps * ideal a
+  let charge : A → ℝ := fun a => (if B a then ideal a else 0) + eps * ideal a
+  have h_charge_nonneg : ∀ a, 0 ≤ charge a := by
+    intro a
+    refine add_nonneg ?_ (mul_nonneg eps.coe_nonneg (h_ideal_nonneg a))
+    by_cases h : B a <;> simp [h, h_ideal_nonneg a]
   have h_term_bound : ∀ a, ideal a - real a ≤ charge a := by
     intro a
     by_cases h_bad : B a
     · simp only [charge, h_bad, if_true]
-      exact le_add_right tsub_le_self
+      have := h_real_nonneg a
+      have := mul_nonneg eps.coe_nonneg (h_ideal_nonneg a)
+      linarith
     · simp only [charge, h_bad, if_false, zero_add]
-      exact tsub_le_mul_of_one_sub_mul_le (h_ratio a h_bad)
-  have h_eps_weight_le : eps * ideal.weight ≤ eps := by
-    calc eps * ideal.weight ≤ eps * 1 :=
-        mul_le_mul_of_nonneg_left h_ideal_le (zero_le eps)
-      _ = eps := mul_one eps
-  refine le_trans (statDist_le_sum_of_forall_tsub_le ideal real charge h_term_bound) ?_
+      exact sub_le_mul_of_one_sub_mul_le (h_ratio a h_bad)
+  have h_eps_weight_le : (eps : ℝ) * ideal.weight ≤ eps := by
+    calc (eps : ℝ) * ideal.weight ≤ (eps : ℝ) * 1 :=
+        mul_le_mul_of_nonneg_left h_ideal_le eps.coe_nonneg
+      _ = eps := mul_one _
+  refine le_trans
+    (statDist_le_sum_of_forall_tsub_le ideal real charge h_charge_nonneg h_term_bound) ?_
   calc ∑ a, charge a
-    _ = (∑ a, if B a then ideal a else 0) + ∑ a, eps * ideal a := by
+    _ = (∑ a, if B a then ideal a else 0) + ∑ a, (eps : ℝ) * ideal a := by
         simp only [charge]
         rw [Finset.sum_add_distrib]
-    _ = (∑ a, if B a then ideal a else 0) + eps * ∑ a, ideal a := by
+    _ = (∑ a, if B a then ideal a else 0) + (eps : ℝ) * ∑ a, ideal a := by
         rw [← Finset.mul_sum]
-    _ = probBad ideal B + eps * ideal.weight := by
+    _ = probBad ideal B + (eps : ℝ) * ideal.weight := by
         rw [probBad, Dist.mass_eq_sum, ← Dist.weight_eq_sum ideal]
     _ ≤ probBad ideal B + eps :=
-        add_le_add_right h_eps_weight_le _
+        add_le_add le_rfl h_eps_weight_le
 
 /-- Expectation-method H-technique bound with a point-dependent error term. -/
 theorem hTechnique_expectation {A : Type*} [Fintype A]
     (real ideal : Dist A)
     (B : A → Prop) [DecidablePred B]
     (eps : A → NNReal)
+    (h_real_nonneg : real.NonNeg)
+    (h_ideal_nonneg : ideal.NonNeg)
     (h_weight : real.weight = ideal.weight)
     (h_ratio : ∀ a, ¬ B a → (1 - eps a) * ideal a ≤ real a) :
     statDist real ideal ≤ probBad ideal B +
       ideal.sum (fun a w => if ¬ B a then w * eps a else 0) := by
   classical
   rw [statDist_symm_of_eq_weight real ideal h_weight]
-  let charge : A → NNReal :=
+  let charge : A → ℝ :=
     fun a => (if B a then ideal a else 0) + if ¬ B a then ideal a * eps a else 0
+  have h_charge_nonneg : ∀ a, 0 ≤ charge a := by
+    intro a
+    refine add_nonneg ?_ ?_
+    · by_cases h : B a <;> simp [h, h_ideal_nonneg a]
+    · by_cases h : B a <;>
+        simp [h, mul_nonneg (h_ideal_nonneg a) (eps a).coe_nonneg]
   have h_term_bound : ∀ a, ideal a - real a ≤ charge a := by
     intro a
     by_cases h_bad : B a
     · simp only [charge, h_bad, if_true, not_true_eq_false, if_false, add_zero]
-      exact tsub_le_self
+      have := h_real_nonneg a
+      linarith
     · simp only [charge, h_bad, if_false, not_false_eq_true, if_true, zero_add]
-      simpa [mul_comm] using tsub_le_mul_of_one_sub_mul_le (h_ratio a h_bad)
-  refine le_trans (statDist_le_sum_of_forall_tsub_le ideal real charge h_term_bound) ?_
+      calc ideal a - real a ≤ (eps a : ℝ) * ideal a :=
+            sub_le_mul_of_one_sub_mul_le (h_ratio a h_bad)
+        _ = ideal a * eps a := mul_comm _ _
+  refine le_trans
+    (statDist_le_sum_of_forall_tsub_le ideal real charge h_charge_nonneg h_term_bound) ?_
   have hsum :
-      ideal.sum (fun a w => if ¬ B a then w * eps a else 0) =
+      ideal.sum (fun a w => if ¬ B a then w * (eps a : ℝ) else 0) =
         ∑ a, if ¬ B a then ideal a * eps a else 0 := by
     exact Finsupp.sum_fintype _ _ (fun a => by by_cases h : B a <;> simp [h])
   calc ∑ a, charge a
     _ = (∑ a, if B a then ideal a else 0) +
-          ∑ a, if ¬ B a then ideal a * eps a else 0 := by
+          ∑ a, if ¬ B a then ideal a * (eps a : ℝ) else 0 := by
         simp only [charge]
         rw [Finset.sum_add_distrib]
     _ = probBad ideal B + ideal.sum (fun a w => if ¬ B a then w * eps a else 0) := by
@@ -361,16 +682,23 @@ bounded by the ideal bad probability. -/
 theorem hTechnique_eq_on_good {A : Type*} [Fintype A]
     (real ideal : Dist A)
     (B : A → Prop)
+    (h_real_nonneg : real.NonNeg)
+    (h_ideal_nonneg : ideal.NonNeg)
     (h_weight : real.weight = ideal.weight)
     (h_eq : ∀ a, ¬ B a → real a = ideal a) :
     statDist real ideal ≤ probBad ideal B := by
   classical
   rw [statDist_symm_of_eq_weight real ideal h_weight]
   refine le_trans
-    (statDist_le_sum_of_forall_tsub_le ideal real (fun a => if B a then ideal a else 0) ?_) ?_
+    (statDist_le_sum_of_forall_tsub_le ideal real (fun a => if B a then ideal a else 0)
+      ?_ ?_) ?_
+  · intro a
+    by_cases h_bad : B a <;> simp [h_bad, h_ideal_nonneg a]
   · intro a
     by_cases h_bad : B a
-    · simp [h_bad]
+    · simp only [h_bad, if_true]
+      have := h_real_nonneg a
+      linarith
     · simp [h_bad, h_eq a h_bad]
   · rw [probBad, Dist.mass_eq_sum]
 
@@ -379,11 +707,13 @@ then `statDist real ideal <= eps`. -/
 theorem oneSided_hTechnique {A : Type*} [Fintype A]
     (real ideal : Dist A)
     (eps : NNReal)
+    (h_ideal_nonneg : ideal.NonNeg)
     (h_weight : real.weight = ideal.weight)
     (h_ideal_le : ideal.weight ≤ 1)
     (h_lower : ∀ a, (1 - eps) * ideal a ≤ real a) :
     statDist real ideal ≤ eps := by
-  exact statDist_le_of_one_sub_mul_le real ideal eps h_weight h_ideal_le h_lower
+  exact statDist_le_of_one_sub_mul_le real ideal eps h_ideal_nonneg h_weight
+    h_ideal_le h_lower
 
 /-- The one-sided H-technique is stable under a common deterministic
 post-processing. -/
@@ -391,12 +721,13 @@ theorem oneSided_hTechnique_fTransform {A B : Type*} [Fintype A] [Fintype B]
     [DecidableEq B]
     (real ideal : Dist A) (f : A → B)
     (eps : NNReal)
+    (h_ideal_nonneg : ideal.NonNeg)
     (h_weight : real.weight = ideal.weight)
     (h_ideal_le : ideal.weight ≤ 1)
     (h_lower : ∀ a, (1 - eps) * ideal a ≤ real a) :
     statDist (Dist.fTransform f real) (Dist.fTransform f ideal) ≤ eps := by
   refine oneSided_hTechnique (Dist.fTransform f real)
-    (Dist.fTransform f ideal) eps ?_ ?_ ?_
+    (Dist.fTransform f ideal) eps (h_ideal_nonneg.fTransform f) ?_ ?_ ?_
   · rw [Dist.weight_fTransform, Dist.weight_fTransform, h_weight]
   · rwa [Dist.weight_fTransform]
   · intro b
@@ -407,19 +738,22 @@ theorem oneSided_hTechnique_fTransform {A B : Type*} [Fintype A] [Fintype B]
 theorem oneSided_hTechnique_proper {A : Type*} [Fintype A]
     (real ideal : Dist A)
     (eps : NNReal)
+    (h_ideal_nonneg : ideal.NonNeg)
     (h_real_proper : real.weight = 1)
     (h_ideal_proper : ideal.weight = 1)
     (h_lower : ∀ a, (1 - eps) * ideal a ≤ real a) :
     statDist real ideal ≤ eps := by
-  exact oneSided_hTechnique real ideal eps
+  exact oneSided_hTechnique real ideal eps h_ideal_nonneg
     (by rw [h_real_proper, h_ideal_proper]) (by rw [h_ideal_proper]) h_lower
 
 /-- Ratio-form H-technique applied to finite mass functions rather than
 explicit `Dist` objects. -/
 theorem hTechnique_ratio_massFunction {A : Type*} [Fintype A]
-    (real ideal : A → NNReal)
+    (real ideal : A → ℝ)
     (B : A → Prop)
     (eps : NNReal)
+    (h_real_nonneg : ∀ a, 0 ≤ real a)
+    (h_ideal_nonneg : ∀ a, 0 ≤ ideal a)
     (h_weight :
       (Dist.ofFiniteMassFunction real).weight =
         (Dist.ofFiniteMassFunction ideal).weight)
@@ -429,15 +763,19 @@ theorem hTechnique_ratio_massFunction {A : Type*} [Fintype A]
         (Dist.ofFiniteMassFunction ideal) ≤
       probBad (Dist.ofFiniteMassFunction ideal) B + eps := by
   exact hTechnique_ratio (Dist.ofFiniteMassFunction real)
-    (Dist.ofFiniteMassFunction ideal) B eps h_weight h_ideal_le (by
+    (Dist.ofFiniteMassFunction ideal) B eps
+    (fun a => by simpa using h_real_nonneg a)
+    (fun a => by simpa using h_ideal_nonneg a)
+    h_weight h_ideal_le (by
       intro a ha
       simpa using h_ratio a ha)
 
 /-- One-sided H-technique applied to finite mass functions rather than explicit
 `Dist` objects. -/
 theorem oneSided_hTechnique_massFunction {A : Type*} [Fintype A]
-    (real ideal : A → NNReal)
+    (real ideal : A → ℝ)
     (eps : NNReal)
+    (h_ideal_nonneg : ∀ a, 0 ≤ ideal a)
     (h_weight :
       (Dist.ofFiniteMassFunction real).weight =
         (Dist.ofFiniteMassFunction ideal).weight)
@@ -446,7 +784,9 @@ theorem oneSided_hTechnique_massFunction {A : Type*} [Fintype A]
     statDist (Dist.ofFiniteMassFunction real)
       (Dist.ofFiniteMassFunction ideal) ≤ eps := by
   exact oneSided_hTechnique (Dist.ofFiniteMassFunction real)
-    (Dist.ofFiniteMassFunction ideal) eps h_weight h_ideal_le (by
+    (Dist.ofFiniteMassFunction ideal) eps
+    (fun a => by simpa using h_ideal_nonneg a)
+    h_weight h_ideal_le (by
       intro a
       simpa using h_lower a)
 
@@ -457,26 +797,11 @@ For any partition {Aⱼ} of A:
 where X_j, Y_j are X, Y restricted to Aⱼ. -/
 theorem statDist_partition {A : Type*} [Fintype A] {n : ℕ}
     (X Y : Dist A) (P : A → Fin n) :
-    statDist X Y = ∑ j : Fin n, ∑ a ∈ Finset.univ.filter (fun a => P a = j), (X a - Y a) := by
-  simp only [statDist]
+    statDist X Y =
+      ∑ j : Fin n, ∑ a ∈ Finset.univ.filter (fun a => P a = j),
+        max (X a - Y a) 0 := by
+  simp only [statDist_eq_sum_univ]
   exact (Finset.sum_fiberwise Finset.univ P _).symm
-
-/-- Pointwise evaluation of `Finsupp.mapDomain` as a finite fiber sum.
-
-This is the stable fiber-sum form needed by the statistical-distance
-data-processing proof. -/
-theorem mapDomain_apply_eq_sum {A B : Type*} [DecidableEq B] [Fintype A]
-    (f : A → B) (X : A →₀ NNReal) (b : B) :
-    Finsupp.mapDomain f X b = ∑ a ∈ Finset.univ.filter (fun a => f a = b), X a := by
-  simp only [Finsupp.mapDomain, Finsupp.sum, Finsupp.coe_finset_sum,
-    Finset.sum_apply, Finsupp.single_apply]
-  rw [← Finset.sum_filter (p := fun x => f x = b)]
-  apply Finset.sum_subset
-  · exact Finset.filter_subset_filter _ (Finset.subset_univ _)
-  · intro a ha1 ha2
-    simp only [Finset.mem_filter, Finset.mem_univ, true_and] at ha1
-    simp only [Finset.mem_filter, not_and] at ha2
-    exact Finsupp.notMem_support_iff.mp (by tauto)
 
 /-- Lemma 3 (Data processing inequality).
 
@@ -490,22 +815,17 @@ Paper proof (Appendix A): δ(f(X), f(Y)) = ∑_b max(0, ∑_{f(a)=b} (X(a) - Y(a
 theorem statDist_fTransform_le {A B : Type*} [Fintype A] [Fintype B] [DecidableEq B]
     (X Y : Dist A) (f : A → B) :
     statDist (Dist.fTransform f X) (Dist.fTransform f Y) ≤ statDist X Y := by
-  simp only [statDist]
-  have hfX : Dist.fTransform f X = Finsupp.mapDomain f X := by
-    simp [Dist.fTransform, Finsupp.mapDomain]
-  have hfY : Dist.fTransform f Y = Finsupp.mapDomain f Y := by
-    simp [Dist.fTransform, Finsupp.mapDomain]
-  rw [hfX, hfY]
-  rw [show ∑ a : A, (X a - Y a) =
-      ∑ b : B, ∑ a ∈ Finset.univ.filter (fun a => f a = b), (X a - Y a)
+  simp only [statDist_eq_sum_univ]
+  rw [show ∑ a : A, max (X a - Y a) 0 =
+      ∑ b : B, ∑ a ∈ Finset.univ.filter (fun a => f a = b), max (X a - Y a) 0
     from (Finset.sum_fiberwise Finset.univ f _).symm]
   apply Finset.sum_le_sum
   intro b _
-  rw [mapDomain_apply_eq_sum f X b, mapDomain_apply_eq_sum f Y b]
-  rw [tsub_le_iff_right, ← Finset.sum_add_distrib]
-  apply Finset.sum_le_sum
-  intro a _
-  exact le_tsub_add
+  rw [Dist.fTransform_apply_eq_sum f X b, Dist.fTransform_apply_eq_sum f Y b]
+  apply max_le
+  · rw [← Finset.sum_sub_distrib]
+    exact Finset.sum_le_sum fun a _ => le_max_left _ _
+  · exact Finset.sum_nonneg fun a _ => le_max_right _ _
 
 /-- Exact-on-good H-technique bounds are stable under common deterministic
 post-processing.
@@ -517,25 +837,31 @@ theorem hTechnique_eq_on_good_fTransform {A B : Type*} [Fintype A] [Fintype B]
     [DecidableEq B]
     (real ideal : Dist A) (f : A → B)
     (Bad : A → Prop)
+    (h_real_nonneg : real.NonNeg)
+    (h_ideal_nonneg : ideal.NonNeg)
     (h_weight : real.weight = ideal.weight)
     (h_eq : ∀ a, ¬ Bad a → real a = ideal a) :
     statDist (Dist.fTransform f real) (Dist.fTransform f ideal) ≤
       probBad ideal Bad := by
   exact le_trans
     (statDist_fTransform_le real ideal f)
-    (hTechnique_eq_on_good real ideal Bad h_weight h_eq)
+    (hTechnique_eq_on_good real ideal Bad h_real_nonneg h_ideal_nonneg
+      h_weight h_eq)
 
 /-- Ratio-form H-technique bounds are stable under common deterministic
 post-processing.
 
-This is the generic data-processing step used by extended-transcript
-arguments: prove the H-coefficient ratio on the richer finite law, then apply a
-projection or any other deterministic map. -/
+This is the generic data-processing step for richer observations: prove the
+H-coefficient ratio on the richer finite law, then apply any deterministic
+stripping map.  Nothing in the statement is specific to transcripts or product
+carriers. -/
 theorem hTechnique_ratio_fTransform {A B : Type*} [Fintype A] [Fintype B]
     [DecidableEq B]
     (real ideal : Dist A) (f : A → B)
     (Bad : A → Prop)
     (eps : NNReal)
+    (h_real_nonneg : real.NonNeg)
+    (h_ideal_nonneg : ideal.NonNeg)
     (h_weight : real.weight = ideal.weight)
     (h_ideal_le : ideal.weight ≤ 1)
     (h_ratio : ∀ a, ¬ Bad a → (1 - eps) * ideal a ≤ real a) :
@@ -543,56 +869,41 @@ theorem hTechnique_ratio_fTransform {A B : Type*} [Fintype A] [Fintype B]
       probBad ideal Bad + eps := by
   exact le_trans
     (statDist_fTransform_le real ideal f)
-    (hTechnique_ratio real ideal Bad eps h_weight h_ideal_le h_ratio)
+    (hTechnique_ratio real ideal Bad eps h_real_nonneg h_ideal_nonneg
+      h_weight h_ideal_le h_ratio)
 
-/-- First-projection specialization of `hTechnique_ratio_fTransform`.
-
-This is the distribution-level form of terminal side-information removal: prove
-the H-coefficient ratio on a law over `A × Side`, then forget `Side`. -/
-theorem hTechnique_ratio_project_fst {A Side : Type*}
-    [Fintype A] [Fintype Side] [DecidableEq A]
-    (realExt idealExt : Dist (A × Side))
-    (Bad : A × Side → Prop)
-    (eps : NNReal)
-    (h_weight : realExt.weight = idealExt.weight)
-    (h_ideal_le : idealExt.weight ≤ 1)
-    (h_ratio : ∀ a, ¬ Bad a → (1 - eps) * idealExt a ≤ realExt a) :
-    statDist
-        (Dist.fTransform (fun a : A × Side => a.1) realExt)
-        (Dist.fTransform (fun a : A × Side => a.1) idealExt) ≤
-      probBad idealExt Bad + eps := by
-  exact hTechnique_ratio_fTransform realExt idealExt (fun a : A × Side => a.1)
-    Bad eps h_weight h_ideal_le h_ratio
-
-/-- If Y = 0 on S and X ≤ Y pointwise on Sᶜ, then statDist(X, Y) = ∑_{S} X(a).
+/-- If Y = 0 on S and X ≤ Y pointwise on Sᶜ, then statDist(X, Y) = ∑_{S} X(a),
+for a non-negative X.
 
 This is the core pattern for "zero on bad, dominated on good" arguments in
 switching-style proofs (e.g., PRP/PRF switching, CBC-MAC). -/
 theorem statDist_eq_mass_on_zero_support {A : Type*} [Fintype A] [DecidableEq A]
-    (X Y : Dist A) (S : Finset A)
+    {X : Dist A} (Y : Dist A) (hX : X.NonNeg) (S : Finset A)
     (h_zero : ∀ a ∈ S, Y a = 0)
     (h_le : ∀ a ∉ S, X a ≤ Y a) :
     statDist X Y = ∑ a ∈ S, X a := by
-  simp only [statDist]
-  rw [show ∑ a : A, (X a - Y a) =
-      ∑ a ∈ S, (X a - Y a) + ∑ a ∈ Sᶜ, (X a - Y a) from by
+  simp only [statDist_eq_sum_univ]
+  rw [show ∑ a : A, max (X a - Y a) 0 =
+      ∑ a ∈ S, max (X a - Y a) 0 + ∑ a ∈ Sᶜ, max (X a - Y a) 0 from by
     rw [← Finset.sum_union disjoint_compl_right, Finset.union_compl]]
-  have h_on_S : ∑ a ∈ S, (X a - Y a) = ∑ a ∈ S, X a := by
+  have h_on_S : ∑ a ∈ S, max (X a - Y a) 0 = ∑ a ∈ S, X a := by
     apply Finset.sum_congr rfl
-    intro a ha; rw [h_zero a ha, tsub_zero]
-  have h_on_Sc : ∑ a ∈ Sᶜ, (X a - Y a) = 0 := by
+    intro a ha
+    rw [h_zero a ha, sub_zero, max_eq_left (hX a)]
+  have h_on_Sc : ∑ a ∈ Sᶜ, max (X a - Y a) 0 = 0 := by
     apply Finset.sum_eq_zero
     intro a ha
-    exact tsub_eq_zero_of_le (h_le a (Finset.mem_compl.mp ha))
+    exact max_eq_right (sub_nonpos.mpr (h_le a (Finset.mem_compl.mp ha)))
   rw [h_on_S, h_on_Sc, add_zero]
 
-/-- For an injective function, fTransform at the image point gives the original value.
-
-  (f(X))(f(a)) = X(a) -/
+/-- Compatibility alias: the owner is `Dist.fTransform_injective_apply` in
+`RandomSystems.Dist`.  Kept because several legacy application files reference
+the unqualified `RandomSystems`-level name; retire with the legacy tree
+cleanup. -/
 theorem fTransform_injective_apply {A B : Type*} [Fintype A] [DecidableEq B]
     (X : Dist A) (f : A → B) (hf : Function.Injective f) (a : A) :
-    (Dist.fTransform f X) (f a) = X a := by
-  exact Dist.fTransform_injective_apply X f hf a
+    (Dist.fTransform f X) (f a) = X a :=
+  Dist.fTransform_injective_apply X f hf a
 
 /-- Lemma 3+ (Data processing equality for injective functions).
 
@@ -605,16 +916,17 @@ theorem statDist_fTransform_injective {A B : Type*} [Fintype A] [Fintype B] [Dec
     statDist (Dist.fTransform f X) (Dist.fTransform f Y) = statDist X Y := by
   apply le_antisymm
   · exact statDist_fTransform_le X Y f
-  · simp only [statDist]
-    rw [show ∑ a : A, (X a - Y a) =
-        ∑ a : A, ((Dist.fTransform f X) (f a) - (Dist.fTransform f Y) (f a)) from by
+  · simp only [statDist_eq_sum_univ]
+    rw [show ∑ a : A, max (X a - Y a) 0 =
+        ∑ a : A, max ((Dist.fTransform f X) (f a) - (Dist.fTransform f Y) (f a)) 0 from by
       congr 1; ext a; rw [fTransform_injective_apply X f hf, fTransform_injective_apply Y f hf]]
-    calc ∑ a : A, ((Dist.fTransform f X) (f a) - (Dist.fTransform f Y) (f a))
-        = ∑ b ∈ Finset.univ.image f, ((Dist.fTransform f X) b - (Dist.fTransform f Y) b) := by
+    calc ∑ a : A, max ((Dist.fTransform f X) (f a) - (Dist.fTransform f Y) (f a)) 0
+        = ∑ b ∈ Finset.univ.image f,
+            max ((Dist.fTransform f X) b - (Dist.fTransform f Y) b) 0 := by
           rw [Finset.sum_image (fun a _ b _ h => hf h)]
-      _ ≤ ∑ b : B, ((Dist.fTransform f X) b - (Dist.fTransform f Y) b) := by
+      _ ≤ ∑ b : B, max ((Dist.fTransform f X) b - (Dist.fTransform f Y) b) 0 := by
           apply Finset.sum_le_sum_of_subset_of_nonneg (Finset.subset_univ _)
-          intro b _ _; exact zero_le _
+          intro b _ _; exact le_max_right _ _
 
 /-- UPSTREAM-CANDIDATE: adding a deterministic terminal component preserves
 statistical distance exactly.
@@ -650,7 +962,8 @@ theorem statDist_project_const_pair {A U : Type*} [Fintype A] [Fintype U]
 
 /-- Statistical distance between product distributions with a shared left factor.
 
-If `U` is a distribution on `A` and `X,Y` are distributions on `B`, then:
+If `U` is a non-negative distribution on `A` and `X,Y` are distributions on
+`B`, then:
 
 `δ(U × X, U × Y) = |U| * δ(X, Y)`.
 
@@ -658,16 +971,17 @@ In particular, if `U` is a probability distribution (`|U| = 1`), then taking an
 independent product with `U` does not change statistical distance. -/
 theorem statDist_prod_left {A B : Type*} [Fintype A] [Nonempty A] [Fintype B] [Nonempty B]
     [DecidableEq A] [DecidableEq B]
-    (U : Dist A) (X Y : Dist B) :
+    {U : Dist A} (hU : U.NonNeg) (X Y : Dist B) :
     statDist (Dist.prod U X) (Dist.prod U Y) = U.weight * statDist X Y := by
   classical
   -- Expand both `statDist`s and the shared weight `|U| = ∑ U`, then match the
-  -- product distributions summand-by-summand (`prod_apply`, `mul_tsub`).
-  simp only [statDist, Fintype.sum_prod_type]
+  -- product distributions summand-by-summand (`prod_apply`).
+  simp only [statDist_eq_sum_univ, Fintype.sum_prod_type]
   rw [Dist.weight_eq_sum, Finset.sum_mul]
   refine Finset.sum_congr rfl fun a _ => ?_
   rw [Finset.mul_sum]
   refine Finset.sum_congr rfl fun b _ => ?_
-  rw [Dist.prod_apply, Dist.prod_apply, mul_tsub]
+  rw [Dist.prod_apply, Dist.prod_apply, ← mul_sub,
+    mul_max_of_nonneg _ _ (hU a), mul_zero]
 
 end RandomSystems

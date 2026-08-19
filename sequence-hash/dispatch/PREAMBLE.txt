@@ -1,0 +1,67 @@
+================================================================================
+STANDING PREAMBLE — prepended to EVERY Codex dispatch, verbatim, NON-NEGOTIABLE.
+Canonical source of truth (PLAN.md §0.5 points here). Codex has no cross-run
+memory, so this is repeated on every dispatch. Act on STEP 0 before anything else.
+================================================================================
+
+STEP 0 — before writing a single line:
+
+1. KNOW THE FRAMEWORK — PDS, not games, not H-technique (for R2/R3). RandomSystems
+   is an algebraic random-systems framework that INSTANTIATES AbstractCrypto
+   (../abstract-crypto). It already has the high-level theorems (resource algebra,
+   distinguishing advantage, H-technique layer, converters, DPI). Systems are
+   `PFunPDS` (converter-on-resource, like `cbcReal`); security is
+   `Δ(⌈q⌉ real, ⌈q⌉ URF)` = `maxAdvantage` + `filterQueries`, mirroring
+   `cbc_mac_randomness_expander`. `advPRF`/`advNPRF`/`Adv` are H-technique — DO NOT
+   use them for R2/R3 (allowed ONLY for the R4 H-technique route). Never introduce
+   game/adversary/oracle objects.
+
+2. NEVER REPROVE; NO `private` — EVER; START FROM `SequenceFunction`. Consult
+   CHEATSHEET.md (at the repo root) FIRST (reusable theorems/constructions/tactics/notations). Reuse
+   by name. Then grep RandomSystems/AbstractCrypto, lean_local_search, loogle,
+   leansearch, #check. If a needed fact is not SequenceHash-specific, GENERALIZE IT
+   IN PLACE — never a specialized copy. Never write `private`; make a needed private
+   lemma public and reuse it. NEW modeling MUST build on canonical
+   `SequenceFunction(H,K,S,F;M)` — never re-spell inner/outer inputs or the step.
+
+3. AUTOMATION FIRST — match CBC's density. Prefer `grind` + `cr18_*` (CBC uses
+   ~10× grind, ~6× cr18_*). Use custom tactics (`cr18_*`, `htechnique_*`,
+   mass/grind bundles, `char2`) + `bound`/`gcongr`/`omega`. No hand-written
+   simp/have/calc chains for bookkeeping a tactic handles. Every proof reads
+   pen-and-paper.
+
+3b. REUSE GENERIC FACTS — do not bury them. Scheme-agnostic facts (adjacent-sum,
+   uniform-restriction, Dist prod-map, statDist) live in Dist/Distinguishing/
+   AdvantageSeq and usually ALREADY EXIST — grep/loogle/lean_local_search FIRST,
+   reuse (e.g. `maxAdvantage_le_adjacent_sum`). Never mint a local `gazi_*` generic
+   helper; if genuinely missing, add it PUBLIC to the framework.
+
+3c. SKETCH TASKS — REALLY ADAPT, NEVER TRANSCRIBE. *** THIS IS MANDATORY AND CANNOT
+   BE SKIPPED. *** For a sketch of a source paper (Gaži / Shen / DRST / Backendal),
+   the paper is a TEMPLATE, NOT the answer. NO blunt copy-paste of its bound or
+   bad-event list — a verbatim-copied bound is a FAILED sketch. For EVERY bound term
+   and EVERY bad event, state in a TABLE whether a KNOWN SequenceHash specificity
+   KILLS / SHRINKS / leaves it REMAINING, and WHY. Known simplifiers (reuse, don't
+   re-derive):
+     • FIELD domain separation (R1: `encodeItems_injective` /
+       `sequenceHash_collision_of_distinct_inputs`) ⇒ NO ambiguity/prefix-free events.
+     • INNER/OUTER domain separation (R2/A2: `HeaderI ≠ HeaderO`, distinct leading
+       bytes) ⇒ independent effective inner/outer keys ⇒ SequenceHash is NMAC-LIKE,
+       NOT HMAC-LIKE ⇒ related-ipad/opad-key terms DO NOT APPLY.
+     • CROSS-ROLE domain separation (`Derive(K)`/`Derive(S)`/inner/outer/key inputs
+       pairwise disjoint via header/F/length framing + secret key in input) ⇒
+       internal cross-role collisions cannot occur ⇒ the paper's bad-event partition
+       COLLAPSES, cross-role union terms DROP.
+     • SINGLE-KEY CLEAN DERIVATION: extra `Derive` long-key/customization cost is a
+       small ACCOUNTABLE term — name it, don't hide it.
+     • SECRET KEY IN INPUT: adversary can't steer cascade states to known values ⇒
+       offline-chain attacks limited by key guessing.
+   Deliver a SequenceHash-SPECIFIC bound, NOT the paper's constant. Be HONEST: the
+   dominant CASCADE-INHERENT terms (functional-graph, internal collision) are MD
+   properties SequenceHash shares and likely REMAIN — separation kills
+   bookkeeping/aliasing/related-key terms, not the cascade's inherent loss. Do NOT
+   over-claim vanishing. Start from `SequenceFunction`.
+
+4. Only after 1–3c: do the task below. Report which existing theorems you reused,
+   anything you generalized, and (for sketches) the term-by-term adaptation table.
+================================================================================

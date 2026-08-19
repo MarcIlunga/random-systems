@@ -18,6 +18,7 @@ Use as `simp only [dist_simp]`.
 - Uniform: `uniform_apply`, `prod_uniform`
 - Finite mass/support adapters: `ofFiniteMassFunction_apply`,
   `supportProbDist_mass_preimage`, `prodProbDist_val`
+- Pushforward events: `mass_fTransform`, `evalPred_fTransform`
 - Composition: `fTransform_comp`, `fTransform_bijection_uniform`,
   `fTransform_equiv_uniform`, `fTransform_fst_uniform`, `fTransform_snd_uniform`,
   `fTransform_fst_const_pair`, `fTransform_id`
@@ -42,6 +43,8 @@ attribute [dist_simp]
   prod_uniform
   fTransform_comp
   fTransform_id
+  mass_fTransform
+  evalPred_fTransform
   mass_preimage_eq_fTransform_apply
   supportProbDist_mass_preimage
   fTransform_bijection_uniform

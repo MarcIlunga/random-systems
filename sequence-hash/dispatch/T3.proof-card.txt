@@ -1,0 +1,45 @@
+STEP 0 — non-negotiable:
+1. PURE CR18 idiom (PFunPDS / Δ / ⌈q⌉). No advPRF/advNPRF/Adv, no
+   game/adversary/oracle objects. NO `private`, EVER; NEVER RE-DERIVE.
+2. NO GUESSWORK — follow the accepted sketch
+   `sequence-hash/sketches/A3-sequencehash-realization.md`.
+3. AUTOMATION FIRST.
+
+TASK T3.proof — discharge the two remaining sorries in
+  sequence-hash/SequenceHash/RandomSystems/SequenceMACRealization.lean,
+completing R2 on the LITERAL C2SP SequenceMAC:
+  (1) `sequenceMACSystem_realization` — the keyed F=1 converter realizes the
+      literal C2SP SequenceMAC function (mirror
+      `Converter.sequenceHashSystem_realization`: `applyDDC` + the round schedule,
+      split MD folds with `List.foldl_append`/`mdIterate_append`).
+  (2) `sequenceMAC_prf_bound_concrete` — the assembly.
+
+PROOF PLAN for (2) (a triangle + a pullback DPI + the PROVEN block-level theorem):
+  Δ(⌈q⌉ concreteReal, ⌈q⌉ URF_InputSequence)
+    ≤ Δ(⌈q⌉ concreteReal, ⌈q⌉ blockSequenceMACReal)   -- = `epsC2SP` BY DEFINITION
+      + Δ(⌈q⌉ blockSequenceMACReal, ⌈q⌉ URF_InputSequence)
+  and the second term: `blockSequenceMACReal = pullbackBlockSystem e nmacReal`;
+  the simple injective converter `e` makes one query each, so by converter/DPI
+  monotonicity `Δ(⌈q⌉ pullback nmacReal, ⌈q⌉ pullback macIdeal) ≤ Δ(⌈q⌉ nmacReal,
+  ⌈q⌉ macIdeal)`, and `pullback macIdeal = URF_InputSequence` (pullback of a URF
+  along an INJECTIVE embedding is a URF — prove/reuse this lemma). Then apply the
+  proven `nmac_prf_bound` for `Δ(⌈q⌉ nmacReal, ⌈q⌉ macIdeal) ≤ Δ(f_K,r) +
+  (ℓ+1)q·εna + q²/|C|` (|C| = |HashOutput L|). Thread `hna`.
+
+REUSE (do not reprove): `nmac_prf_bound`, `sequenceMAC_prf_bound`,
+`maxAdvantage_triangle`, `maxAdvantage_filterQueries_applyDDC_le` (converter DPI),
+`Converter.sequenceHashSystem_realization`, `mdIterate_append`,
+`PFunPDS.URF`/`ofFunDist`. Generalize any pullback-URF fact publicly, don't clone.
+
+GUARDRAIL: `sequenceMAC_prf_bound_concrete`, `nmac_prf_bound`,
+`sequenceMAC_prf_bound` statements are FROZEN. No `private`. If a statement is
+wrong/unprovable as stated, STOP + report.
+
+ACCEPTANCE: `lake build SequenceHash` green; both sorries closed;
+`sequenceMAC_prf_bound_concrete` axiom-clean (force-check after a fresh build);
+ZERO `sorry` in the R2 + realization files; no `private`/advPRF/game; reused the
+block-level theorem (no re-derivation). If a step genuinely can't close, leave one
+`sorry` at the hardest point and report which.
+
+Report: the realization proof, the assembly, reused lemmas, and confirm both files
+are sorry-free.

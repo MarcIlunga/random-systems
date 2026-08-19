@@ -14,12 +14,13 @@ import Mathlib.Algebra.BigOperators.Ring.Finset
 
 Lean 4 formalization of Definitions 1, 2, 4 from Lanzenberger-Maurer (TCC 2020).
 
-A distribution over a type `A` is a finitely supported function `A → ℝ≥0`.
+A distribution over a type `A` is a finitely supported function `A → ℝ`.
 We use Mathlib's `Finsupp` to get `support`, `sum`, algebraic operations for free.
 
 ## Main Definitions
 
-* `Dist A` — type alias for `A →₀ NNReal`
+* `Dist A` — type alias for `A →₀ ℝ`
+* `Dist.NonNeg` — pointwise non-negativity (no longer structural over `ℝ`)
 * `Dist.weight` — total mass `|X| := ∑ a, X(a)`
 * `Dist.isProbDist` — weight = 1
 * `Dist.mass` — mass of an event/predicate, summed over finite support
@@ -34,7 +35,9 @@ We use Mathlib's `Finsupp` to get `support`, `sum`, algebraic operations for fre
 ## Design Notes
 
 - Sub-distributions (weight ≤ 1) arise naturally in the proof of Theorem 1.
-- `NNReal` (not `ENNReal`) since everything is finite; cleaner arithmetic.
+- The codomain is `ℝ` (signed): non-negativity is no longer structural.
+  Honest distributions carry it via `Dist.NonNeg`; `isProbDist` bundles
+  `NonNeg` with `weight = 1`, so the `ProbDist` boundary keeps its meaning.
 -/
 
 noncomputable section
@@ -43,16 +46,24 @@ open scoped BigOperators NNReal
 
 namespace RandomSystems
 
-/-- A finite distribution over `A`: a finitely supported function `A → ℝ≥0`.
+/-- A finite distribution over `A`: a finitely supported function `A → ℝ`.
 
 Paper Definition 1: "A distribution X : A → ℝ≥0 with finite support."
-We do NOT require weight = 1 (sub-distributions appear in Theorem 1 proof). -/
-abbrev Dist (A : Type*) := A →₀ NNReal
+We do NOT require weight = 1 (sub-distributions appear in Theorem 1 proof),
+and the codomain is the signed reals: non-negativity is a predicate
+(`Dist.NonNeg`), not part of the carrier. -/
+abbrev Dist (A : Type*) := A →₀ ℝ
 
 namespace Dist
 
 set_option linter.unusedSectionVars false
 
+-- Decidability policy: these classical instances serve PROOFS only.  Any
+-- lemma whose STATEMENT contains a decidability-dependent term
+-- (`Finset.filter`, `if`) must take the instance as an explicit binder
+-- (`[DecidablePred p]` / `[DecidableEq B]`), so the statement instantiates
+-- with the caller's ambient instance and `rw`/`simp` match in both classical
+-- and `[DecidableEq]`-world files.  See DESIGN.md §4 (statement policies).
 attribute [local instance] Classical.propDecidable
 attribute [local instance] Classical.decEq
 
@@ -62,8 +73,17 @@ variable [Fintype Ω] [Nonempty Ω] [Fintype C] [Nonempty C]
 
 /-- The weight (total mass) of a distribution.
 Paper: `|X| := ∑_{a ∈ A} X(a)`. -/
-def weight (X : Dist A) : NNReal :=
+def weight (X : Dist A) : ℝ :=
   X.sum fun _ w => w
+
+/-- Pointwise non-negativity of a finite-support mass function.  Over the
+signed carrier `A →₀ ℝ` this is no longer structural; honest distributions
+carry it as a predicate. -/
+def NonNeg {A : Type*} (X : Dist A) : Prop := ∀ a, 0 ≤ X a
+
+omit [Fintype A] [Nonempty A] in
+theorem NonNeg.weight_nonneg {X : Dist A} (hX : X.NonNeg) : 0 ≤ X.weight :=
+  Finset.sum_nonneg fun a _ => hX a
 
 omit [Nonempty A] in
 /-- On a finite carrier, support-based weight is the ordinary sum over all
@@ -75,19 +95,19 @@ theorem weight_eq_sum (X : Dist A) :
 
 omit [Nonempty A] in
 /-- A mass function on a finite carrier as a finite-support distribution. -/
-def ofFiniteMassFunction (law : A → NNReal) : Dist A :=
+def ofFiniteMassFunction (law : A → ℝ) : Dist A :=
   Finsupp.onFinset Finset.univ law (by intro a _; exact Finset.mem_univ a)
 
 omit [Nonempty A] in
 @[simp]
-theorem ofFiniteMassFunction_apply (law : A → NNReal) (a : A) :
+theorem ofFiniteMassFunction_apply (law : A → ℝ) (a : A) :
     ofFiniteMassFunction law a = law a := by
   simp [ofFiniteMassFunction]
 
 omit [Nonempty A] in
 /-- The total weight of a finite mass function as a distribution is the sum of
 its masses over the carrier. -/
-theorem weight_ofFiniteMassFunction (law : A → NNReal) :
+theorem weight_ofFiniteMassFunction (law : A → ℝ) :
     (ofFiniteMassFunction law).weight = ∑ a : A, law a := by
   simp [weight_eq_sum, ofFiniteMassFunction]
 
@@ -101,14 +121,24 @@ theorem weight_eq_none_add_sum_some {Y : Type*} [Fintype Y] (D : Dist (Part Y)) 
   rw [weight_eq_sum, ← Equiv.sum_comp Part.equivOption.symm (fun a => D a), Fintype.sum_option]
   rfl
 
-/-- A distribution is a probability distribution if its weight is 1. -/
-def isProbDist (X : Dist A) : Prop := X.weight = 1
+/-- A distribution is a probability distribution if it is pointwise
+non-negative and its weight is 1.  (Over the `NNReal` carrier the first
+conjunct was structural; over `ℝ` it is part of the definition, so the
+`ProbDist` boundary keeps its meaning.) -/
+def isProbDist (X : Dist A) : Prop := X.NonNeg ∧ X.weight = 1
+
+omit [Fintype A] [Nonempty A] in
+theorem isProbDist.nonNeg {X : Dist A} (hX : X.isProbDist) : X.NonNeg := hX.1
+
+omit [Fintype A] [Nonempty A] in
+theorem isProbDist.weight_eq {X : Dist A} (hX : X.isProbDist) : X.weight = 1 :=
+  hX.2
 
 /-- Probability distributions are distributions with total mass one. -/
 abbrev ProbDist (A : Type*) := {X : Dist A // X.isProbDist}
 
 /-- Probability distributions evaluate like their underlying mass functions. -/
-instance : CoeFun (ProbDist A) (fun _ => A → NNReal) where
+instance : CoeFun (ProbDist A) (fun _ => A → ℝ) where
   coe X := X.val
 
 /-- Represent a probability law by its finite support subtype.
@@ -119,8 +149,9 @@ carrier to be finite or relevant. -/
 noncomputable def supportProbDist {A : Type*} (D : ProbDist A) :
     ProbDist {a : A // a ∈ D.val.support} :=
   ⟨ofFiniteMassFunction (fun a : {a : A // a ∈ D.val.support} => D.val a.1), by
-    rw [isProbDist, weight_ofFiniteMassFunction]
-    rw [← D.property]
+    refine ⟨fun a => by simpa using D.property.nonNeg a.1, ?_⟩
+    rw [weight_ofFiniteMassFunction]
+    rw [← D.property.weight_eq]
     unfold weight
     rw [Finsupp.sum]
     exact Finset.sum_attach D.val.support (fun a => D.val a)⟩
@@ -131,23 +162,40 @@ theorem supportProbDist_apply {A : Type*} (D : ProbDist A)
     supportProbDist D a = D.val a.1 := by
   rfl
 
+omit [Fintype A] [Nonempty A] in
+/-- A unit point mass is a probability distribution. -/
+theorem isProbDist_single (a : A) :
+    isProbDist (Finsupp.single a (1 : ℝ) : Dist A) := by
+  constructor
+  · intro b
+    rw [Finsupp.single_apply]
+    split <;> norm_num
+  · rw [weight, Finsupp.sum_single_index rfl]
+
 /-- Evaluate a distribution on a subset.
 Paper: `X(B) := ∑_{a ∈ B} X(a)`. -/
-def evalSet (X : Dist A) (B : Finset A) : NNReal :=
+def evalSet (X : Dist A) (B : Finset A) : ℝ :=
   ∑ a ∈ B, X a
 
 /-- Event mass of a distribution, summed over its finite support.
 
 This is the support-based form of CR18/LM20 Definition 1 notation
 `X(A) := ∑_{a ∈ A} X(a)`. Unlike `evalPred`, it does not require
-`Fintype A`; the finite support is already carried by `Dist A = A →₀ ℝ≥0`. -/
-noncomputable def mass (X : Dist A) (P : A → Prop) : NNReal :=
+`Fintype A`; the finite support is already carried by `Dist A = A →₀ ℝ`. -/
+noncomputable def mass (X : Dist A) (P : A → Prop) : ℝ :=
   X.sum fun a w => if P a then w else 0
+
+omit [Fintype A] [Nonempty A] in
+/-- Event mass of a non-negative distribution is non-negative. -/
+theorem NonNeg.mass_nonneg {X : Dist A} (hX : X.NonNeg) (P : A → Prop) :
+    0 ≤ X.mass P :=
+  Finset.sum_nonneg fun a _ => by
+    by_cases h : P a <;> simp [h, hX a]
 
 /-- Mass of a set under a distribution, using the finite support of the
 distribution. This is the direct formalization of the overloaded paper notation
 `X(A)` for `A ⊆ 𝓐`. -/
-noncomputable def massSet (X : Dist A) (E : Set A) : NNReal :=
+noncomputable def massSet (X : Dist A) (E : Set A) : ℝ :=
   X.mass fun a => a ∈ E
 
 /-- Restrict a distribution to an event, dropping all mass outside it. -/
@@ -158,6 +206,12 @@ noncomputable def restrict {A : Type*} (X : Dist A) (P : A → Prop) : Dist A :=
 theorem restrict_apply {A : Type*} (X : Dist A) (P : A → Prop) (a : A) :
     X.restrict P a = if P a then X a else 0 := by
   simp [restrict, Finsupp.filter_apply]
+
+/-- Restriction preserves non-negativity. -/
+theorem NonNeg.restrict {A : Type*} {X : Dist A} (hX : X.NonNeg) (P : A → Prop) :
+    (X.restrict P).NonNeg := fun a => by
+  rw [restrict_apply]
+  by_cases h : P a <;> simp [h, hX a]
 
 /-- The mass of `P` after restricting to `Q` is the mass of `P ∩ Q`. -/
 theorem mass_restrict {A : Type*} (X : Dist A) (P Q : A → Prop) :
@@ -173,6 +227,18 @@ theorem mass_true {A : Type*} (X : Dist A) :
     X.mass (fun _ => True) = X.weight := by
   unfold mass weight
   simp
+
+/-- A pointwise-impossible event has zero mass. -/
+theorem mass_eq_zero_of_forall_not {A : Type*} (X : Dist A) {P : A → Prop}
+    (h : ∀ a, ¬ P a) : X.mass P = 0 := by
+  unfold mass Finsupp.sum
+  exact Finset.sum_eq_zero fun a _ => if_neg (h a)
+
+/-- A pointwise-impossible event is below every non-negative bound. -/
+theorem mass_le_of_forall_not {A : Type*} (X : Dist A) {P : A → Prop}
+    (h : ∀ a, ¬ P a) {c : ℝ} (hc : 0 ≤ c) : X.mass P ≤ c := by
+  rw [mass_eq_zero_of_forall_not X h]
+  exact hc
 
 /-- Mass depends only on the event up to logical equivalence. -/
 theorem mass_congr {A : Type*} (X : Dist A) {P Q : A → Prop} (h : ∀ a, P a ↔ Q a) :
@@ -190,10 +256,105 @@ theorem mass_add_compl {A : Type*} (X : Dist A) (P : A → Prop) :
   rw [← Finset.sum_add_distrib]
   exact Finset.sum_congr rfl fun a _ => by by_cases h : P a <;> simp [h]
 
-/-- The mass of an event never exceeds the total mass: `X(P) ≤ |X|`. -/
-theorem mass_le_weight {A : Type*} (X : Dist A) (P : A → Prop) :
+/-- The mass of an event never exceeds the total mass of a non-negative
+distribution: `X(P) ≤ |X|`. -/
+theorem mass_le_weight {A : Type*} {X : Dist A} (hX : X.NonNeg) (P : A → Prop) :
     X.mass P ≤ X.weight := by
-  rw [← mass_add_compl X P]; exact le_self_add
+  rw [← mass_add_compl X P]
+  exact le_add_of_nonneg_right (hX.mass_nonneg _)
+
+/-- Monotonicity of event mass: a weaker event carries at least as much mass.
+
+Promoted here from `CR18.HTechniqueDerivation` (and `CR18` in
+`RelateGameDistinguishing`), where two copies already lived. Both sat in CR18-only
+namespaces, so no import closure rooted at `Dist` could reach them and callers
+re-derived them inline. -/
+theorem mass_mono {A : Type*} {X : Dist A} (hX : X.NonNeg) {P Q : A → Prop}
+    (h : ∀ a, P a → Q a) : X.mass P ≤ X.mass Q := by
+  classical
+  simp only [Dist.mass, Finsupp.sum]
+  refine Finset.sum_le_sum fun a _ => ?_
+  by_cases hP : P a
+  · simp [hP, h a hP]
+  · by_cases hQ : Q a <;> simp [hP, hQ, hX a]
+
+/-- `mass_mono` with the implication required only on the support — mass is
+a support sum, so off-support behavior of the events is irrelevant. -/
+theorem mass_mono_on_support {A : Type*} {X : Dist A} (hX : X.NonNeg)
+    {P Q : A → Prop} (h : ∀ a ∈ X.support, P a → Q a) :
+    X.mass P ≤ X.mass Q := by
+  classical
+  simp only [Dist.mass, Finsupp.sum]
+  refine Finset.sum_le_sum fun a ha => ?_
+  by_cases hP : P a
+  · simp [hP, h a ha hP]
+  · by_cases hQ : Q a <;> simp [hP, hQ, hX a]
+
+/-- Subadditivity over a disjunction — the two-event union bound. -/
+theorem mass_or_le {A : Type*} {X : Dist A} (hX : X.NonNeg) (P Q : A → Prop) :
+    X.mass (fun a => P a ∨ Q a) ≤ X.mass P + X.mass Q := by
+  classical
+  simp only [Dist.mass, Finsupp.sum]
+  rw [← Finset.sum_add_distrib]
+  refine Finset.sum_le_sum fun a _ => ?_
+  by_cases hpq : P a ∨ Q a
+  · rw [if_pos hpq]
+    rcases hpq with hp | hq
+    · rw [if_pos hp]
+      refine le_add_of_nonneg_right ?_
+      by_cases hq : Q a <;> simp [hq, hX a]
+    · rw [if_pos hq]
+      refine le_add_of_nonneg_left ?_
+      by_cases hp : P a <;> simp [hp, hX a]
+  · rw [if_neg hpq]
+    push_neg at hpq
+    simp [hpq.1, hpq.2]
+
+/-- **Modularity of event mass** (inclusion–exclusion, in the form a lattice valuation asks for):
+`X(P ∨ Q) + X(P ∧ Q) = X(P) + X(Q)`.
+
+Signed layer — no `Dist.NonNeg`, no normalization: the identity is the pointwise indicator identity
+`⟦P ∨ Q⟧ + ⟦P ∧ Q⟧ = ⟦P⟧ + ⟦Q⟧` summed over the support, and that holds for arbitrary real weights.
+Subadditivity (`mass_or_le`) is the strictly weaker consequence, and it is where non-negativity
+enters, via `X(P ∧ Q) ≥ 0`. -/
+theorem mass_or_add_mass_and {A : Type*} (X : Dist A) (P Q : A → Prop) :
+    X.mass (fun a => P a ∨ Q a) + X.mass (fun a => P a ∧ Q a)
+      = X.mass P + X.mass Q := by
+  classical
+  simp only [Dist.mass, Finsupp.sum]
+  rw [← Finset.sum_add_distrib, ← Finset.sum_add_distrib]
+  refine Finset.sum_congr rfl fun a _ => ?_
+  by_cases hp : P a <;> by_cases hq : Q a <;> simp [hp, hq]
+
+/-- **Mass monotonicity on the support.**  `mass_mono` asks for the implication everywhere;
+`Dist.mass` only ever sums over the support, so that is all it needs.  Required whenever the
+hypothesis is a statement about *reachable* outcomes — a budget, a well-formedness invariant
+— rather than about the carrier. -/
+theorem mass_mono_support {A : Type*} {X : Dist A} (hX : X.NonNeg) {P Q : A → Prop}
+    (h : ∀ a ∈ X.support, P a → Q a) : X.mass P ≤ X.mass Q := by
+  classical
+  simp only [Dist.mass, Finsupp.sum]
+  refine Finset.sum_le_sum fun a ha => ?_
+  by_cases hP : P a
+  · simp [hP, h a ha hP]
+  · by_cases hQ : Q a <;> simp [hP, hQ, hX a]
+
+/-- The `Finset`-indexed union bound — `mass_or_le` iterated. -/
+theorem mass_exists_le {A ι : Type*} {X : Dist A} (hX : X.NonNeg) (s : Finset ι)
+    (P : ι → A → Prop) :
+    X.mass (fun a => ∃ i ∈ s, P i a) ≤ ∑ i ∈ s, X.mass (P i) := by
+  classical
+  induction s using Finset.induction with
+  | empty => simpa using le_of_eq (mass_eq_zero_of_forall_not X (by simp))
+  | insert a t ha ih =>
+      rw [Finset.sum_insert ha]
+      refine le_trans (le_trans (mass_mono hX (Q := fun x => P a x ∨ ∃ i ∈ t, P i x)
+        (by rintro x ⟨i, hi, hix⟩
+            rcases Finset.mem_insert.mp hi with rfl | hi'
+            · exact Or.inl hix
+            · exact Or.inr ⟨i, hi', hix⟩))
+        (mass_or_le hX _ _)) ?_
+      linarith [ih]
 
 omit [Fintype A] [Nonempty A] in
 /-- Candidate for upstream: a finite pairwise-disjoint family of events has
@@ -201,7 +362,7 @@ total mass at most the distribution weight. This is the finite-support
 subdistribution form of the elementary disjoint-union bound, with no
 `Fintype` assumption on the sample space. -/
 theorem sum_mass_le_weight_of_pairwise_disjoint {A ι : Type*} [Fintype ι]
-    (X : Dist A) (E : ι → A → Prop)
+    {X : Dist A} (hX : X.NonNeg) (E : ι → A → Prop)
     (hdisj : ∀ i j, i ≠ j → ∀ a, E i a → E j a → False) :
     (∑ i : ι, X.mass (E i)) ≤ X.weight := by
   classical
@@ -229,7 +390,7 @@ theorem sum_mass_le_weight_of_pairwise_disjoint {A ι : Type*} [Fintype ι]
   · have hnone : ∀ i : ι, ¬ E i a := by
       intro i hi
       exact h ⟨i, hi⟩
-    simp [hnone]
+    simp [hnone, hX a]
 
 omit [Fintype A] [Nonempty A] in
 /-- Candidate for upstream: a finite pairwise-disjoint family of events that
@@ -263,7 +424,7 @@ theorem sum_mass_eq_weight_of_pairwise_disjoint_of_cover {A ι : Type*} [Fintype
 
 /-- Under a probability distribution every event has mass at most one. -/
 theorem mass_le_one {A : Type*} {X : Dist A} (hX : X.isProbDist) (P : A → Prop) :
-    X.mass P ≤ 1 := by rw [← hX]; exact mass_le_weight X P
+    X.mass P ≤ 1 := by rw [← hX.weight_eq]; exact mass_le_weight hX.nonNeg P
 
 /-- Restricting to an event leaves exactly the mass of that event. -/
 theorem weight_restrict {A : Type*} (X : Dist A) (P : A → Prop) :
@@ -276,14 +437,14 @@ theorem weight_restrict {A : Type*} (X : Dist A) (P : A → Prop) :
 `X.cond P Q` is defined exactly when the conditioning event `Q` has nonzero
 mass, and then equals `X(P ∧ Q) / X(Q)`. This is the generic distribution-level
 operation used by CR18 behavior kernels. -/
-noncomputable def cond (X : Dist A) (P Q : A → Prop) : Part NNReal :=
+noncomputable def cond (X : Dist A) (P Q : A → Prop) : Part ℝ :=
   ⟨X.mass Q ≠ 0, fun _ => X.mass (fun a => P a ∧ Q a) / X.mass Q⟩
 
 /-- The value of a conditional probability is the ratio of masses. -/
 theorem cond_get {A : Type*} (X : Dist A) (P Q : A → Prop) (h : (X.cond P Q).Dom) :
     (X.cond P Q).get h = X.mass (fun a => P a ∧ Q a) / X.mass Q := rfl
 
-def condEvent (X: Dist A) (P Q: Set A): Part NNReal :=
+def condEvent (X: Dist A) (P Q: Set A): Part ℝ :=
   X.cond (fun a => a ∈ P) (fun a => a ∈ Q)
 
 end Dist
@@ -318,6 +479,12 @@ namespace Dist
 
 set_option linter.unusedSectionVars false
 
+-- Decidability policy: these classical instances serve PROOFS only.  Any
+-- lemma whose STATEMENT contains a decidability-dependent term
+-- (`Finset.filter`, `if`) must take the instance as an explicit binder
+-- (`[DecidablePred p]` / `[DecidableEq B]`), so the statement instantiates
+-- with the caller's ambient instance and `rw`/`simp` match in both classical
+-- and `[DecidableEq]`-world files.  See DESIGN.md §4 (statement policies).
 attribute [local instance] Classical.propDecidable
 attribute [local instance] Classical.decEq
 
@@ -332,7 +499,7 @@ variable [Fintype Ω] [Nonempty Ω] [Fintype C] [Nonempty C]
 This is the older finite-carrier predicate evaluator, equivalent to
 `evalSet X (Finset.univ.filter P)`. Prefer `mass` when the finite support of
 the distribution itself should supply the finiteness, as in CR18. -/
-def evalPred (X : Dist A) (P : A → Prop) : NNReal :=
+def evalPred (X : Dist A) (P : A → Prop) : ℝ :=
   ∑ a ∈ Finset.univ.filter P, X a
 
 @[simp]
@@ -340,18 +507,19 @@ theorem evalPred_eq_evalSet (X : Dist A) (P : A → Prop) :
     X.evalPred P = X.evalSet (Finset.univ.filter P) := by
   rfl
 
-theorem evalPred_le_weight (X : Dist A) (P : A → Prop) :
+theorem evalPred_le_weight {X : Dist A} (hX : X.NonNeg) (P : A → Prop) :
     X.evalPred P ≤ X.weight := by
   rw [weight_eq_sum]
   unfold evalPred
-  apply Finset.sum_le_sum_of_subset
-  exact Finset.filter_subset _ _
+  apply Finset.sum_le_sum_of_subset_of_nonneg (Finset.filter_subset _ _)
+  intro a _ _
+  exact hX a
 
 omit [Fintype A] [Nonempty A] [Fintype B] [Nonempty B]
   [Fintype Ω] [Nonempty Ω] [Fintype C] [Nonempty C] in
 /-- UPSTREAM-CANDIDATE: finite union bound for predicate mass. -/
 theorem evalPred_iUnion_le {A ι : Type*} [Fintype A] [Fintype ι]
-    (X : Dist A) (P : ι → A → Prop) [∀ p, DecidablePred (P p)] :
+    {X : Dist A} (hX : X.NonNeg) (P : ι → A → Prop) [∀ p, DecidablePred (P p)] :
     X.evalPred (fun a => ∃ p, P p a) ≤ ∑ p, X.evalPred (P p) := by
   simp only [Dist.evalPred, Finset.sum_filter]
   rw [Finset.sum_comm]
@@ -361,14 +529,15 @@ theorem evalPred_iUnion_le {A ι : Type*} [Fintype A] [Fintype ι]
   · rw [if_pos ha]
     obtain ⟨p₀, hp₀⟩ := ha
     have hbound :
-        (if P p₀ a then X a else (0 : NNReal))
+        (if P p₀ a then X a else (0 : ℝ))
           ≤ ∑ x, if P x a then X a else 0 :=
       Finset.single_le_sum (f := fun p => if P p a then X a else 0)
-        (fun _ _ => zero_le _) (Finset.mem_univ p₀)
+        (fun p _ => by by_cases h : P p a <;> simp [h, hX a])
+        (Finset.mem_univ p₀)
     refine le_trans (le_of_eq (if_pos hp₀).symm) (le_trans hbound (le_of_eq ?_))
     exact Finset.sum_congr rfl (fun x _ => by congr 1)
   · rw [if_neg ha]
-    exact zero_le _
+    exact Finset.sum_nonneg fun p _ => by by_cases h : P p a <;> simp [h, hX a]
 
 /-- The zero distribution: all mass is 0. -/
 def zero' (A : Type*) : Dist A := 0
@@ -376,20 +545,34 @@ def zero' (A : Type*) : Dist A := 0
 /-- The uniform distribution over a finite nonempty type.
 `uniform A` assigns mass `1 / |A|` to each element. -/
 def uniform (A : Type*) [Fintype A] [Nonempty A] : Dist A :=
-  Finsupp.equivFunOnFinite.invFun (fun _ => (1 : NNReal) / (Fintype.card A : NNReal))
+  Finsupp.equivFunOnFinite.invFun (fun _ => (1 : ℝ) / (Fintype.card A : ℝ))
 
 /-! ### Uniform distribution lemmas -/
 
 /-- Pointwise evaluation of the uniform distribution. -/
 theorem uniform_apply (a : A) :
-    (uniform A) a = 1 / (Fintype.card A : NNReal) := by
+    (uniform A) a = 1 / (Fintype.card A : ℝ) := by
   simp [uniform, Finsupp.equivFunOnFinite]
+
+/-- The uniform distribution is pointwise non-negative. -/
+theorem uniform_nonNeg : (uniform A).NonNeg := fun a => by
+  rw [uniform_apply]
+  positivity
+
+/-- Uniform distributions do not depend on which extensionally equivalent
+`Fintype` enumeration Lean selected for their finite carrier. -/
+theorem uniform_eq_of_fintype_instances
+    (inst₁ inst₂ : Fintype A) [Nonempty A] :
+    @uniform A inst₁ _ = @uniform A inst₂ _ := by
+  ext a
+  rw [@uniform_apply A inst₁ _ a, @uniform_apply A inst₂ _ a,
+    @Fintype.card_congr A A inst₁ inst₂ (Equiv.refl A)]
 
 omit [Fintype B] [Nonempty B] [Fintype Ω] [Nonempty Ω] [Fintype C] [Nonempty C] in
 /-- UPSTREAM-CANDIDATE: counting form of predicate mass over a uniform distribution. -/
 theorem evalPred_uniform (P : A → Prop) [DecidablePred P] :
     (uniform A).evalPred P =
-      ((Finset.univ.filter P).card : NNReal) / (Fintype.card A : NNReal) := by
+      ((Finset.univ.filter P).card : ℝ) / (Fintype.card A : ℝ) := by
   unfold evalPred
   rw [Finset.sum_congr rfl (fun a _ => uniform_apply a), Finset.sum_const,
     nsmul_eq_mul, mul_one_div]
@@ -401,19 +584,19 @@ omit [Fintype B] [Nonempty B] [Fintype Ω] [Nonempty Ω] [Fintype C] [Nonempty C
 theorem evalPred_uniform_le
     (P : A → Prop) [DecidablePred P] {d : ℕ} (hd : 0 < d)
     (hcard : d * (Finset.univ.filter P).card ≤ Fintype.card A) :
-    (uniform A).evalPred P ≤ 1 / (d : NNReal) := by
+    (uniform A).evalPred P ≤ 1 / (d : ℝ) := by
   rw [evalPred_uniform]
   rw [div_le_div_iff₀ (by exact_mod_cast Fintype.card_pos) (by exact_mod_cast hd)]
   rw [one_mul]
-  calc ((Finset.univ.filter P).card : NNReal) * (d : NNReal)
-      = ((d * (Finset.univ.filter P).card : ℕ) : NNReal) := by push_cast; ring
-    _ ≤ (Fintype.card A : NNReal) := by exact_mod_cast hcard
+  calc ((Finset.univ.filter P).card : ℝ) * (d : ℝ)
+      = ((d * (Finset.univ.filter P).card : ℕ) : ℝ) := by push_cast; ring
+    _ ≤ (Fintype.card A : ℝ) := by exact_mod_cast hcard
 
 /-- The uniform distribution has weight 1. -/
 theorem weight_uniform :
     (uniform A).weight = 1 := by
   rw [weight_eq_sum]
-  have h_card_pos : (0 : NNReal) < (Fintype.card A : NNReal) :=
+  have h_card_pos : (0 : ℝ) < (Fintype.card A : ℝ) :=
     Nat.cast_pos.mpr Fintype.card_pos
   rw [Finset.sum_congr rfl (fun a _ => uniform_apply a)]
   rw [Finset.sum_const, Finset.card_univ, nsmul_eq_mul, mul_div_cancel₀]
@@ -421,7 +604,7 @@ theorem weight_uniform :
 
 /-- The uniform distribution is a probability distribution. -/
 theorem uniform_isProbDist :
-    (uniform A).isProbDist := weight_uniform
+    (uniform A).isProbDist := ⟨uniform_nonNeg, weight_uniform⟩
 
 /-- The unique probability distribution on a one-point sample space. -/
 def unitProbDist : ProbDist PUnit :=
@@ -525,21 +708,55 @@ theorem weight_fTransform {A B : Type*}
   show (Finsupp.mapDomain f X).sum (fun _ w => w) = X.sum (fun _ w => w)
   rw [Finsupp.sum_mapDomain_index (fun _ => rfl) (fun _ _ _ => rfl)]
 
+/-- Pushforward preserves non-negativity: the mass at each image point is a
+sum of non-negative source masses. -/
+theorem NonNeg.fTransform {A B : Type*} {X : Dist A} (hX : X.NonNeg)
+    (f : A → B) : (Dist.fTransform f X).NonNeg := fun b => by
+  rw [fTransform_apply_eq_mass]
+  exact hX.mass_nonneg _
+
 /-- Pushforward preserves total probability mass. -/
 theorem fTransform_isProbDist {A B : Type*} (f : A → B) {X : Dist A}
     (hX : X.isProbDist) : (fTransform f X).isProbDist := by
-  unfold isProbDist
+  refine ⟨hX.nonNeg.fTransform f, ?_⟩
   rw [weight_fTransform]
-  exact hX
+  exact hX.weight_eq
 
-/-- `isProbDist` normalizes through pushforward. -/
-@[simp] theorem isProbDist_fTransform {A B : Type*} (f : A → B) (X : Dist A) :
+/-- `isProbDist` normalizes through pushforward — for a non-negative source
+law.  (Over the signed carrier the unconditional `↔` is false: a pushforward
+can merge cancelling signed masses into a non-negative law.) -/
+theorem isProbDist_fTransform {A B : Type*} (f : A → B) {X : Dist A}
+    (hX : X.NonNeg) :
     (fTransform f X).isProbDist ↔ X.isProbDist := by
-  unfold isProbDist
-  rw [weight_fTransform]
+  constructor
+  · intro h
+    refine ⟨hX, ?_⟩
+    rw [← weight_fTransform f X]
+    exact h.weight_eq
+  · exact fTransform_isProbDist f
+
+/-- An injective pushforward reflects non-negativity: every source mass shows
+up unmerged at its image point. -/
+theorem NonNeg.of_fTransform_injective {A B : Type*} {X : Dist A} {f : A → B}
+    (hf : Function.Injective f) (h : (Dist.fTransform f X).NonNeg) : X.NonNeg :=
+  fun a => by
+    have := h (f a)
+    rwa [fTransform_injective_apply X f hf] at this
+
+/-- `isProbDist` normalizes through an **injective** pushforward with no
+side condition: injectivity rules out merging cancelling signed masses. -/
+@[simp]
+theorem isProbDist_fTransform_of_injective {A B : Type*} {f : A → B}
+    (hf : Function.Injective f) (X : Dist A) :
+    (fTransform f X).isProbDist ↔ X.isProbDist := by
+  constructor
+  · intro h
+    have hX : X.NonNeg := NonNeg.of_fTransform_injective hf h.nonNeg
+    exact (isProbDist_fTransform f hX).mp h
+  · exact fTransform_isProbDist f
 
 /-- Dividing every mass by `c` divides the total mass by `c`. -/
-theorem weight_mapRange_div {A : Type*} (X : Dist A) (c : NNReal) :
+theorem weight_mapRange_div {A : Type*} (X : Dist A) (c : ℝ) :
     weight (Finsupp.mapRange (fun w => w / c) (by simp) X : Dist A) =
       X.weight / c := by
   unfold weight
@@ -571,12 +788,7 @@ ambient random experiment has mass function `p` on outcomes `ω`, and
 Paper-facing notation below suppresses `p`, matching Maurer's convention that
 probabilities are taken in the current random experiment. -/
 def PMF (p : ProbDist Ω) (X : RV (Ω := Ω) (A := A)) : ProbDist A :=
-  ⟨fTransform X p.val, by
-    change (fTransform X p.val).weight = 1
-    unfold fTransform weight
-    show (Finsupp.mapDomain X p.val).sum (fun _ w => w) = 1
-    rw [Finsupp.sum_mapDomain_index (fun _ => rfl) (fun _ _ _ => rfl)]
-    exact p.property⟩
+  ⟨fTransform X p.val, fTransform_isProbDist X p.property⟩
 
 /-- Paper-facing PMF notation in the current random experiment.
 
@@ -671,9 +883,14 @@ noncomputable def condPMF {Ω A : Type*} (p : ProbDist Ω)
     fun hE =>
       ⟨Finsupp.mapRange (fun w => w / p.val.mass E) (by simp)
         (fTransform X (p.val.restrict E)), by
-          unfold isProbDist
-          rw [weight_mapRange_div, weight_fTransform, weight_restrict]
-          exact div_self hE⟩⟩
+          constructor
+          · intro a
+            rw [Finsupp.mapRange_apply]
+            exact div_nonneg
+              (((p.property.nonNeg.restrict E).fTransform X) a)
+              (p.property.nonNeg.mass_nonneg E)
+          · rw [weight_mapRange_div, weight_fTransform, weight_restrict]
+            exact div_self hE⟩⟩
 
 theorem condPMF_apply {Ω A : Type*} (p : ProbDist Ω)
     (X : RV (Ω := Ω) (A := A)) (E : Ω → Prop)
@@ -689,7 +906,7 @@ This is the paper-facing object `p_{X|Y}`: a partial function of two arguments
 `(a, b)`, undefined exactly when `Pr[Y = b] = 0`. -/
 noncomputable def condPMFOf {Ω A B : Type*} (p : ProbDist Ω)
     (X : RV (Ω := Ω) (A := A)) (Y : RV (Ω := Ω) (A := B)) :
-    A → B → Part NNReal :=
+    A → B → Part ℝ :=
   fun a b =>
     ⟨p.val.mass (fun ω => Y ω = b) ≠ 0,
       fun _ => p.val.mass (fun ω => X ω = a ∧ Y ω = b) /
@@ -807,9 +1024,9 @@ The telescoping identity `Pr[⋀ⱼ Aⱼ] = ∏ⱼ Pr[Aⱼ | ⋀_{k<j} Aₖ]` (C
 the probabilistic chain rule). The mathematical content is a generic NNReal
 telescope; the probability layer only supplies `Pr[⋀_{k<0} Aₖ] = 1`. -/
 
-/-- Pure NNReal telescope: `∏_{j<i+1} P(j+1)/P(j) = P(i+1)` when `P 0 = 1` and
+/-- Pure real telescope: `∏_{j<i+1} P(j+1)/P(j) = P(i+1)` when `P 0 = 1` and
 every intermediate `P j` is nonzero. -/
-theorem prod_div_eq_of_zero_one (P : ℕ → NNReal) (hP0 : P 0 = 1) :
+theorem prod_div_eq_of_zero_one (P : ℕ → ℝ) (hP0 : P 0 = 1) :
     ∀ i, (∀ j, j ≤ i → P j ≠ 0) →
       ∏ j ∈ Finset.range (i + 1), P (j + 1) / P j = P (i + 1) := by
   intro i
@@ -834,7 +1051,7 @@ theorem mass_biForall_lt_eq_prod {Ω : Type*} (p : ProbDist Ω)
   have hP0 : p.val.mass (fun ω => ∀ k, k < 0 → A k ω) = 1 := by
     have hTrue : (fun ω : Ω => ∀ k, k < 0 → A k ω) = fun _ => True := by
       funext ω; exact eq_true (fun k hk => absurd hk (Nat.not_lt_zero k))
-    rw [hTrue, mass_true]; exact p.property
+    rw [hTrue, mass_true]; exact p.property.weight_eq
   exact (prod_div_eq_of_zero_one
     (fun m => p.val.mass (fun ω => ∀ k, k < m → A k ω)) hP0 i hpos).symm
 
@@ -864,9 +1081,15 @@ theorem PMF_coord_eq_marginalAt {Ω : Type*} {ι : Type*} {X : ι → Type*}
 omit [Nonempty A] [Fintype B] [Nonempty B] in
 /-- Fiber-sum form of `fTransform` evaluation.
 
-`(fTransform f X) b` is the total mass of all `a` such that `f a = b`. -/
+`(fTransform f X) b` is the total mass of all `a` such that `f a = b`.
+
+The decidability of the fiber predicate is an explicit parameter rather than
+this file's classical local instance: the statement's `Finset.filter` then
+instantiates with the caller's ambient instance, whether classical or derived
+from `[DecidableEq B]`, so `rw` matches goals in both instance policies. -/
 theorem fTransform_apply_eq_sum
-    (f : A → B) (X : Dist A) (b : B) :
+    (f : A → B) (X : Dist A) (b : B)
+    [DecidablePred fun a : A => f a = b] :
     (fTransform f X) b =
       ∑ a ∈ (Finset.univ : Finset A).filter (fun a => f a = b), X a := by
   classical
@@ -887,7 +1110,7 @@ omit [Fintype A] [Nonempty A] [Fintype B] [Nonempty B] in
 /-- A pointwise multiplicative lower bound is preserved by pushing both
 distributions forward through the same deterministic map. -/
 theorem mul_fTransform_le_fTransform_of_forall_mul_le
-    (X Y : Dist A) (f : A → B) (c : NNReal)
+    (X Y : Dist A) (f : A → B) (c : ℝ)
     (h : ∀ a, c * X a ≤ Y a) (b : B) :
     c * fTransform f X b ≤ fTransform f Y b := by
   rw [fTransform_apply_eq_mass, fTransform_apply_eq_mass]
@@ -923,13 +1146,16 @@ theorem mul_fTransform_le_fTransform_of_forall_mul_le
 /-- Pushforward of a uniform distribution evaluated at a point equals
 the fiber cardinality divided by the total cardinality.
 
-`(fTransform f (uniform A)) b = |{a : f a = b}| / |A|` -/
+`(fTransform f (uniform A)) b = |{a : f a = b}| / |A|`
+
+As in `fTransform_apply_eq_sum`, the fiber decidability is an explicit
+parameter so the statement's filter matches the caller's ambient instance. -/
 theorem fTransform_uniform_apply
-    (f : A → B) (b : B) :
+    (f : A → B) (b : B)
+    [DecidablePred fun a : A => f a = b] :
     (fTransform f (uniform A)) b =
-      ((Finset.univ.filter (fun a => f a = b)).card : NNReal)
-        / (Fintype.card A : NNReal) := by
-  classical
+      ((Finset.univ.filter (fun a => f a = b)).card : ℝ)
+        / (Fintype.card A : ℝ) := by
   rw [fTransform_apply_eq_sum]
   simp only [uniform_apply, Finset.sum_const, nsmul_eq_mul, mul_one_div]
 
@@ -938,6 +1164,7 @@ map, pushing the uniform distribution on `A` forward along `f` gives the
 uniform distribution on `B`. -/
 theorem fTransform_uniform_eq_uniform_of_card_fiber_mul
     {A B : Type*} [Fintype A] [Nonempty A] [Fintype B] [Nonempty B]
+    [DecidableEq B]
     (f : A → B)
     (hfiber : ∀ b : B,
       ((Finset.univ.filter (fun a : A => f a = b)).card) * Fintype.card B =
@@ -946,9 +1173,9 @@ theorem fTransform_uniform_eq_uniform_of_card_fiber_mul
   classical
   ext b
   rw [fTransform_uniform_apply, uniform_apply]
-  let c : NNReal := ((Finset.univ.filter (fun a : A => f a = b)).card : NNReal)
-  let d : NNReal := (Fintype.card B : NNReal)
-  have hcardA : (Fintype.card A : NNReal) = c * d := by
+  let c : ℝ := ((Finset.univ.filter (fun a : A => f a = b)).card : ℝ)
+  let d : ℝ := (Fintype.card B : ℝ)
+  have hcardA : (Fintype.card A : ℝ) = c * d := by
     dsimp [c, d]
     exact_mod_cast (hfiber b).symm
   have hc_ne : c ≠ 0 := by
@@ -962,17 +1189,15 @@ theorem fTransform_uniform_eq_uniform_of_card_fiber_mul
       exact (Fintype.card_pos (α := A)).ne' hA_zero
     exact_mod_cast (Nat.ne_of_gt hfiber_pos)
   rw [hcardA]
-  simp [NNReal.coe_div]
-  have hcr : (c : ℝ) ≠ 0 := by exact_mod_cast hc_ne
-  have hdr : (d : ℝ) ≠ 0 := by
+  have hdr : d ≠ 0 := by
     dsimp [d]
     exact_mod_cast (Fintype.card_pos (α := B)).ne'
-  field_simp [hcr, hdr]
+  field_simp
   simp [c, d]
 
 /-- Summing against a pushforward distribution pulls the summand back. -/
 theorem fTransform_sum_mul
-    (X : Dist A) (f : A → B) (g : B → NNReal) :
+    (X : Dist A) (f : A → B) (g : B → ℝ) :
     (∑ b : B, (fTransform f X) b * g b) = ∑ a : A, X a * g (f a) := by
   classical
   simp only [fTransform, Finsupp.sum, Finsupp.coe_finset_sum, Finset.sum_apply,
@@ -1002,13 +1227,13 @@ theorem evalPred_fTransform
   unfold evalPred
   calc
     ∑ b ∈ Finset.univ.filter P, (fTransform f X) b =
-        ∑ b : B, (fTransform f X) b * if P b then (1 : NNReal) else 0 := by
+        ∑ b : B, (fTransform f X) b * if P b then (1 : ℝ) else 0 := by
           rw [Finset.sum_filter]
           apply Finset.sum_congr rfl
           intro b _
           by_cases h : P b <;> simp [h]
-    _ = ∑ a : A, X a * if P (f a) then (1 : NNReal) else 0 := by
-          exact fTransform_sum_mul X f (fun b => if P b then (1 : NNReal) else 0)
+    _ = ∑ a : A, X a * if P (f a) then (1 : ℝ) else 0 := by
+          exact fTransform_sum_mul X f (fun b => if P b then (1 : ℝ) else 0)
     _ = ∑ a ∈ Finset.univ.filter (fun a => P (f a)), X a := by
           rw [Finset.sum_filter]
           apply Finset.sum_congr rfl
@@ -1021,7 +1246,7 @@ theorem evalPred_fTransform_uniform_le
     [DecidableEq B] (f : A → B) (P : B → Prop) [DecidablePred P]
     {d : ℕ} (hd : 0 < d)
     (hcard : d * (Finset.univ.filter (fun a => P (f a))).card ≤ Fintype.card A) :
-    (fTransform f (uniform A)).evalPred P ≤ 1 / (d : NNReal) := by
+    (fTransform f (uniform A)).evalPred P ≤ 1 / (d : ℝ) := by
   haveI : Nonempty B := ⟨f (Classical.arbitrary A)⟩
   rw [evalPred_fTransform]
   exact evalPred_uniform_le (fun a => P (f a)) hd hcard
@@ -1046,7 +1271,7 @@ theorem prod_apply (X : Dist A) (Y : Dist B) (a : A) (b : B) :
   classical
   -- Push evaluation inside the nested sums and discharge each sum via `Finsupp.sum_eq_single`.
   simp [prod, Finsupp.sum_apply]
-  let g : A → NNReal → NNReal :=
+  let g : A → ℝ → ℝ :=
     fun a' wa => Y.sum (fun b' wb => (Finsupp.single (a', b') (wa * wb)) (a, b))
   change X.sum g = X a * Y b
   have hX : X.sum g = g a (X a) := by
@@ -1129,10 +1354,17 @@ theorem weight_prod (X : Dist A) (Y : Dist B) :
     _ = ∑ a ∈ X.support, ∑ b ∈ Y.support, X a * Y b := by rw [Finset.sum_product]
     _ = X.weight * Y.weight := by rw [← Finset.sum_mul_sum]; simp only [weight, Finsupp.sum]
 
+/-- Independent products preserve non-negativity. -/
+theorem NonNeg.prod {X : Dist A} {Y : Dist B} (hX : X.NonNeg) (hY : Y.NonNeg) :
+    (Dist.prod X Y).NonNeg := fun p => by
+  rw [show p = (p.1, p.2) from rfl, prod_apply]
+  exact mul_nonneg (hX p.1) (hY p.2)
+
 /-- The product of two probability distributions is a probability distribution. -/
 theorem prod_isProbDist (X : Dist A) (Y : Dist B)
     (hX : X.isProbDist) (hY : Y.isProbDist) : (prod X Y).isProbDist := by
-  rw [isProbDist, weight_prod, hX, hY, mul_one]
+  refine ⟨hX.nonNeg.prod hY.nonNeg, ?_⟩
+  rw [weight_prod, hX.weight_eq, hY.weight_eq, mul_one]
 
 /-- The product of two probability distributions, as a `ProbDist` (CR18 Appendix A:
 the joint distribution of two **independently selected** random variables). -/
@@ -1178,7 +1410,10 @@ theorem iidPow_weight (X : Dist A) (q : ℕ) : (iidPow X q).weight = X.weight ^ 
 /-- `X^q` is a probability distribution whenever `X` is (CR18 Def 4.9: `X^q` is again a random
 variable) — the n-ary analogue of `prod_isProbDist`. -/
 theorem iidPow_isProbDist {X : Dist A} (hX : X.isProbDist) (q : ℕ) : (iidPow X q).isProbDist := by
-  rw [isProbDist, iidPow_weight, hX, one_pow]
+  refine ⟨fun f => ?_, ?_⟩
+  · rw [iidPow_apply]
+    exact Finset.prod_nonneg fun i _ => hX.nonNeg (f i)
+  · rw [iidPow_weight, hX.weight_eq, one_pow]
 
 /-- CR18 **Definition 4.10** (finite part). The **q-fold clone power** `X^[q]` of a distribution:
 `q` *clones* `X₁ = ⋯ = X_q` — the *same* value in every coordinate — each with marginal `X`. It is
@@ -1199,8 +1434,8 @@ theorem clonePow_weight (X : Dist A) (q : ℕ) : (clonePow X q).weight = X.weigh
   weight_fTransform _ X
 
 /-- `X^[q]` is a probability distribution whenever `X` is. -/
-theorem clonePow_isProbDist {X : Dist A} (hX : X.isProbDist) (q : ℕ) : (clonePow X q).isProbDist := by
-  rw [isProbDist, clonePow_weight, hX]
+theorem clonePow_isProbDist {X : Dist A} (hX : X.isProbDist) (q : ℕ) : (clonePow X q).isProbDist :=
+  fTransform_isProbDist _ hX
 
 end
 
@@ -1223,21 +1458,195 @@ theorem supportProbDist_mass_preimage {A : Type*} (D : ProbDist A)
   unfold mass Finsupp.sum
   exact Finset.sum_attach D.val.support (fun a => if P a then D.val a else 0)
 
+/-- Two probability distributions have equal weight — the thesis-style (Def 2.1) weight-equality
+form in which normalization enters cancellation lemmas: distributions have arbitrary weight, and
+proofs only ever need the two weights to agree. -/
+theorem weight_eq_weight_of_isProbDist {A B : Type*} {X : Dist A} {Y : Dist B}
+    (hX : X.isProbDist) (hY : Y.isProbDist) : X.weight = Y.weight :=
+  Eq.trans hX.weight_eq (Eq.symm hY.weight_eq)
+
 /-- Uniform event mass as a cardinality ratio. -/
 theorem uniform_mass_eq_card_filter (P : A → Prop) [DecidablePred P] :
     (uniform A).mass P =
-      (((Finset.univ : Finset A).filter P).card : NNReal) /
-        (Fintype.card A : NNReal) := by
+      (((Finset.univ : Finset A).filter P).card : ℝ) /
+        (Fintype.card A : ℝ) := by
   rw [mass_eq_sum]
   simp_rw [uniform_apply]
   rw [← Finset.sum_filter, Finset.sum_const, nsmul_eq_mul, mul_one_div]
+
+/-- **The conditional-probability bridge, as a fiber count.**  If the sample space factors
+as (everything else) × (one free coordinate) and, for each fixing of everything else, at
+most `B` values of the free coordinate satisfy `P`, then `P` has mass at most `B / |A|`.
+
+This is what "conditioning on all prior randomness, at most `B` values of the next draw make
+the equation hold" means operationally: a fiber count, not a conditional distribution.  It
+conditions on the *other coordinates of the sample space*, which are independent by
+construction, never on downstream observations — so it is immune to the adaptivity trap where
+a later query leaks information about an earlier response. -/
+theorem mass_le_of_fiber_bound {K Ω A : Type} [Fintype K] [Fintype Ω] [Nonempty K]
+    [Fintype A] [Nonempty A] (φ : K ≃ Ω × A) (P : K → Prop) [DecidablePred P] (B : ℕ)
+    (h : ∀ ω : Ω, (Finset.univ.filter (fun v : A => P (φ.symm (ω, v)))).card ≤ B) :
+    (uniform K).mass P ≤ (B : ℝ) / Fintype.card A := by
+  classical
+  have hΩ : 0 < Fintype.card Ω := by
+    rcases (inferInstance : Nonempty K) with ⟨k⟩
+    exact Fintype.card_pos_iff.mpr ⟨(φ k).1⟩
+  have hA : 0 < Fintype.card A := Fintype.card_pos
+  have hKcard : Fintype.card K = Fintype.card Ω * Fintype.card A := by
+    rw [Fintype.card_congr φ, Fintype.card_prod]
+  have hcard : (Finset.univ.filter P).card ≤ Fintype.card Ω * B := by
+    have h1 : (Finset.univ.filter P).card
+        = (Finset.univ.filter (fun p : Ω × A => P (φ.symm p))).card := by
+      apply Finset.card_bij (fun k _ => φ k)
+      · intro k hk; simpa using (Finset.mem_filter.mp hk).2
+      · intro a _ b _ hab; exact φ.injective hab
+      · intro p hp
+        exact ⟨φ.symm p, by simpa using (Finset.mem_filter.mp hp).2, by simp⟩
+    rw [h1, Finset.card_filter, Fintype.sum_prod_type]
+    calc (∑ ω : Ω, ∑ v : A, if P (φ.symm (ω, v)) then 1 else 0)
+        = ∑ ω : Ω, (Finset.univ.filter (fun v : A => P (φ.symm (ω, v)))).card :=
+          Finset.sum_congr rfl fun ω _ => (Finset.card_filter _ _).symm
+      _ ≤ ∑ _ω : Ω, B := Finset.sum_le_sum fun ω _ => h ω
+      _ = Fintype.card Ω * B := by rw [Finset.sum_const, Finset.card_univ, smul_eq_mul]
+  rw [uniform_mass_eq_card_filter, hKcard, div_le_div_iff₀ (by positivity) (by positivity)]
+  push_cast
+  calc ((Finset.univ.filter P).card : ℝ) * (Fintype.card A : ℝ)
+      ≤ ((Fintype.card Ω * B : ℕ) : ℝ) * (Fintype.card A : ℝ) :=
+        mul_le_mul_of_nonneg_right (Nat.cast_le.mpr hcard) (by positivity)
+    _ = (B : ℝ) * ((Fintype.card Ω : ℝ) * (Fintype.card A : ℝ)) := by push_cast; ring
+
+/-- **Uniform-mass product law from a counting identity**: if `#P · |B| = #Q · #E` then
+`mass P = mass Q · mass E` over the uniform distributions.  The algebraic endgame of balanced-fiber
+(re-randomisation) counting arguments: prove the count, read off the product law. -/
+theorem uniform_mass_eq_mass_mul_mass_of_card_mul_eq {A B : Type*}
+    [Fintype A] [Nonempty A] [Fintype B] [Nonempty B]
+    (P E : A → Prop) (Q : B → Prop) [DecidablePred P] [DecidablePred E] [DecidablePred Q]
+    (hcard : (Finset.univ.filter P).card * Fintype.card B
+      = (Finset.univ.filter Q).card * (Finset.univ.filter E).card) :
+    (uniform A).mass P = (uniform B).mass Q * (uniform A).mass E := by
+  have hB : ((Fintype.card B : ℝ)) ≠ 0 := Nat.cast_ne_zero.mpr Fintype.card_ne_zero
+  have h : ((Finset.univ.filter P).card : ℝ) * (Fintype.card B : ℝ)
+      = ((Finset.univ.filter Q).card : ℝ) * ((Finset.univ.filter E).card : ℝ) := by
+    exact_mod_cast hcard
+  calc (uniform A).mass P
+      = (((Finset.univ.filter P).card : ℝ) * (Fintype.card B : ℝ))
+          / ((Fintype.card B : ℝ) * (Fintype.card A : ℝ)) := by
+        rw [uniform_mass_eq_card_filter, mul_comm ((Fintype.card B : ℝ)),
+          mul_div_mul_right _ _ hB]
+    _ = (uniform B).mass Q * (uniform A).mass E := by
+        rw [uniform_mass_eq_card_filter, uniform_mass_eq_card_filter, div_mul_div_comm, h]
+
+/-- **Product-uniform coordinate exchange.**  Suppose a real event fixes one
+uniform coordinate of `f : F` inside a key-dependent predicate `P k f`, while
+an ideal event fixes an independent uniform coordinate of `g : G` inside the
+same predicate.  If the two coordinate fibers have the stated balanced
+cardinalities, then integrating over an arbitrary key law preserves mass.
+
+This is the distribution-level endgame for re-randomization arguments that
+exchange a constrained coordinate of one uniform object for a constrained
+coordinate of an independent uniform object. -/
+theorem mass_prod_uniform_coordinate_exchange
+    {F K G A : Type*}
+    [Fintype F] [Nonempty F] [Fintype K] [Nonempty K]
+    [Fintype G] [Nonempty G] [Fintype A] [Nonempty A]
+    [DecidableEq A]
+    (DK : Dist K) (R : F → K → Prop) (I : F → K → G → Prop)
+    (P : K → F → Prop) [∀ k : K, DecidablePred (P k)]
+    (coordF : F → A) (coordG : G → A) (a : A)
+    (hR : ∀ f k, R f k ↔ coordF f = a ∧ P k f)
+    (hI : ∀ f k g, I f k g ↔ coordG g = a ∧ P k f)
+    (hF : ∀ k,
+      (Finset.univ.filter fun f => coordF f = a ∧ P k f).card *
+          Fintype.card A =
+        (Finset.univ.filter fun f => P k f).card)
+    (hG : (Finset.univ.filter fun g => coordG g = a).card *
+        Fintype.card A = Fintype.card G) :
+    (prod (uniform F) DK).mass (fun fk => R fk.1 fk.2) =
+      (prod (uniform F) (prod DK (uniform G))).mass
+        (fun fkg => I fkg.1 fkg.2.1 fkg.2.2) := by
+  classical
+  have hcard (k : K) :
+      (Finset.univ.filter fun f => coordF f = a ∧ P k f).card *
+          Fintype.card G =
+        (Finset.univ.filter fun g => coordG g = a).card *
+          (Finset.univ.filter fun f => P k f).card := by
+    calc
+      _ = (Finset.univ.filter fun f => coordF f = a ∧ P k f).card *
+          ((Finset.univ.filter fun g => coordG g = a).card *
+            Fintype.card A) := by rw [hG]
+      _ = (Finset.univ.filter fun g => coordG g = a).card *
+          ((Finset.univ.filter fun f => coordF f = a ∧ P k f).card *
+            Fintype.card A) := by ac_rfl
+      _ = _ := by rw [hF]
+  have hconditional (k : K) :
+      (uniform F).mass (fun f => R f k) =
+        (uniform F).mass (fun f => P k f) *
+          (uniform G).mass (fun g => coordG g = a) := by
+    rw [mass_congr (uniform F) (hR · k)]
+    simpa [mul_comm] using
+      (uniform_mass_eq_mass_mul_mass_of_card_mul_eq
+        (fun f => coordF f = a ∧ P k f) (P k)
+        (fun g => coordG g = a) (hcard k))
+  have hleft :
+      (prod (uniform F) DK).mass (fun fk => R fk.1 fk.2) =
+        ∑ k, DK k * (uniform F).mass (fun f => R f k) := by
+    rw [mass_eq_sum]
+    simp only [prod_apply, Fintype.sum_prod_type]
+    rw [Finset.sum_comm]
+    apply Finset.sum_congr rfl
+    intro k _
+    rw [mass_eq_sum, Finset.mul_sum]
+    apply Finset.sum_congr rfl
+    intro f _
+    by_cases h : R f k <;> simp [h, mul_comm]
+  have hright :
+      (prod (uniform F) (prod DK (uniform G))).mass
+          (fun fkg => I fkg.1 fkg.2.1 fkg.2.2) =
+        ∑ k, DK k * ((uniform G).mass (fun g => coordG g = a) *
+          (uniform F).mass (fun f => P k f)) := by
+    rw [mass_eq_sum]
+    simp only [prod_apply, Fintype.sum_prod_type]
+    rw [Finset.sum_comm]
+    apply Finset.sum_congr rfl
+    intro k _
+    rw [mass_eq_sum, mass_eq_sum]
+    simp only [hI]
+    rw [mul_comm (∑ _, _) (∑ _, _), Finset.sum_mul, Finset.mul_sum]
+    apply Finset.sum_congr rfl
+    intro f _
+    rw [Finset.mul_sum, Finset.mul_sum]
+    apply Finset.sum_congr rfl
+    intro g _
+    by_cases hg : coordG g = a <;> by_cases hf : P k f <;>
+      simp [hg, hf, mul_comm, mul_left_comm]
+  rw [hleft, hright]
+  apply Finset.sum_congr rfl
+  intro k _
+  rw [hconditional]
+  ac_rfl
+
+/-- **Uniform-mass inverse bound from a counting inequality**: if `#P · |B| ≤ |A|` then
+`mass P ≤ 1 / |B|` — the per-event endgame of single-point re-randomisation. -/
+theorem uniform_mass_le_inv_card_of_card_mul_le {A B : Type*}
+    [Fintype A] [Nonempty A] [Fintype B] [Nonempty B]
+    (P : A → Prop) [DecidablePred P]
+    (hcard : (Finset.univ.filter P).card * Fintype.card B ≤ Fintype.card A) :
+    (uniform A).mass P ≤ 1 / (Fintype.card B : ℝ) := by
+  have hA : (0 : ℝ) < (Fintype.card A : ℝ) := by
+    exact_mod_cast Fintype.card_pos
+  have hB : (0 : ℝ) < (Fintype.card B : ℝ) := by
+    exact_mod_cast Fintype.card_pos
+  rw [uniform_mass_eq_card_filter, div_le_iff₀ hA, one_div, ← div_eq_inv_mul, le_div_iff₀ hB]
+  exact_mod_cast hcard
 
 /-- **The uniform distribution has full support**: an event has nonzero mass iff it
 is satisfiable. The engine behind "the conditioning history of a URF has nonzero
 probability iff it is realizable by some function" (CR18 Def 3.18 partiality). -/
 theorem uniform_mass_ne_zero_iff (P : A → Prop) :
     (uniform A).mass P ≠ 0 ↔ ∃ a, P a := by
-  rw [mass_eq_sum, Ne, Finset.sum_eq_zero_iff]
+  rw [mass_eq_sum, Ne,
+    Finset.sum_eq_zero_iff_of_nonneg
+      (fun a _ => by by_cases h : P a <;> simp [h, uniform_nonNeg a])]
   push Not
   constructor
   · rintro ⟨a, -, ha⟩
@@ -1318,7 +1727,7 @@ theorem indepRV_prodProbDist (P : ProbDist A) (Q : ProbDist B) :
   rw [mass_prod_and P.val Q.val (fun u => u = a) (fun v => v = b),
       mass_prod_fst P.val Q.val (fun u => u = a),
       mass_prod_snd P.val Q.val (fun v => v = b),
-      show Q.val.weight = 1 from Q.property, show P.val.weight = 1 from P.property,
+      Q.property.weight_eq, P.property.weight_eq,
       mul_one, one_mul]
 
 theorem prod_uniform :
@@ -1373,6 +1782,22 @@ theorem fTransform_comp
   rw [Finsupp.mapDomain_comp]
 
 omit [Fintype A] [Nonempty A] [Fintype B] [Nonempty B] [Fintype C] [Nonempty C] in
+/-- **The law of a stripped random variable.**  Let `aug` and `plain` be two
+random variables on the same sample space.  If stripping `aug` recovers
+`plain` pointwise, then stripping the law of `aug` recovers the law of
+`plain`.
+
+All randomness, including fresh augmentation coins, belongs in the source
+law `X`; no product observation carrier or transcript-specific construction
+is involved. -/
+theorem fTransform_comp_eq_of_pointwise
+    (strip : B → C) (aug : A → B) (plain : A → C) (X : Dist A)
+    (h : ∀ a, strip (aug a) = plain a) :
+    fTransform strip (fTransform aug X) = fTransform plain X := by
+  rw [fTransform_comp]
+  exact congrArg (fun observation => fTransform observation X) (funext h)
+
+omit [Fintype A] [Nonempty A] [Fintype B] [Nonempty B] [Fintype C] [Nonempty C] in
 /-- UPSTREAM-CANDIDATE: pushing a distribution forward by the identity map
 does not change it. -/
 @[simp]
@@ -1391,9 +1816,11 @@ mass once projected away. -/
 @[simp]
 theorem fTransform_fst_const_pair {A U : Type*} (X : Dist A) (u : U) :
     fTransform (fun p : A × U => p.1) (fTransform (fun a : A => (a, u)) X) = X := by
-  rw [fTransform_comp]
-  change fTransform id X = X
-  exact fTransform_id X
+  calc
+    fTransform (fun p : A × U => p.1) (fTransform (fun a : A => (a, u)) X)
+        = fTransform id X :=
+          fTransform_comp_eq_of_pointwise _ _ id X fun _ => rfl
+    _ = X := fTransform_id X
 
 section ProductUniform
 
@@ -1411,7 +1838,7 @@ theorem fTransform_equiv_uniform (e : A' ≃ B') :
   simp only [fTransform, Finsupp.sum, Finsupp.coe_finset_sum, Finset.sum_apply,
     Finsupp.single_apply, uniform]
   have h_supp : (Finsupp.equivFunOnFinite.invFun
-    (fun _ : A' => (1 : NNReal) / (Fintype.card A' : NNReal))).support = Finset.univ := by
+    (fun _ : A' => (1 : ℝ) / (Fintype.card A' : ℝ))).support = Finset.univ := by
     ext s; simp [Finsupp.equivFunOnFinite]
   rw [h_supp, ← Finset.sum_filter]
   simp only [Finsupp.equivFunOnFinite, Finsupp.coe_mk, Finset.sum_const, nsmul_eq_mul, mul_one_div]
@@ -1421,7 +1848,7 @@ theorem fTransform_equiv_uniform (e : A' ≃ B') :
     exact Finset.card_singleton _
   rw [h_filter, Nat.cast_one, one_div, one_div]
   have h_card : Fintype.card A' = Fintype.card B' := Fintype.card_congr e
-  rw [show (Fintype.card A' : NNReal) = (Fintype.card B' : NNReal) from by exact_mod_cast h_card]
+  rw [show (Fintype.card A' : ℝ) = (Fintype.card B' : ℝ) from by exact_mod_cast h_card]
 
 variable (A' B')
 
@@ -1435,7 +1862,7 @@ theorem fTransform_fst_uniform :
   simp only [fTransform, Finsupp.sum, Finsupp.coe_finset_sum, Finset.sum_apply,
     Finsupp.single_apply, uniform]
   have h_supp : (Finsupp.equivFunOnFinite.invFun
-    (fun _ : A' × B' => (1 : NNReal) / (Fintype.card (A' × B') : NNReal))).support = Finset.univ := by
+    (fun _ : A' × B' => (1 : ℝ) / (Fintype.card (A' × B') : ℝ))).support = Finset.univ := by
     ext s; simp [Finsupp.equivFunOnFinite]
   rw [h_supp, ← Finset.sum_filter]
   simp only [Finsupp.equivFunOnFinite, Finsupp.coe_mk, Finset.sum_const, nsmul_eq_mul, mul_one_div]
@@ -1444,10 +1871,12 @@ theorem fTransform_fst_uniform :
       (Finset.univ : Finset B').map ⟨fun b => (a, b), fun b₁ b₂ h => by simpa using h⟩ := by
       ext ⟨a', b⟩; simp [eq_comm]
     rw [this, Finset.card_map, Finset.card_univ]
-  rw [h_filter, Fintype.card_prod, Nat.cast_mul, mul_comm]
-  congr 1
-  rw [div_mul_eq_div_div, div_self, one_div]
-  exact_mod_cast Fintype.card_pos (α := B').ne'
+  rw [h_filter, Fintype.card_prod, Nat.cast_mul]
+  have hA : (Fintype.card A' : ℝ) ≠ 0 := by
+    exact_mod_cast Fintype.card_pos (α := A').ne'
+  have hB : (Fintype.card B' : ℝ) ≠ 0 := by
+    exact_mod_cast Fintype.card_pos (α := B').ne'
+  field_simp
 
 /-- Projecting a uniform product distribution to the second component gives uniform.
 
@@ -1529,6 +1958,37 @@ theorem fTransform_fst_pair_eval_snd_prod_uniform {D' ι C' : Type*}
   rw [fTransform_eval_snd_prod_uniform]
 
 end ProductUniform
+
+/-! ### Pushforward congruence and the coupling method, equality face
+
+Migrated in from `RandomSystems/Jost/LawCoupling.lean` (2026-08-04); the
+`Machine.lawOf` corollaries remain there. -/
+
+/-- Pushforward only reads the function on the support. -/
+theorem fTransform_congr {A B : Type*} {f g : A → B} (X : Dist A)
+    (h : ∀ a ∈ X.support, f a = g a) :
+    fTransform f X = fTransform g X :=
+  Finsupp.mapDomain_congr h
+
+/-- **Pushforward congruence along a coupling.**  If a joint law has the two
+given laws as marginals and the two maps agree on its support, the two
+pushforwards coincide.  This is the equality face of the coupling method:
+`f₁⋆μ₁ = f₁⋆(fst⋆γ) = (f₁∘fst)⋆γ = (f₂∘snd)⋆γ = f₂⋆(snd⋆γ) = f₂⋆μ₂`,
+the middle step by congruence of pushforward on the support. -/
+theorem fTransform_eq_of_coupling {Ω₁ Ω₂ B : Type*}
+    {f₁ : Ω₁ → B} {f₂ : Ω₂ → B} {μ₁ : Dist Ω₁} {μ₂ : Dist Ω₂}
+    (γ : Dist (Ω₁ × Ω₂))
+    (marginal_fst : fTransform Prod.fst γ = μ₁)
+    (marginal_snd : fTransform Prod.snd γ = μ₂)
+    (agree : ∀ pair ∈ γ.support, f₁ pair.1 = f₂ pair.2) :
+    fTransform f₁ μ₁ = fTransform f₂ μ₂ := by
+  calc fTransform f₁ μ₁
+      = fTransform f₁ (fTransform Prod.fst γ) := by rw [marginal_fst]
+    _ = fTransform (f₁ ∘ Prod.fst) γ := fTransform_comp f₁ Prod.fst γ
+    _ = fTransform (f₂ ∘ Prod.snd) γ := fTransform_congr γ agree
+    _ = fTransform f₂ (fTransform Prod.snd γ) :=
+        (fTransform_comp f₂ Prod.snd γ).symm
+    _ = fTransform f₂ μ₂ := by rw [marginal_snd]
 
 end Dist
 

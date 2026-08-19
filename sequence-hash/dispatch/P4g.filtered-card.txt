@@ -1,0 +1,41 @@
+TASK P4g.filtered — R4 step 3c: COMPLETE the equality-on-good. Your step-3b escalation was
+correct: the eq-on-good only holds for BUDGET-RESPECTING transcripts, so we need a `Filt`-premised
+endpoint (the facade gap). Add it (additive) and package step 3b into it. Sorry-free. NO `B_SEQ`/
+`h_badmass`/final theorem (step 4).
+
+THE FIX (your recommendation): `adv_le_of_extFixedQueryRep_eq_on_good_filtered` requires
+UNCONDITIONAL per-transcript equality; out-of-budget transcripts have >q Eval calls beyond the
+reveal slots, so equality holds only under `TaggedBudgetRespects`. Add a filtered endpoint whose
+eq-on-good premise is conditional on `Filt t` — the analog of `adv_le_of_fixedQuery_ratio_of_good_filtered`.
+
+DO:
+1. In the GENERIC facade `RandomSystems/HTechnique/IdealCompression.lean` (ADDITIVE, NON-BREAKING),
+   add a filtered equality-on-good endpoint: same shape as
+   `adv_le_of_extFixedQueryRep_eq_on_good_filtered`, but the equality premise is
+   `∀ t, Filt t → realExtendedMass t = idealExtendedMass t` (conditional on the budget filter).
+   REUSE `adv_le_of_fixedQuery_ratio_of_good_filtered` (or the existing filtered-ratio endpoint) as
+   the template — do NOT reprove the fundamental/coupling theorem. Existing endpoint + its users
+   MUST still build unchanged (grep first).
+2. PACKAGE: use step 3b's reveal maps + mass equality (`SequenceMACGenericFiberMass.lean`) — which
+   hold for `SequenceFunctionTaggedBudgetRespects`-respecting transcripts — to supply the filtered
+   eq-on-good premise, yielding the R4 equality-on-good lemma (ε_ratio = 0 on budget-respecting
+   good transcripts). This is the exact hypothesis step 4's `sequenceMAC_generic_prf_tight` will
+   feed to the endpoint.
+
+READ FIRST: `SequenceMACGenericFiberMass.lean` (3b), `SequenceMACGenericFiber.lean` (3a),
+`RandomSystems/HTechnique/IdealCompression.lean` (the endpoints:
+`adv_le_of_extFixedQueryRep_eq_on_good_filtered`, `adv_le_of_fixedQuery_ratio_of_good_filtered`),
+`SequenceMACGenericBad.lean` (`SequenceFunctionTaggedBudgetRespects`).
+
+ADDITIVE: the new filtered endpoint (generic, in `HTechnique/IdealCompression.lean`) + the packaging
+(extend `SequenceMACGenericFiberMass.lean` or a new file). Do NOT modify steps 1/2/3a, R1–R6,
+DomainSeparation, or existing facade endpoints/users.
+
+ACCEPTANCE: whole-repo `lake build` green; axiom-clean {propext, Classical.choice, Quot.sound};
+sorry-free / axiom-free / no `private`; additive + NON-BREAKING (grep-confirm existing endpoint
+users still build); reuse the filtered-ratio endpoint + steps 3a/3b by name; NO `B_SEQ`/`h_badmass`/
+final theorem. Report: the new filtered endpoint, the packaged R4 eq-on-good lemma, reuse map,
+axiom line, and confirm step 4 is the only thing left for the R4 spine.
+
+*** IF the filtered endpoint needs a genuinely-missing fundamental fact, STOP + report exactly what
+(do NOT reprove the fundamental theorem, do NOT leave a sorry). ***

@@ -1,0 +1,59 @@
+TASK P4-normB — the generic `DeltaFilterDomFiniteQueryNormalization` construction (Part B of h_norm), then
+discharge R4's `h_norm`. Part A is DONE (`QExtensible`, `budgetHist_qExtensible` (needs `0<users`),
+`sequenceFunctionICReal/Ideal_totalOnNonempty`). Sorry-free, additive, whole-repo green. VALVE after the
+suppression transform.
+
+GOAL: prove the generic framework lemma (near `deltaFilteredFiniteQueryNormalization_of_totalOnNonempty`,
+`GameOf.lean:1203`):
+  `deltaFilterDomFiniteQueryNormalization_of_extensible` :
+    `PrefixClosed P → QExtensible P q → TotalOnNonempty S → TotalOnNonempty T →
+        DeltaFilterDomFiniteQueryNormalization P hP q S T`
+(def `Derivation.lean:1711`: ∀ D, ∃ D' exactly-q ∧ `DistinguisherRespects P` ∧
+`advantage D (filterDom P hP S) (filterDom P hP T) ≤ advantage D' S T`).
+
+CONSTRUCTION (D → exactly-q, P-respecting D', base advantage ≥ filtered advantage) — two transforms:
+
+STEP 1 (SUPPRESSION; VALVE point):
+  1a. Define a PUBLIC suppression transform `suppressViolating P d : DDD X Y` (or on `DDD`): follow `d`
+      while proposed histories satisfy `P`; at the FIRST proposed P-violating query, do NOT issue it —
+      instead compute `d`'s eventual verdict along the DETERMINISTIC `none` tail (both `filterDom P S`
+      and `filterDom P T` answer `none` there; prefix-closure ⟹ no later query restores `P`).
+  1b. Prove `verdict (suppressViolating P d) S' = verdict d (filterDom P hP S')` for both `S' ∈ {S,T}`
+      (the suppressed run reproduces d's filtered interaction: on P-respecting queries `filterDom P S' =
+      S'` where defined; the suppressed none-tail matches the filtered none-tail). Hence
+      `advantage D (filterDom P S) (filterDom P T) = advantage (fTransform (suppressViolating P) D) S T`
+      via `Dist.fTransform` mass preservation.
+  *** VALVE: if STEP 1 (the suppression transform + its two verdict equalities) is large, STOP here with
+  STEP 1 green + report STEP 2's precise remaining obligations. A clean STEP-1 return is ACCEPTED. ***
+
+STEP 2 (RESPECTING PADDING + domination):
+  2a. Define history-dependent padding via `QExtensible`: from a P-respecting run of length < q, append a
+      `QExtensible`-witness query, repeat to exactly q. (NOT the fixed-dummy `padDDD` — the pad query is
+      history-dependent.) Prove the padded distinguisher makes EXACTLY q queries and
+      `DistinguisherRespects P`.
+  2b. Padding with P-RESPECTING (real-answered) queries does not DECREASE the signed advantage:
+      `advantage (fTransform suppress D) S T ≤ advantage (fTransform (pad ∘ suppress) D) S T` (respecting
+      padding only adds distinguishing power; verdict equalities via `TotalOnNonempty`, mirroring
+      `advantage_padDDDDist_filterQueries_eq_of_totalOnNonempty` `GameOf.lean:1209`).
+  2c. Combine 1b + 2a + 2b ⟹ the generic lemma.
+
+DISCHARGE: instantiate for the sequence (adding `0 < users`) ⟹ prove `sequenceMAC_generic_prf_tight_norm`
+= the headline with `h_norm` REPLACED by the proven normalization (only `h_badmass` remains). Do NOT
+modify the existing `sequenceMAC_generic_prf_tight`.
+
+REUSE (grep-first): the `padDDD` exact-query + verdict-tail structure (`GameOf.lean:1186–1260`),
+`advantage`/`verdict`/`fTransform` mass-preservation lemmas, `TotalOnNonempty` API, `DistinguisherRespects`
+(`Derivation.lean:1700`). Keep `deltaFilteredFiniteQueryNormalization_of_totalOnNonempty` (:1203) green.
+
+READ: `GameOf.lean:1175–1260`, `Derivation.lean:1700–1722`, `PFunDDS.lean` (`DDD`/`DDE`/`ddToDDE`,
+`filterDom`, transcript/verdict API), Part A decls (`QExtensible`, `budgetHist_qExtensible`,
+`..._totalOnNonempty`), CHEATSHEET.md (repo root, distinguisher/advantage/verdict facts).
+
+ADDITIVE: new/extended framework file + `SequenceMACGeneric.lean` for the discharge. Do NOT modify the
+bridge, eq-on-good, facade, R1–R6, or the existing headline.
+
+ACCEPTANCE: whole-repo `lake build RandomSystems RandomSystemsCC SequenceHash` green; axiom-clean
+{propext, Classical.choice, Quot.sound}; sorry-free; NO `private`; count-filter normalization preserved;
+STEP 1 landed (+ STEP 2 + the discharge, unless valved). Report: the suppression transform + its verdict
+equalities, STEP 2 status, the discharged `sequenceMAC_generic_prf_tight_norm` (or valve + plan), reuse
+map, axiom line.

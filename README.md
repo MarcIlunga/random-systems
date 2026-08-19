@@ -1,76 +1,73 @@
 # Random Systems in Lean 4
 
-A standalone formalization of Maurer's random systems framework for
-cryptographic indistinguishability proofs.
+A formalization of Maurer's random systems framework for cryptographic
+indistinguishability proofs — DDS/PDS, behaviors, transcript laws, games with
+monotone binary outputs, the H-coefficient technique, and applications
+(Sum-of-Permutations, XoP, Hash-then-PRF, strong/tweakable PRPs, URF/URP
+switching).
 
-## What Are Random Systems?
+## What are random systems?
 
-A **random system** is an abstract object that answers queries
-probabilistically. In round i, it receives input X_i and produces
-output Y_i, where Y_i may depend (probabilistically) on all
-previous inputs and outputs.
+A **random system** answers queries probabilistically: in round `i` it
+receives `Xᵢ` and produces `Yᵢ`, which may depend on the whole history.
+Concretely (following Maurer EUROCRYPT'02, the CR18 lecture notes, and
+Lanzenberger–Maurer TCC'20):
 
-The framework, introduced by Maurer (EUROCRYPT 2002) and refined
-by Lanzenberger & Maurer (TCC 2020), provides a clean theory for
-proving that two systems are indistinguishable:
+- a **DDS** is a deterministic lookup table `s : X⁺ ⇀ Y`;
+- a **PDS law** (`ProbPDS`) is a probability distribution over DDSs —
+  the repository's public statement language;
+- a **random system** proper is the behavioral/transcript-law equivalence
+  class of a PDS; the **advantage** `Adv(S,T)` is the supremum of transcript
+  distances over adaptive environments.
 
-- A **DDS** (deterministic discrete system) is a concrete lookup
-  table: a partial function `s : X+ -> Y`.
-- A **PDS** (probabilistic discrete system) is a distribution
-  over DDS — "fix the random tape to get a deterministic system."
-- A **random system** is an equivalence class of PDS under
-  behavioral equivalence.
-- The **advantage** Adv(S, T) measures how well any adaptive
-  environment can distinguish systems S from T.
+See `DESIGN.md` §3 for the four equivalent views of a PDS and the planned
+unification.
 
-The central result (Theorem 1) shows that the advantage equals
-Delta(S, T), the infimum statistical distance over PDS representatives.
-This means you can prove indistinguishability by exhibiting a
-coupling of deterministic systems — no need to reason about
-adaptive environments.
+## Documentation
 
-## Structure
+Four root documents:
+
+- **`DESIGN.md`** — architecture, modeling discipline, statement/proof
+  policies, automation stack, CR18 deviations register, the system-views
+  unification design.
+- **`STATUS.md`** — current state, build gates, public-surface inventory,
+  quarantine/retirement map, known gaps, downstream notes, open work.
+- **[FOUNDATIONS.md](FOUNDATIONS.md)** — mandatory notation, source-faithful
+  Maurer--Lanzenberger definitions and coupling theorems, the signed
+  representative extension, and the required structure of pen-and-paper
+  research notes.
+- **[AGENTS.md](AGENTS.md)** — repository workflow and reading order for
+  agents.
+- `papers/` — source PDFs/extractions and reading notes (including the
+  LM20 orbit-proof and CBC-MAC expositions under `papers/notes/`).
+
+## Layout
 
 ```
-RandomSystems/
-  Dist.lean              -- Distributions (A ->_0 NNReal)
-  StatDist.lean          -- Statistical distance
-  Coupling.lean          -- Coupling lemma
-  DDS.lean               -- Deterministic discrete systems
-  DDE.lean               -- Environments
-  Transcript.lean        -- Interaction transcripts
-  PDS.lean               -- Probabilistic discrete systems
-  Equiv.lean             -- PDS equivalence
-  Successor.lean         -- Successor operation (key proof technique)
-  Advantage.lean         -- Adv and Delta
-  FundamentalTheorem.lean -- Theorem 1: Delta = Adv
-  SystemCoupling.lean    -- Theorem 2: Adv = Pr(S != T)
-  Construction.lean      -- n-ary constructions
-  Combiner.lean          -- (k,n)-combiners
-  Amplification.lean     -- Theorem 3: indistinguishability amplification
-  Instances/
-    URF.lean             -- Uniform Random Function
-    URP.lean             -- Uniform Random Permutation
-    BoolDDS.lean         -- Example: Boolean single-query systems
+RandomSystems/            -- the library (single lake lib, glob-built)
+  …                       -- probability core + PFun/CR18 surface
+  HTechnique/             -- H-coefficient application layer (public API: Surface)
+  Legacy/                 -- pre-migration bounded API + applications
+attic/                    -- parked never-buildable files (see STATUS.md §5)
+papers/                   -- sources and notes
 ```
-
-See [BLUEPRINT.md](BLUEPRINT.md) for the detailed plan, milestones,
-and paper-to-code map.
 
 ## Building
 
 ```bash
-lake update
-lake build
+lake build RandomSystems                        # everything (~8.4k jobs)
+lake build RandomSystems.HTechnique.All         # curated surface (legacy-free)
+lake run htechniqueCheck                        # surface audit + surface build
 ```
 
-Requires Lean 4 v4.28.0-rc1 and Mathlib.
+Requires the pinned Lean 4 toolchain (`lean-toolchain`) and Mathlib.
 
 ## References
 
-- Lanzenberger & Maurer, "Coupling of Random Systems" (TCC 2020)
-- Maurer, "Indistinguishability of Random Systems" (EUROCRYPT 2002)
-- Maurer, Pietrzak & Renner, "Indistinguishability Amplification" (CRYPTO 2007)
+- Lanzenberger & Maurer, *Coupling of Random Systems* (TCC 2020)
+- Maurer, *Indistinguishability of Random Systems* (EUROCRYPT 2002)
+- Maurer, *Cryptography Foundations* lecture notes (2018), `papers/CR18_LN.txt`
+- Maurer, Pietrzak & Renner, *Indistinguishability Amplification* (CRYPTO 2007)
 
 ## License
 

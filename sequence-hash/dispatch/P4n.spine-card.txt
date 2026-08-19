@@ -1,0 +1,34 @@
+TASK P4n.spine — R4 step 4: complete the R4 STRUCTURAL spine. The equality-on-good is PROVEN
+(`sequenceFunctionIC_r4_equality_on_good` in `SequenceMACGenericFiberMass.lean`). Define `B_SEQ`,
+state the frozen R4 theorem, and close it via that eq-on-good (ε_ratio = 0) + `h_badmass` as a
+NAMED hypothesis (= R4.deep, the bad-mass counting — proven separately next). Sorry-free.
+
+DELIVER (A4 §5 + §8):
+1. `B_SEQ` DEFINED per §5 (NOT `B_N`): `B_cascade(p,q,λ;c) + B_key(p,u;κ*) + deriveCostGeneric(rK,rS,…)`
+   with `B_cascade = pqλ/2^c + C(q,2)((λ+2)/2^c + 64λ⁴/2^{2c})`, `B_key = (C(u,2)+2up)/2^{κ*}`, and the
+   §5 `deriveCostGeneric` (zero when rK=rS=0). Name it `deriveCostGeneric` (distinct from R5's `DeriveCost_SEQ`).
+2. `h_badmass` NAMED hypothesis (= R4.deep, NOT proven here):
+   `∀ E, SequenceFunctionTaggedBudgetRespects … E →
+       Pr[Bad_SEQ ∣ sequenceFunctionICIdeal-extension … E] ≤ (B_SEQ … : ℝ)` (state precisely against
+   the actual facade extension type).
+3. FROZEN theorem `sequenceMAC_generic_prf_tight` (A4 §8, the 5 non-negotiable features: real =
+   canonical `sequenceFunctionICReal`; shared `Prim` in both; p/q/λ enforced by
+   `SequenceFunctionTaggedBudgetRespects`; `KeyPointMassBound` + `SequenceFunctionCrossRoleSeparated`
+   explicit; RHS = `B_SEQ` incl `deriveCostGeneric`, not `B_N`):
+     `filteredAdaptiveTranscriptAdvantage (SequenceFunctionTaggedBudgetRespects …)
+         (sequenceFunctionICReal …) (sequenceFunctionICIdeal …) ≤ (B_SEQ … : ℝ)`
+   PROVE by feeding the PROVEN `sequenceFunctionIC_r4_equality_on_good` (ε_ratio = 0) to the endpoint
+   and `h_badmass` as the bad leg. No triangle hop to NMAC.
+
+READ: `SequenceMACGenericFiberMass.lean` (`sequenceFunctionIC_r4_equality_on_good` + how it packages
+through `adv_le_of_extFixedQueryRep_eq_on_good_filtered_of_filter`), both `IdealCompression.lean`
+facades, `SequenceMACGenericBad.lean` (`KeyPointMassBound`, `SequenceFunctionCrossRoleSeparated`), A4 §5/§8.
+
+ADDITIVE: new file `SequenceHash/RandomSystems/SequenceMACGeneric.lean`. Do NOT modify the eq-on-good
+module, the facade, steps 1–3, R1–R6.
+
+ACCEPTANCE: whole-repo `lake build` green; axiom-clean {propext, Classical.choice, Quot.sound};
+sorry-free / axiom-free (only `h_badmass` is a named hypothesis, never a `sorry`); additive; NO
+`private`; `B_SEQ` = §5 (not `B_N`); reuse the proven eq-on-good + facade by name; closed via the
+endpoint. Report: `B_SEQ` def, the frozen theorem, what `h_badmass` states precisely, reuse map,
+axiom line. This lands R4-structural.

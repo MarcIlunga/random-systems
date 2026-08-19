@@ -1,0 +1,53 @@
+STEP 0 — DO THIS BEFORE PROVING ANYTHING (non-negotiable):
+1. KNOW THE FRAMEWORK. RandomSystems (this repo) is an algebraic random-systems
+   framework that instantiates AbstractCrypto (../abstract-crypto, a lakefile
+   dependency). It already has the high-level theorems. Do not re-derive
+   framework-level facts inside this scheme.
+2. NEVER REPROVE. Before proving any lemma, search for it: grep the
+   SequenceHash / RandomSystems / AbstractCrypto trees, and use the lean-lsp
+   tools (lean_local_search, loogle, leansearch) and #check. If it exists, reuse
+   it. If the fact you need is NOT SequenceHash-specific (a general
+   random-systems / algebra / Mathlib fact), do NOT prove a specialized copy —
+   generalize in place or use the general lemma. Never prove the same thing
+   twice.
+3. AUTOMATION FIRST. Use the repo's custom tactics (cr18_*, htechnique_*,
+   char2, the mass/grind bundles) and grind / bound / gcongr / omega. Proofs
+   should read pen-and-paper; no hand-rolled bookkeeping a tactic already does.
+4. Only after 1–3: fill the sorry under the frozen -- GUARDRAIL statement.
+
+TASK T1.2 — SequenceHash sound encoding (deterministic core of R1).
+Result R1. Depends: none.
+
+GOAL: prove that a collision-free underlying hash makes SequenceHash injective
+on (customization, item-sequence) pairs.
+
+SOURCE: this is a direct corollary of the existing pure collision theorem
+`SequenceHash.sequenceHash_collision_of_distinct_inputs` in
+sequence-hash/SequenceHash/Spec.lean. COPY/REUSE that theorem; do NOT reprove
+the collision case analysis.
+
+GUARDRAIL FILE: sequence-hash/SequenceHash/SoundEncoding.lean
+  The statement marked `-- GUARDRAIL` (`sequenceHash_pair_injective`) is FROZEN.
+  Do not change its signature, name, or type in any way. Fill ONLY the `sorry`.
+  You may add short helper lemmas ONLY if strictly needed, but the direct proof
+  should be: assume two pairs map to equal outputs; if the pairs differ, apply
+  `sequenceHash_collision_of_distinct_inputs`; each of its three disjuncts is a
+  `HashCollision H x y` (i.e. `x ≠ y ∧ H x = H y`), which contradicts injective
+  `H` (from `hH`). Conclude the pairs are equal.
+
+DELIVERABLE: `sequence-hash/SequenceHash/SoundEncoding.lean` compiles with the
+`sorry` replaced by a real proof.
+
+ACCEPTANCE (I will check all of these):
+- `lake build SequenceHash.SoundEncoding` is green.
+- `sequenceHash_pair_injective` is axiom-clean: `#print axioms
+  SequenceHash.sequenceHash_pair_injective` shows only propext, Classical.choice,
+  Quot.sound.
+- No `sorry` / `admit` remains anywhere you touched.
+- The `-- GUARDRAIL` statement is byte-identical to what you were given.
+- You did NOT modify Spec.lean or any other existing file.
+- You reused `sequenceHash_collision_of_distinct_inputs` rather than reproving
+  the collision analysis.
+
+In your final message, report: the exact proof term/tactic script you used, and
+which existing theorems you reused.

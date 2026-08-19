@@ -1,0 +1,48 @@
+STEP 0 — non-negotiable:
+1. PURE CR18 idiom: `PFunPDS`, `Δ`=`maxAdvantage`, `⌈q⌉`=`filterQueries`. No
+   `advPRF`/`advNPRF`/`Adv`, no game/adversary/oracle objects.
+2. NO GUESSWORK — follow Gaži 2014 (`2014-578.pdf`) §3.1 condition C / Eq. (2).
+3. **NO `private` DECLARATIONS, EVER, and NEVER RE-DERIVE.** The condition-C /
+   first-collision / birthday machinery you need already exists in
+   `RandomSystems/CBCMAC.lean` but is `private` (e.g. `cbc_condEquiv`,
+   `blindMaxWinProb_cbcGame_le`, `mass_cbcBad_le`, the `cbcBad`/first-minimal
+   lemmas). You MUST:
+     a. make those needed lemmas PUBLIC (delete the `private` keyword);
+     b. where a lemma is stated only for CBC's objects, GENERALIZE its reusable
+        core into a PUBLIC scheme-agnostic lemma (seed-indexed hash-then-URF
+        condition-C / first-collision) and refactor CBC to use that same public
+        lemma (single source of truth — no duplicate, no clone);
+     c. REUSE the public lemma to close the NMAC collision bound.
+   Do NOT re-derive CBC's argument, and do NOT introduce ANY new `private`
+   declaration anywhere (CBCMAC.lean, the shared file, or the sequence-hash file).
+
+TASK P2.collision — close the last Theorem-1 `sorry`
+  `gazi_outer_random_collision_bound` in
+  sequence-hash/SequenceHash/RandomSystems/SequenceMACPRF.lean, making
+  `nmac_prf_bound` (Gaži Theorem 1) fully sorry-free.
+
+TARGET (Gaži §3.1, cond. C / Eq. (2)): on the no-inner-collision event the
+random-outer world equals the VIL URF; the collision probability is the prefix-free
+birthday term `q²/|C|`. This is the NMAC analogue of `cbc_mac_randomness_expander`
+— reuse its (now-public) machinery.
+
+REUSE (make public + reuse; generalize if CBC-specific): `cbc_condEquiv`,
+`blindMaxWinProb_cbcGame_le`, `mass_cbcBad_le`, `pairCollisionUnionBound(_le_birthday)`,
+`bday`/`bday_mono`, `PrefixFree`, `maxAdvantage_filterQueries_le_blindMaxWinProb_of_condEquiv`,
+`mdIterate_append`.
+
+GUARDRAIL: `nmac_prf_bound`/`sequenceMAC_prf_bound` and the
+`gazi_outer_random_collision_bound` STATEMENT are frozen — fill its `sorry`. Do NOT
+change existing PUBLIC theorem statements (you MAY delete `private` keywords and
+add public generic lemmas). If blocked, STOP + report the missing public lemma.
+
+ACCEPTANCE: `lake build SequenceHash.RandomSystems.SequenceMACPRF` AND
+`lake build RandomSystems.CBCMAC` (and `RandomSystems`) green; `nmac_prf_bound`
+axiom-clean (`propext`/`Classical.choice`/`Quot.sound`, no `sorryAx`);
+**grep shows ZERO new `private` and you did not re-derive** (you reused/generalized
+CBC's machinery); pure `Δ`, no advPRF/game. If you cannot fully close it, leave one
+`sorry` at the hardest collision-counting step and report the exact public lemma
+still missing.
+
+Report: which CBC lemmas you made public, the generic lemma you extracted (and that
+CBC now reuses), whether `nmac_prf_bound` is sorry-free, and any residual.

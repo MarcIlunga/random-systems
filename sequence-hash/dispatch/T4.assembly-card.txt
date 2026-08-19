@@ -1,0 +1,27 @@
+STEP 0 — non-negotiable:
+1. PURE CR18/PDS idiom (PFunPDS / Δ / ⌈q⌉). No advPRF/advNPRF/Adv, no
+   game/adversary/oracle objects. NO `private`; NEVER RE-DERIVE.
+2. AUTOMATION FIRST.
+
+TASK T4.assembly — discharge the sole `sorry` in
+  sequence-hash/SequenceHash/RandomSystems/SequenceMACIndiff.lean:
+  `sequenceMAC_prf_bound_indiff`. It already TAKES the two obligations as
+  hypotheses `h_bridge : ProtocolIndifferentiableSequenceMACBridge …` and
+  `h_enc : SequenceMACEncodingBound …`. So the proof is a mechanical triangle:
+    Δ(⌈q⌉ SM_H, ⌈q⌉ URF)
+      ≤ Δ(⌈q⌉ SM_H, ⌈q⌉ SM_RO)      -- bound by ε_ind (4q) via `h_bridge`
+        + Δ(⌈q⌉ SM_RO, ⌈q⌉ URF)      -- bound by ε_enc via `h_enc`
+  Apply `maxAdvantage_triangle`, then the two hypotheses, then normalize with the
+  `ε_enc` definition (`ε_sched + pairCollisionUnionBound`). Do NOT re-prove the
+  hypotheses; they are inputs.
+
+GUARDRAIL: the `sequenceMAC_prf_bound_indiff` statement + the two named
+obligation defs are FROZEN. No `private`. No edits to R1/R2.
+
+ACCEPTANCE: `lake build SequenceHash` green; `sequenceMAC_prf_bound_indiff`
+axiom-clean (fresh-build check); the file's only remaining `sorry`s (if any) are
+the two named obligations if they carry proofs elsewhere — the GUARDRAIL theorem
+itself must be sorry-free given its hypotheses; no `private`/advPRF/game.
+
+Report: the triangle proof, reused lemmas, and confirm the guardrail is
+sorry-free given its hypotheses.

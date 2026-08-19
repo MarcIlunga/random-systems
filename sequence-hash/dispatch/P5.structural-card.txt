@@ -1,0 +1,53 @@
+TASK P5.structural — R5 STRUCTURAL: discharge R3's frozen `h_indiff` via the DRST
+indifferentiability composition, with the DRST simulator indistinguishability held as
+an EXPLICIT NAMED HYPOTHESIS (NOT proven here — that is the separate deep follow-up
+P5.deep). Everything else sorry-free and axiom-clean. ADDITIVE: new file
+`SequenceHash/RandomSystems/SequenceMACIndiffMD.lean`; do NOT modify R1/R2/R3/DomainSeparation.
+
+Follow the ACCEPTED sketch `sequence-hash/sketches/A5-indiff.md` (esp. §0, §4, §5, §7).
+Key corrections from that sketch you MUST honor: plain `MD[f]` is NOT indifferentiable —
+the indifferentiable object is the FULL `SequenceFunction` construction; and `4q` counts
+FIXED-OUTPUT-HASH-interface calls, DRST counts COMPRESSION calls, so a hash→compression
+cost map is required.
+
+DELIVER (start from canonical `SequenceFunction`; reuse `DomainSeparation` lemmas by name):
+
+1. OBJECTS (concrete, matching the paper — define, do not stub):
+   - `mdHashDist` : the MD fixed-output-hash law = pushforward of a compression-function
+     law `Df` through `mdHash codec · iv` (reuse `MDHash.mdHash`; a `Dist.map`/`fTransform`).
+     Then `SM_H b S DK (mdHashDist …)` is R3's `SM_H` at the MD hash law — no new SM_H.
+   - `drstError : ℕ → NNReal` (the DRST `13·Σ²/2^n` bound), `sequenceFunctionCompressionCost`
+     (the hash-call→compression-call cost map, §0/§4), `DeriveCost_SEQ` (the secret-key
+     prefix-hit mass — DEFINE via the proven `DomainSeparation.sequenceMACDeriveInput_ne_*`
+     lemmas / their `¬ IsPrefix` condition), `DeriveSafeS_SEQ` (the fixed-customization
+     side-condition predicate, §2.4).
+
+2. THE DRST INDIFF BOUND AS A NAMED HYPOTHESIS (not a sorry, not an axiom):
+   `h_drst : Δ(⌈q⌉ SM_H b S DK (mdHashDist codec Df iv), ⌈q⌉ SM_RO_separated b S DK)
+       ≤ (drstError (sequenceFunctionCompressionCost codec b S L (4*q) 0)
+           + (if q = 0 then 0 else DeriveCost_SEQ b S DK) : ℝ)`
+   This is §7.1/§7.2's conclusion; its PROOF (the DRST simulator: colored compression-graph
+   router + preimage extractor) is out of scope here — carry it as a hypothesis.
+
+3. FROZEN corollary (G5 guardrail — the byte-for-byte R3 `h_indiff` shape, §7.3),
+   proven from `h_drst` + `hepsilon`:
+   `theorem sequenceMAC_md_h_indiff … (h_drst …)
+       (hepsilon : (drstError (…4*q…) + (if q=0 then 0 else DeriveCost_SEQ b S DK))
+           ≤ epsilon_ind (4*q)) :
+     Δ(⌈q⌉ SM_H b S DK (mdHashDist codec Df iv), ⌈q⌉ SM_RO_separated b S DK)
+       ≤ (epsilon_ind (4*q) : ℝ)`
+   (proof = `le_trans h_drst` + the `hepsilon` cast).
+
+4. END-TO-END chain: a theorem composing `sequenceMAC_md_h_indiff` with R3's
+   `sequenceMAC_prf_bound_indiff` (REUSE by name) to give the SequenceMAC PRF bound
+   conditional on `h_drst` + `hepsilon` + `hDK`:
+   `Δ(⌈q⌉ SM_H b S DK (mdHashDist …), ⌈q⌉ PFunPDS.URF …)
+       ≤ (epsilon_ind (4*q) : ℝ) + (pairCollisionUnionBound (HashOutput L) q : ℝ)`.
+   This wires R1→R5.
+
+ACCEPTANCE: `lake build` green over the WHOLE repo; axiom-clean {propext, Classical.choice,
+Quot.sound}; sorry-free and axiom-free (the DRST proof is an explicit HYPOTHESIS, not a
+`sorry`/`axiom`); additive (new file only — `git`-untracked dir, so verify existing files'
+mtimes unchanged); NO `private`; `DomainSeparation` + R3 reused by name; `DeriveCost_SEQ`
+defined through the proven Derive lemmas. Report: the object defs, the `h_drst` hypothesis,
+the corollary + end-to-end chain statements, and the axiom line.

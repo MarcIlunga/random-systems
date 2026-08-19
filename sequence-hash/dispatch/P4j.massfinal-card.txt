@@ -1,0 +1,50 @@
+TASK P4j.massfinal — R4 step 3 FINAL: from the DONE terminal shift, prove the real/ideal
+EXTENDED fixed-query mass equality off `Bad_SEQ` DIRECTLY, and package the R4 equality-on-good.
+Sorry-free. NO `B_SEQ`/`h_badmass`/final theorem (step 4).
+
+CORRECTION (your escalation was right, and my last card mis-pointed): do NOT route through
+`condEquiv_of_transcript_mass_reductions` — it yields a blind-GAME conditional equivalence
+(`Shat |≡ T`), the WRONG surface (R4 is H-technique extended-representative; NO games). Apply the
+fiber-card factorization DIRECTLY to `extFixedQueryTranscriptDistRep`. Model the card structure on
+`cbc_fiber_card` (`CBCMAC.lean:468`) — the theorem, not the game plumbing around it.
+
+ALREADY DONE (reuse by name): `sequenceFunctionTerminalShift` + `sequenceFunctionTerminalShift_state`
+/ `_compose` / `_zero` (`SequenceMACGenericFiberMass.lean`); 3a freshness
+(`sequenceFunctionConstructionCall_fresh_of_not_Bad_SEQ`, `..._uniform`); 3b reveal/reduction.
+
+DELIVER (sorry-free):
+1. TRACE-STABILITY: prove the shift reproduces every honest NON-terminal trace entry and only
+   translates the terminal output. Prove it from `Bad_SEQ`'s global freshness / `Nodup` of
+   compression inputs (3a) + the shift definition — the inner/derive inputs do not depend on the
+   terminal outer coordinate. Do NOT require a new `DomainSeparation` prefix-free theorem; the
+   `Nodup` from `Bad_SEQ` is the structure you need.
+2. `sequenceFunction_fiber_card`: the fiber-cardinality factorization via
+   `Counting.card_filter_shift_univ` (the GENERIC engine `cbc_fiber_card` also uses), instantiated
+   with the shift (done) as the group action, trace-stability (1) as `hPshift`, and 3a freshness as
+   `hPfresh`.
+3. DIRECT extended-mass equality: use (2) — fresh terminal assignments are UNIFORM among
+   `Bad_SEQ`-free coin assignments — to prove
+     `SequenceFunctionTaggedBudgetRespects … tz.1 → ¬ Bad_SEQ tz →
+        extFixedQueryTranscriptDistRep realP realF realReveal xs tz
+          = extFixedQueryTranscriptDistRep idealP idealF idealReveal xs tz`
+   directly on the representative masses (the real fresh-uniform terminal value distributes exactly
+   as the ideal programmed independent value; all non-terminal entries agree by trace-stability).
+   NO game, NO `|≡`, NO `condEquiv`.
+4. Package via `adv_le_of_extFixedQueryRep_eq_on_good_filtered_of_filter`
+   (`IdealCompression.lean:378`) ⇒ the named R4 equality-on-good lemma.
+
+READ FIRST: `SequenceMACGenericFiberMass.lean` (shift + reveal/reduction + honest-prefix);
+`CBCMAC.lean:468` (`cbc_fiber_card` structure) + `Counting.card_filter_shift_univ`;
+`SequenceMACGenericFiber.lean` (3a); `IdealCompression.lean:378` (endpoint).
+
+ADDITIVE: extend `SequenceMACGenericFiberMass.lean`. Do NOT modify 3a, the facade, steps 1–2, R1–R6.
+
+ACCEPTANCE: whole-repo `lake build` green; axiom-clean {propext, Classical.choice, Quot.sound};
+sorry-free / axiom-free / no `private`; additive; reuse the shift + `Counting.card_filter_shift_univ`
++ 3a/3b + the endpoint by name; NO `condEquiv`/blind-game route; the R4 equality-on-good lemma is
+PROVEN. NO `B_SEQ`/`h_badmass`/final theorem. Report: trace-stability, `sequenceFunction_fiber_card`,
+the direct mass-equality, the packaged eq-on-good, reuse map, axiom line, and confirm step 4 is the
+ONLY remaining R4-spine work.
+
+*** VALVE: if the direct mass-equality is large, STOP after `sequenceFunction_fiber_card` (2)
+sorry-free + report the remaining direct-mass plan. Never leave a `sorry`. ***

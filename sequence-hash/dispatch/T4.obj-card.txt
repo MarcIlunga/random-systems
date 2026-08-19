@@ -1,0 +1,43 @@
+STEP 0 — non-negotiable:
+1. PURE CR18/PDS idiom (PFunPDS / Δ / ⌈q⌉). No advPRF/advNPRF/Adv, no
+   game/adversary/oracle objects. NO `private`, EVER; NEVER RE-DERIVE.
+2. NO GUESSWORK — follow the accepted sketch
+   `sequence-hash/sketches/A4-indiff-prf.md` and the ACTUAL abstract-crypto
+   `ProtocolIndifferentiable`/`.constructs` API.
+3. AUTOMATION FIRST.
+
+TASK T4.obj — place the R3 guardrail STATEMENT-FIRST (proof stays `sorry`):
+SequenceMAC PRF security assuming the underlying hash `H` is indifferentiable
+from a random oracle. New file
+sequence-hash/SequenceHash/RandomSystems/SequenceMACIndiff.lean.
+
+DELIVERABLES (per sketch):
+  - The `PFunPDS` real system `SM_H` = the C2SP SequenceMAC converter over the
+    hash resource `H` (reuse the existing converter realization; the finite
+    active-call-domain wrapper the sketch describes, since `PFunPDS.URF` needs a
+    finite domain).
+  - The indifferentiability hypothesis via abstract-crypto's actual
+    `ProtocolIndifferentiable`/`.constructs` (bound `ε_ind`); and the encoding
+    collision term `ε_enc` (reuse R1 parsing + `pairCollisionUnionBound`).
+  - GUARDRAIL statement `sequenceMAC_prf_bound_indiff`:
+      Δ(⌈q⌉ SM_H, ⌈q⌉ PFunPDS.URF_InputSequence)
+        ≤ ε_ind (4*q) + ε_enc q
+    stated `:= by sorry`. It must ELABORATE and build green (objects may be
+    `sorry` stubs, but every type faithful).
+
+If the abstract-crypto indiff notion cannot be expressed directly at the
+`PFunPDS`/`Δ` level (the "PFunPDC RandomSystemsCC bridge" the sketch flags),
+introduce `ε_ind` as an explicit hypothesis/term and RECORD the bridge as the
+named proof obligation — do NOT fake a composition. If you need a goal parameter
+that is missing, STOP + report.
+
+GUARDRAIL: do NOT touch the proven R1/R2 theorems (`sequenceMAC_prf_bound`,
+`sequenceMAC_prf_bound_concrete`, etc.). No `private`. Reuse R1 + converter +
+abstract-crypto indiff + block-level surface.
+
+ACCEPTANCE: `lake build SequenceHash` green; `sequenceMAC_prf_bound_indiff`
+elaborates; only intended `sorry`s; no `private`/advPRF/game; reuse (no
+re-derivation).
+
+Report: the R3 statement, the objects, how the indiff hypothesis is expressed
+(direct `ProtocolIndifferentiable` vs bridged term), and the reuse-vs-new split.
