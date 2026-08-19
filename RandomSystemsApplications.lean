@@ -32,7 +32,7 @@ import RandomSystems.HTechnique.HCTR2Paper
 import RandomSystems.HTechnique.TweakablePRP
 -- SpoC-128 AEAD real/ideal distinction and concrete attack.
 import RandomSystems.SpoC.NIST
-import RandomSystems.SpoC.Distinguishing
+import RandomSystems.SpoC.FullAEAD
 -- CBC-MAC beyond the birthday bound (Jha–Nandi structure graphs).
 import RandomSystems.CBCStructureGraph
 -- Sum of two independent random permutations, by conditional equivalence.
